@@ -33,8 +33,8 @@ private:
 
     void drawVectors();
     void drawOwnShipVector(qreal magnitude, qreal bearing);
-    void drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackDistance, qreal selectedTrackBearing, qreal magnitude);
-    void drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackDistance,  qreal adoptedTrackBearing, qreal magnitude);
+    void drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackSpeed, qreal selectedTrackBearing, qreal magnitude);
+    void drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackSpeed,  qreal adoptedTrackBearing, qreal magnitude);
 
 private:
     Ui::TacticalSolutionView *ui;

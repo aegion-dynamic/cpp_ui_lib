@@ -128,12 +128,12 @@ void TacticalSolutionView::drawVectors()
     }
     int magnitude = 30;
     double bearing = 45; // degrees
-    qreal selectedTrackDistance = 50;
+    qreal selectedTrackSpeed = 50;
     qreal selectedTrackBearing = 200;
 
     qreal sensorBearing = 250;
 
-    qreal adoptedTrackDistance = 100;
+    qreal adoptedTrackSpeed = 100;
     qreal adoptedTrackBearing = 300;
 
     QPointF selectedTrackPosition = QPointF(150, 100);
@@ -143,10 +143,10 @@ void TacticalSolutionView::drawVectors()
     drawOwnShipVector(magnitude, bearing);
 
     // Draw the selected track vector
-    drawSelectedTrackVector(sensorBearing, selectedTrackDistance, selectedTrackBearing, magnitude);
+    drawSelectedTrackVector(sensorBearing, selectedTrackSpeed, selectedTrackBearing, magnitude);
 
     // Adopted track vector
-    drawAdoptedTrackVector(sensorBearing, adoptedTrackDistance, adoptedTrackBearing, magnitude);
+    drawAdoptedTrackVector(sensorBearing, adoptedTrackSpeed, adoptedTrackBearing, magnitude);
 }
 
 /**
@@ -170,14 +170,14 @@ void TacticalSolutionView::drawOwnShipVector(qreal magnitude, qreal bearing)
  * @brief Draws the selected track vector
  *
  * @param sensorBearing
- * @param selectedTrackDistance
+ * @param selectedTrackSpeed
  * @param selectedTrackBearing
  * @param magnitude
  */
-void TacticalSolutionView::drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackDistance, qreal selectedTrackBearing, qreal magnitude)
+void TacticalSolutionView::drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackSpeed, qreal selectedTrackBearing, qreal magnitude)
 {
     QPointF selectedTrackPosition = DrawUtils::bearingToCartesian(
-        selectedTrackDistance,
+        selectedTrackSpeed,
         sensorBearing,
         this->scene->sceneRect());
     // Draw a figure (circle) at each position
@@ -188,18 +188,19 @@ void TacticalSolutionView::drawSelectedTrackVector(qreal sensorBearing, qreal se
  * @brief Draws the adopted track vector
  *
  * @param sensorBearing
- * @param adoptedTrackDistance
+ * @param adoptedTrackSpeed
  * @param adoptedTrackBearing
  * @param magnitude
  */
-void TacticalSolutionView::drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackDistance, qreal adoptedTrackBearing, qreal magnitude)
+void TacticalSolutionView::drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackSpeed, qreal adoptedTrackBearing, qreal magnitude)
 {
     QPointF adoptedTrackPosition = DrawUtils::bearingToCartesian(
-        adoptedTrackDistance,
+        adoptedTrackSpeed,
         sensorBearing,
         this->scene->sceneRect());
     // Draw a figure (circle) at each position
     DrawUtils::drawCourseVector(scene, adoptedTrackPosition, magnitude, adoptedTrackBearing, Qt::red);
 }
+
 
 
