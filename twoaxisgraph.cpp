@@ -480,43 +480,54 @@ void twoaxisgraph::drawCursor()
         return;
     }
 
-    // Create a cross hair cursor
-    QPen cursorPen(Qt::white, 1);     // White color
-    cursorPen.setStyle(Qt::DashLine); // Dashed line for better visibility
+    // Get X coordinate at cursor position
+    qreal xcoord = getSceneCoordinates(currentMousePos);
+    
+    // Get Y values at cursor X position
+    qreal y1Value = data.getY1AtX(xcoord);
+    qreal y2Value = data.getY2AtX(xcoord);
 
-    // Draw vertical line from top to bottom of graph area
+    // Convert Y values to screen coordinates
+    qreal y1Screen = graphArea.bottom() - (y1Value - data.getY1Min()) / (data.getY1Max() - data.getY1Min()) * graphArea.height();
+    qreal y2Screen = graphArea.bottom() - (y2Value - data.getY2Min()) / (data.getY2Max() - data.getY2Min()) * graphArea.height();
+
+    // Create pens for each cursor
+    QPen cursorPen(Qt::white, 1);
+    cursorPen.setStyle(Qt::DashLine);
+    QPen y1Pen(Qt::yellow, 1);
+    y1Pen.setStyle(Qt::DashLine);
+    QPen y2Pen(Qt::green, 1);
+    y2Pen.setStyle(Qt::DashLine);
+
+    // Draw vertical cursor line
     scene->addLine(currentMousePos.x(), graphArea.top(),
                    currentMousePos.x(), graphArea.bottom(),
                    cursorPen);
 
-    // Draw horizontal line from left to right of graph area
-    scene->addLine(graphArea.left(), currentMousePos.y(),
-                   graphArea.right(), currentMousePos.y(),
-                   cursorPen);
+    // Draw Y1 horizontal cursor line (to left axis)
+    scene->addLine(graphArea.left(), y1Screen,
+                   currentMousePos.x(), y1Screen,
+                   y1Pen);
 
-    // Get normalized coordinates
-    qreal xcoord = getSceneCoordinates(currentMousePos);
-    qDebug() << "Cursor X Coordinate:" << xcoord;
-    // Get values at cursor position
-    qreal y1Value = data.getY1AtX(xcoord);
-    qreal y2Value = data.getY2AtX(xcoord);
-    qreal xValue = xcoord;
-    qDebug() << "Cursor Data - X:" << xValue << "Y1:" << y1Value << "Y2:" << y2Value;
+    // Draw Y2 horizontal cursor line (to right axis)
+    scene->addLine(currentMousePos.x(), y2Screen,
+                   graphArea.right(), y2Screen,
+                   y2Pen);
 
     // Create coordinate labels
     QString leftText = QString::number(y1Value, 'f', 1);
     QString rightText = QString::number(y2Value, 'f', 1);
-    QString bottomText = QString::number(xValue, 'f', 1);
+    QString bottomText = QString::number(xcoord, 'f', 1);
 
-    // Create and position left axis label (yellow)
+    // Create and position left axis label (yellow) at Y1 height
     QGraphicsTextItem *leftLabel = createAxisLabel(leftText, Qt::yellow, Qt::darkYellow, Qt::black);
     leftLabel->setPos(graphArea.left() - leftLabel->boundingRect().width() - 8,
-                      currentMousePos.y() - leftLabel->boundingRect().height() / 2);
+                      y1Screen - leftLabel->boundingRect().height() / 2);
 
-    // Create and position right axis label (green)
+    // Create and position right axis label (green) at Y2 height
     QGraphicsTextItem *rightLabel = createAxisLabel(rightText, Qt::green, Qt::darkGreen, Qt::black);
     rightLabel->setPos(graphArea.right() + 8,
-                       currentMousePos.y() - rightLabel->boundingRect().height() / 2);
+                       y2Screen - rightLabel->boundingRect().height() / 2);
 
     // Create and position bottom axis label (white)
     QGraphicsTextItem *bottomLabel = createAxisLabel(bottomText, Qt::white, Qt::gray, Qt::black);
