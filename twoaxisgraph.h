@@ -4,8 +4,7 @@
 #include <QWidget>
 #include <QPainter>
 #include <QDebug>
-#include <QtWidgets/QGraphicsScene>
-#include <QtWidgets/QGraphicsView>
+#include <QGraphicsScene>
 
 namespace Ui {
 class twoaxisgraph;
@@ -26,11 +25,14 @@ protected:
 private:
     // Scene management
     void setupScene();
+    void renderScene(QPainter *painter);
 
 private:
     Ui::twoaxisgraph *ui;
     QGraphicsScene *scene;
-    QGraphicsView *view;
-};
 
+    // Utility functions
+    QRectF getGraphDrawArea() const;
+
+};
 #endif // TWOAXISGRAPH_H

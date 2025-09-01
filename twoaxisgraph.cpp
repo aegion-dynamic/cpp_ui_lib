@@ -1,14 +1,10 @@
 #include "twoaxisgraph.h"
 #include "ui_twoaxisgraph.h"
-#include <QVBoxLayout>
-#include <QGraphicsScene>
-#include <QGraphicsView>
 
 twoaxisgraph::twoaxisgraph(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::twoaxisgraph)
     , scene(nullptr)
-    , view(nullptr)
 {
     ui->setupUi(this);
     
@@ -21,20 +17,12 @@ twoaxisgraph::twoaxisgraph(QWidget *parent)
     // Set minimum size
     setMinimumSize(400, 300);
 
-    // Initialize scene and view
+    // Initialize scene
     scene = new QGraphicsScene(this);
-    view = new QGraphicsView(scene, this);
-    view->setRenderHint(QPainter::Antialiasing);
-    view->setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
-    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    view->setBackgroundBrush(Qt::black);
-
-    // Add view to layout
-    QVBoxLayout* layout = new QVBoxLayout(this);
-    layout->addWidget(view);
-    layout->setContentsMargins(0, 0, 0, 0);
-    setLayout(layout);
+    scene->setSceneRect(0, 0, width(), height());
+    
+    // Make sure widget expands
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     setupScene();
 }
@@ -50,43 +38,87 @@ void twoaxisgraph::paintEvent(QPaintEvent* event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     
-    // Set up pen for axis drawing
-    QPen axisPen(Qt::white, 2);
-    axisPen.setCapStyle(Qt::RoundCap);
-    painter.setPen(axisPen);
+    // Render the scene
+    if (scene) {
+        renderScene(&painter);
+    }
     
-    // Debug output
-    qDebug() << "Drawing dimensions:";
-    qDebug() << "Widget size:" << width() << "x" << height();
+    qDebug() << "Paint event - Widget size:" << width() << "x" << height();
 }
+
 
 void twoaxisgraph::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
-    if (view && scene) {
+    if (scene) {
+        // Update scene with new size
         setupScene();
+        
         // Debug information
-        qDebug() << "Widget resized to:" << size();
-        qDebug() << "View size:" << view->size();
-        qDebug() << "Scene rect:" << scene->sceneRect();
-
+        qDebug() << "Resize event:";
+        // qDebug() << "  New widget size:" << event->size();
+        // qDebug() << "  Scene rect:" << scene->sceneRect();
     }
     update();
 }
 
 void twoaxisgraph::setupScene()
 {
-    if (!scene || !view) return;
+    if (!scene) return;
 
     // Clear existing items
     scene->clear();
 
-    // Set the scene rect to match widget size
+    // Update scene rect to match widget size
     scene->setSceneRect(0, 0, width(), height());
-    view->fitInView(scene->sceneRect(), Qt::KeepAspectRatio);
-
+    
     // Add basic scene elements
     QPen axisPen(Qt::white, 2);
-    scene->addLine(0, 0, width(), height(), axisPen);  // Example line
+    
+    // Draw test rectangle to show bounds
+    scene->addRect(scene->sceneRect(), axisPen);
+    
+    // Draw diagonal line to show extent
+    scene->addLine(0, 0, width(), height(), axisPen);
+
+    // Draw graph area
+    scene->addRect(getGraphDrawArea(), axisPen);
+
+    // Debug output
+    qDebug() << "Scene setup - Scene rect:" << scene->sceneRect();
 }
 
+void twoaxisgraph::renderScene(QPainter *painter)
+{
+    if (!scene || !painter) return;
+    
+    // Render the scene directly to the widget
+    scene->render(painter, rect(), scene->sceneRect());
+}
+
+
+QRectF twoaxisgraph::getGraphDrawArea() const
+{
+    //
+    if (!scene->sceneRect().isValid()) {
+        return QRectF();
+    }
+
+    // This is the area where we reserve to draw the graph
+    QRectF sceneRect = scene->sceneRect();
+
+    if (!sceneRect.isValid()) {
+        return QRectF();
+    }
+
+    // This is the area where we reserve to draw the graph
+    QRectF graphArea = sceneRect;
+
+    // Reserve 20% of each side for labels/info
+    qreal hMargin = graphArea.width() * 0.10;
+    qreal vMargin = graphArea.height() * 0.10;
+
+    graphArea.adjust(hMargin, vMargin, -hMargin, -vMargin);
+    return graphArea;
+
+}
