@@ -177,16 +177,37 @@ void twoaxisgraph::drawInfoArea()
 
 }
 
+bool twoaxisgraph::shouldProcessEvent()
+{
+    eventCount++;
+    
+    // Process event if it falls outside the drop percentage
+    bool shouldProcess = (eventCount % 100) > dropPercentage;
+    
+    // Reset counter to prevent overflow
+    if (eventCount > 1000000) {
+        eventCount = 0;
+    }
+    
+    return shouldProcess;
+}
+
 void twoaxisgraph::mouseMoveEvent(QMouseEvent *event)
 {
     if (!scene) return;
 
+    // Apply debounce
+    if (!shouldProcessEvent()) {
+        return;
+    }
+
     QPoint pos = event->pos();
     QPointF scenePos = getSceneCoordinates(pos);
     
-    qDebug() << "Mouse Position -" 
+    qDebug() << "Mouse Position [" << eventCount << "] -" 
              << "Widget:" << pos
-             << "Graph:" << scenePos;
+             << "Graph:" << scenePos
+             << "(Processed" << (100 - dropPercentage) << "% of events)";
 }
 
 QPointF twoaxisgraph::getSceneCoordinates(const QPoint& widgetPos) const
