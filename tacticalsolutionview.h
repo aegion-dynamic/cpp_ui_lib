@@ -32,9 +32,21 @@ private:
     void drawTestPattern();
 
     void drawVectors();
-    void drawOwnShipVector(qreal magnitude, qreal bearing);
-    void drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackSpeed, qreal selectedTrackBearing, qreal magnitude);
-    void drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackSpeed,  qreal adoptedTrackBearing, qreal magnitude);
+    void drawOwnShipVector(qreal ownShipSpeed, qreal ownShipBearing);
+    void drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackRange, qreal selectedTrackBearing, qreal selectedTrackSpeed);
+    void drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackRange,  qreal adoptedTrackBearing, qreal adoptedTrackSpeed);
+
+    QRectF getGuideBox(
+        qreal ownShipSpeed,
+        qreal ownShipBearing,
+        qreal sensorBearing,
+        qreal adoptedTrackRange,
+        qreal adoptedTrackSpeed,
+        qreal adoptedTrackBearing,
+        qreal selectedTrackRange,
+        qreal selectedTrackSpeed,
+        qreal selectedTrackBearing
+    );
 
 private:
     Ui::TacticalSolutionView *ui;

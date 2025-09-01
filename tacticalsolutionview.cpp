@@ -155,7 +155,7 @@ void TacticalSolutionView::drawVectors()
  * @param magnitude
  * @param bearing
  */
-void TacticalSolutionView::drawOwnShipVector(qreal magnitude, qreal bearing)
+void TacticalSolutionView::drawOwnShipVector(qreal ownShipSpeed, qreal ownShipBearing)
 {
     QPointF ownShipBearingPosition = QPointF(0, 0);
     QPointF ownShipPosition = DrawUtils::bearingToCartesian(
@@ -163,7 +163,7 @@ void TacticalSolutionView::drawOwnShipVector(qreal magnitude, qreal bearing)
         0,
         this->scene->sceneRect());
     // Draw a figure (circle) at each position
-    DrawUtils::drawCourseVector(scene, ownShipPosition, magnitude, bearing, Qt::cyan);
+    DrawUtils::drawCourseVector(scene, ownShipPosition, ownShipSpeed, ownShipBearing, Qt::cyan);
 }
 
 /**
@@ -174,14 +174,14 @@ void TacticalSolutionView::drawOwnShipVector(qreal magnitude, qreal bearing)
  * @param selectedTrackBearing
  * @param magnitude
  */
-void TacticalSolutionView::drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackSpeed, qreal selectedTrackBearing, qreal magnitude)
+void TacticalSolutionView::drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackRange, qreal selectedTrackBearing, qreal selectedTrackSpeed)
 {
     QPointF selectedTrackPosition = DrawUtils::bearingToCartesian(
-        selectedTrackSpeed,
+        selectedTrackRange,
         sensorBearing,
         this->scene->sceneRect());
     // Draw a figure (circle) at each position
-    DrawUtils::drawCourseVector(scene, selectedTrackPosition, magnitude, selectedTrackBearing, Qt::yellow);
+    DrawUtils::drawCourseVector(scene, selectedTrackPosition, selectedTrackSpeed, selectedTrackBearing, Qt::yellow);
 }
 
 /**
@@ -192,15 +192,37 @@ void TacticalSolutionView::drawSelectedTrackVector(qreal sensorBearing, qreal se
  * @param adoptedTrackBearing
  * @param magnitude
  */
-void TacticalSolutionView::drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackSpeed, qreal adoptedTrackBearing, qreal magnitude)
+void TacticalSolutionView::drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackRange, qreal adoptedTrackBearing, qreal adoptedTrackSpeed)
 {
     QPointF adoptedTrackPosition = DrawUtils::bearingToCartesian(
-        adoptedTrackSpeed,
+        adoptedTrackRange,
         sensorBearing,
         this->scene->sceneRect());
     // Draw a figure (circle) at each position
-    DrawUtils::drawCourseVector(scene, adoptedTrackPosition, magnitude, adoptedTrackBearing, Qt::red);
+    DrawUtils::drawCourseVector(scene, adoptedTrackPosition, adoptedTrackSpeed, adoptedTrackBearing, Qt::red);
 }
 
+QRectF TacticalSolutionView::getGuideBox(
+    qreal ownShipSpeed,
+    qreal ownShipBearing,
+    qreal sensorBearing,
+    qreal adoptedTrackRange,
+    qreal adoptedTrackSpeed,
+    qreal adoptedTrackBearing,
+    qreal selectedTrackRange,
+    qreal selectedTrackSpeed,
+    qreal selectedTrackBearing
+)
+{
+    std::vector<QPointF> guideBoxPoints;
 
+    // Own ship position
+    QPointF ownShipBearingPosition = QPointF(0, 0);
+    QPointF ownShipPosition = DrawUtils::bearingToCartesian(
+        0,
+        0,
+        this->scene->sceneRect());
 
+    // Add it to the guideBoxPoints
+    guideBoxPoints.push_back(ownShipPosition);
+}
