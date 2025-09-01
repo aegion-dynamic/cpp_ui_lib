@@ -2,7 +2,6 @@
 #include "ui_tacticalsolutionview.h"
 #include "drawutils.h"
 
-
 /**
  * @brief Construct a new Tactical Solution View:: Tactical Solution View object
  *
@@ -57,7 +56,7 @@ void TacticalSolutionView::draw()
     drawBackground();
     drawTestPattern();
 
-    drawVectors(QPointF(50, 50), QPointF(150, 100), QPointF(100, 200));
+    drawVectors();
 
     qDebug() << "Draw completed - Scene rect:" << scene->sceneRect();
 }
@@ -116,35 +115,91 @@ void TacticalSolutionView::paintEvent(QPaintEvent *event)
     qDebug() << "Paint event - Widget size:" << width() << "x" << height();
 }
 
-void TacticalSolutionView::drawVectors(QPointF ownShipPosition, QPointF selectedTrackPosition, QPointF adoptedPosition)
+/// @brief Draws the various vectors
+/// @param ownShipPosition
+/// @param selectedTrackPosition
+/// @param adoptedPosition
+void TacticalSolutionView::drawVectors()
 {
-    
+
     if (!scene)
     {
         return;
     }
-    int magnitude = 100;
+    int magnitude = 30;
     double bearing = 45; // degrees
+    qreal selectedTrackDistance = 50;
+    qreal selectedTrackBearing = 200;
 
-    // Draw a figure (circle) at each position
-    drawCourseVector(scene, ownShipPosition, magnitude, bearing, Qt::red);
-    drawCourseVector(scene, selectedTrackPosition, magnitude, bearing, Qt::green);
-    drawCourseVector(scene, adoptedPosition, magnitude, bearing, Qt::blue);
+    qreal sensorBearing = 250;
+
+    qreal adoptedTrackDistance = 100;
+    qreal adoptedTrackBearing = 300;
+
+    QPointF selectedTrackPosition = QPointF(150, 100);
+    QPointF adoptedPosition = QPointF(100, 200);
+
+    // Draw the ownship vector
+    drawOwnShipVector(magnitude, bearing);
+
+    // Draw the selected track vector
+    drawSelectedTrackVector(sensorBearing, selectedTrackDistance, selectedTrackBearing, magnitude);
+
+    // Adopted track vector
+    drawAdoptedTrackVector(sensorBearing, adoptedTrackDistance, adoptedTrackBearing, magnitude);
 }
 
-
-
-void TacticalSolutionView::drawCourseVector(QGraphicsScene* scene , QPointF startPoint, double magnitude, double bearing, const QColor& color)
+/**
+ * @brief Draws the own ship vector
+ *
+ * @param magnitude
+ * @param bearing
+ */
+void TacticalSolutionView::drawOwnShipVector(qreal magnitude, qreal bearing)
 {
-    QPen pen(color);
-    QBrush brush(color);
-    int radius = 5;
-    scene->addEllipse(startPoint.x() - radius, startPoint.y() - radius, radius * 2, radius * 2, pen, brush);
-
-    // Calulate endpoint
-
-    auto endpoint = DrawUtils::calculateEndpoint(startPoint, magnitude, bearing);
-
-    pen.setWidth(2);
-    scene->addLine(QLineF(startPoint, endpoint), pen);
+    QPointF ownShipBearingPosition = QPointF(0, 0);
+    QPointF ownShipPosition = DrawUtils::bearingToCartesian(
+        0,
+        0,
+        this->scene->sceneRect());
+    // Draw a figure (circle) at each position
+    DrawUtils::drawCourseVector(scene, ownShipPosition, magnitude, bearing, Qt::cyan);
 }
+
+/**
+ * @brief Draws the selected track vector
+ *
+ * @param sensorBearing
+ * @param selectedTrackDistance
+ * @param selectedTrackBearing
+ * @param magnitude
+ */
+void TacticalSolutionView::drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackDistance, qreal selectedTrackBearing, qreal magnitude)
+{
+    QPointF selectedTrackPosition = DrawUtils::bearingToCartesian(
+        selectedTrackDistance,
+        sensorBearing,
+        this->scene->sceneRect());
+    // Draw a figure (circle) at each position
+    DrawUtils::drawCourseVector(scene, selectedTrackPosition, magnitude, selectedTrackBearing, Qt::yellow);
+}
+
+/**
+ * @brief Draws the adopted track vector
+ *
+ * @param sensorBearing
+ * @param adoptedTrackDistance
+ * @param adoptedTrackBearing
+ * @param magnitude
+ */
+void TacticalSolutionView::drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackDistance, qreal adoptedTrackBearing, qreal magnitude)
+{
+    QPointF adoptedTrackPosition = DrawUtils::bearingToCartesian(
+        adoptedTrackDistance,
+        sensorBearing,
+        this->scene->sceneRect());
+    // Draw a figure (circle) at each position
+    DrawUtils::drawCourseVector(scene, adoptedTrackPosition, magnitude, adoptedTrackBearing, Qt::red);
+}
+
+
