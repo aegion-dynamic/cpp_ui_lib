@@ -105,6 +105,7 @@ void twoaxisgraph::draw()
     drawBackground();
     drawGraphArea();
     drawAxes();
+    drawData();     // Draw data before info and cursor
     drawInfoArea();
     // drawTestPattern();
     drawCursor();
@@ -274,29 +275,33 @@ void twoaxisgraph::drawData()
     QPen y1Pen(Qt::yellow, 1);
     QPen y2Pen(Qt::green, 1);
 
-    // Draw Y1 data (left axis)
+    // Set up painter paths for smooth lines
+    QPainterPath y1Path;
+    QPainterPath y2Path;
+
+    // Initialize paths with first points
+    qreal startX = graphArea.left() + (x[0] - data.getXMin()) / (data.getXMax() - data.getXMin()) * graphArea.width();
+    qreal startY1 = graphArea.bottom() - (y1[0] - data.getY1Min()) / (data.getY1Max() - data.getY1Min()) * graphArea.height();
+    qreal startY2 = graphArea.bottom() - (y2[0] - data.getY2Min()) / (data.getY2Max() - data.getY2Min()) * graphArea.height();
+
+    y1Path.moveTo(startX, startY1);
+    y2Path.moveTo(startX, startY2);
+
+    // Add points to paths
     for (size_t i = 1; i < x.size(); ++i)
     {
         // Convert data points to screen coordinates
-        qreal x1 = graphArea.left() + (x[i - 1] - data.getXMin()) / (data.getXMax() - data.getXMin()) * graphArea.width();
-        qreal y1_1 = graphArea.bottom() - (y1[i - 1] - data.getY1Min()) / (data.getY1Max() - data.getY1Min()) * graphArea.height();
-        qreal x2 = graphArea.left() + (x[i] - data.getXMin()) / (data.getXMax() - data.getXMin()) * graphArea.width();
-        qreal y1_2 = graphArea.bottom() - (y1[i] - data.getY1Min()) / (data.getY1Max() - data.getY1Min()) * graphArea.height();
+        qreal x_coord = graphArea.left() + (x[i] - data.getXMin()) / (data.getXMax() - data.getXMin()) * graphArea.width();
+        qreal y1_coord = graphArea.bottom() - (y1[i] - data.getY1Min()) / (data.getY1Max() - data.getY1Min()) * graphArea.height();
+        qreal y2_coord = graphArea.bottom() - (y2[i] - data.getY2Min()) / (data.getY2Max() - data.getY2Min()) * graphArea.height();
 
-        scene->addLine(x1, y1_1, x2, y1_2, y1Pen);
+        y1Path.lineTo(x_coord, y1_coord);
+        y2Path.lineTo(x_coord, y2_coord);
     }
 
-    // Draw Y2 data (right axis)
-    for (size_t i = 1; i < x.size(); ++i)
-    {
-        // Convert data points to screen coordinates
-        qreal x1 = graphArea.left() + (x[i - 1] - data.getXMin()) / (data.getXMax() - data.getXMin()) * graphArea.width();
-        qreal y2_1 = graphArea.bottom() - (y2[i - 1] - data.getY2Min()) / (data.getY2Max() - data.getY2Min()) * graphArea.height();
-        qreal x2 = graphArea.left() + (x[i] - data.getXMin()) / (data.getXMax() - data.getXMin()) * graphArea.width();
-        qreal y2_2 = graphArea.bottom() - (y2[i] - data.getY2Min()) / (data.getY2Max() - data.getY2Min()) * graphArea.height();
-
-        scene->addLine(x1, y2_1, x2, y2_2, y2Pen);
-    }
+    // Add paths to scene
+    scene->addPath(y1Path, y1Pen);
+    scene->addPath(y2Path, y2Pen);
 }
 
 /**
