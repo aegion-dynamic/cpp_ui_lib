@@ -23,7 +23,7 @@
     </rect>
    </property>
   </widget>
-  <widget class="QWidget" name="widget_2" native="true">
+  <widget class="TacticalSolutionView" name="widget_2" native="true">
    <property name="geometry">
     <rect>
      <x>620</x>
@@ -39,6 +39,12 @@
    <class>TwoAxisGraph</class>
    <extends>QWidget</extends>
    <header>twoaxisgraph.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>TacticalSolutionView</class>
+   <extends>QWidget</extends>
+   <header>tacticalsolutionview.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>
