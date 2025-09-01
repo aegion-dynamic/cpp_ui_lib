@@ -2,6 +2,9 @@
 #define TACTICALSOLUTIONVIEW_H
 
 #include <QWidget>
+#include <QPainter>
+#include <QDebug>
+#include <QGraphicsScene>
 
 namespace Ui {
 class TacticalSolutionView;
@@ -15,8 +18,20 @@ public:
     explicit TacticalSolutionView(QWidget *parent = nullptr);
     ~TacticalSolutionView();
 
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    // void resizeEvent(QResizeEvent *event) override;
+    // void mouseMoveEvent(QMouseEvent *event) override;
+    
+private:
+    // Drawing functions
+    void draw();
+    void drawBackground();
+    void drawTestPattern();
+
 private:
     Ui::TacticalSolutionView *ui;
+    QGraphicsScene *scene;
 };
 
 #endif // TACTICALSOLUTIONVIEW_H
