@@ -313,19 +313,17 @@ void twoaxisgraph::drawCursor()
     }
 
     // Create a cross hair cursor
-    QPen cursorPen(Qt::red, 1);  // Red color for visibility
-    cursorPen.setStyle(Qt::SolidLine);
+    QPen cursorPen(Qt::white, 1);  // White color
+    cursorPen.setStyle(Qt::DashLine);  // Dashed line for better visibility
     
-    const int crossSize = 10;  // Size of the cross in pixels
-    
-    // Draw vertical line
-    scene->addLine(currentMousePos.x(), currentMousePos.y() - crossSize,
-                  currentMousePos.x(), currentMousePos.y() + crossSize,
+    // Draw vertical line from top to bottom of graph area
+    scene->addLine(currentMousePos.x(), graphArea.top(),
+                  currentMousePos.x(), graphArea.bottom(),
                   cursorPen);
     
-    // Draw horizontal line
-    scene->addLine(currentMousePos.x() - crossSize, currentMousePos.y(),
-                  currentMousePos.x() + crossSize, currentMousePos.y(),
+    // Draw horizontal line from left to right of graph area
+    scene->addLine(graphArea.left(), currentMousePos.y(),
+                  graphArea.right(), currentMousePos.y(),
                   cursorPen);
 }
 
