@@ -13,7 +13,7 @@ Widget::Widget(QWidget *parent)
     std::vector<double> y2_data = {0.0, 1.0, 4.0, 9.0, 16.0}; // Quadratic growth
     
     // Set the data to the graph widget
-    // ui->widget->setData(x_data, y1_data, y2_data);
+    ui->widget->setData(x_data, y1_data, y2_data);
 }
 
 Widget::~Widget()

@@ -15,14 +15,12 @@ bool TwoAxisData::setData(const std::vector<double> &x, const std::vector<double
 
 double TwoAxisData::getY1AtX(double x) const
 {
-    // TODO:Implement linear interpolation or direct access
-    return 0.0; // Placeholder
+    return interpolate(x, x_data, y1_data);
 }
 
 double TwoAxisData::getY2AtX(double x) const
 {
-    // TODO:Implement linear interpolation or direct access
-    return 0.0; // Placeholder
+    return interpolate(x, x_data, y2_data);
 }
 
 void TwoAxisData::updateRanges()
@@ -59,4 +57,31 @@ void TwoAxisData::updateRanges()
     addPadding(x_range);
     addPadding(y1_range);
     addPadding(y2_range);
+}
+
+double TwoAxisData::interpolate(double x, const std::vector<double> &x_data, const std::vector<double> &y_data)
+{
+    if (x_data.empty() || y_data.empty() || x_data.size() != y_data.size())
+    {
+        return 0.0; // Invalid input
+    }
+
+    // Find the interval [x0, x1] such that x0 <= x <= x1
+    for (size_t i = 1; i < x_data.size(); ++i)
+    {
+        if (x_data[i] >= x)
+        {
+            // Perform linear interpolation
+            double x0 = x_data[i - 1];
+            double x1 = x_data[i];
+            double y0 = y_data[i - 1];
+            double y1 = y_data[i];
+
+            // Linear interpolation formula
+            return y0 + (y1 - y0) * (x - x0) / (x1 - x0);
+        }
+    }
+
+    // If x is out of bounds, return the closest value
+    return (x < x_data.front()) ? y_data.front() : y_data.back();
 }

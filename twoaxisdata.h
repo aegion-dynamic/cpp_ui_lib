@@ -22,6 +22,8 @@ private:
 
     // Update ranges when data changes
     void updateRanges();
+
+    static double interpolate(double x, const std::vector<double> &x_data, const std::vector<double> &y_data);
 public:
     // Getters for data
     const std::vector<double>& getXData() const { return x_data; }

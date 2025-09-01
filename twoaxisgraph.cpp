@@ -491,11 +491,12 @@ void twoaxisgraph::drawCursor()
 
     // Get normalized coordinates
     qreal xcoord = getSceneCoordinates(currentMousePos);
-
+    qDebug() << "Cursor X Coordinate:" << xcoord;
     // Get values at cursor position
     qreal y1Value = data.getY1AtX(xcoord);
     qreal y2Value = data.getY2AtX(xcoord);
     qreal xValue = xcoord;
+    qDebug() << "Cursor Data - X:" << xValue << "Y1:" << y1Value << "Y2:" << y2Value;
 
     // Create coordinate labels
     QString leftText = QString::number(y1Value, 'f', 1);
