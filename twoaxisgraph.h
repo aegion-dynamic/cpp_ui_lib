@@ -23,9 +23,13 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 
 private:
-    // Scene management
-    void setupScene();
-    void renderScene(QPainter *painter);
+    // Drawing functions
+    void draw();
+    void drawBackground();
+    void drawGraphArea();
+    void drawTestPattern();
+    void drawInfoArea();
+    void drawAxesLabels();
 
 private:
     Ui::twoaxisgraph *ui;

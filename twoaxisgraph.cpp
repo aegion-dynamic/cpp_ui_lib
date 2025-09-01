@@ -1,30 +1,30 @@
 #include "twoaxisgraph.h"
 #include "ui_twoaxisgraph.h"
+#include <QtGui/QResizeEvent>
+#include <QtWidgets/QGraphicsSimpleTextItem>
 
 twoaxisgraph::twoaxisgraph(QWidget *parent)
-    : QWidget(parent)
-    , ui(new Ui::twoaxisgraph)
-    , scene(nullptr)
+    : QWidget(parent), ui(new Ui::twoaxisgraph), scene(nullptr)
 {
     ui->setupUi(this);
-    
+
     // Set black background
     QPalette pal = palette();
     pal.setColor(QPalette::Window, Qt::black);
     setPalette(pal);
     setAutoFillBackground(true);
-    
+
     // Set minimum size
     setMinimumSize(400, 300);
 
     // Initialize scene
     scene = new QGraphicsScene(this);
     scene->setSceneRect(0, 0, width(), height());
-    
+
     // Make sure widget expands
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
-    setupScene();
+    // Initial draw will happen in paintEvent
 }
 
 twoaxisgraph::~twoaxisgraph()
@@ -32,82 +32,161 @@ twoaxisgraph::~twoaxisgraph()
     delete ui;
 }
 
-void twoaxisgraph::paintEvent(QPaintEvent* event)
+void twoaxisgraph::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
-    
-    // Render the scene
-    if (scene) {
-        renderScene(&painter);
+
+    if (scene)
+    {
+        // Draw all elements
+        draw();
+
+        // Render the scene to the widget
+        scene->render(&painter, rect(), scene->sceneRect());
     }
-    
+
     qDebug() << "Paint event - Widget size:" << width() << "x" << height();
 }
 
-
-void twoaxisgraph::resizeEvent(QResizeEvent* event)
+void twoaxisgraph::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
-    if (scene) {
-        // Update scene with new size
-        setupScene();
-        
-        // Debug information
-        qDebug() << "Resize event:";
-        // qDebug() << "  New widget size:" << event->size();
-        // qDebug() << "  Scene rect:" << scene->sceneRect();
+    if (scene)
+    {
+        // Redraw will happen in paintEvent
+        update();
+
+        qDebug() << "Resize event - New size:" << size();
     }
-    update();
 }
 
-void twoaxisgraph::setupScene()
+void twoaxisgraph::draw()
 {
-    if (!scene) return;
+    if (!scene)
+        return;
 
     // Clear existing items
     scene->clear();
 
     // Update scene rect to match widget size
     scene->setSceneRect(0, 0, width(), height());
-    
-    // Add basic scene elements
-    QPen axisPen(Qt::white, 2);
-    
-    // Draw test rectangle to show bounds
-    scene->addRect(scene->sceneRect(), axisPen);
-    
-    // Draw diagonal line to show extent
-    scene->addLine(0, 0, width(), height(), axisPen);
 
-    // Draw graph area
-    scene->addRect(getGraphDrawArea(), axisPen);
+    // Draw in layers from back to front
+    drawBackground();
+    drawGraphArea();
+    drawInfoArea();
+    drawTestPattern();
 
-    // Debug output
-    qDebug() << "Scene setup - Scene rect:" << scene->sceneRect();
+    qDebug() << "Draw completed - Scene rect:" << scene->sceneRect();
 }
 
-void twoaxisgraph::renderScene(QPainter *painter)
+void twoaxisgraph::drawBackground()
 {
-    if (!scene || !painter) return;
-    
-    // Render the scene directly to the widget
-    scene->render(painter, rect(), scene->sceneRect());
+    if (!scene)
+        return;
+
+    // Draw the background - currently empty as we use widget background
 }
 
+void twoaxisgraph::drawGraphArea()
+{
+    if (!scene)
+        return;
+
+    QPen axisPen(Qt::white, 2);
+    axisPen.setCapStyle(Qt::RoundCap);
+
+    // Draw the graph area rectangle
+    scene->addRect(getGraphDrawArea(), axisPen);
+}
+
+void twoaxisgraph::drawTestPattern()
+{
+    if (!scene)
+        return;
+
+    QPen testPen(Qt::white, 1);
+    testPen.setStyle(Qt::DashLine);
+
+    // Draw test rectangle showing full bounds
+    scene->addRect(scene->sceneRect(), testPen);
+
+    // Draw diagonal line to show extent
+    scene->addLine(0, 0, width(), height(), testPen);
+}
+
+void twoaxisgraph::drawAxesLabels()
+{
+    if (!scene)
+        return;
+
+    // Create a font for the text
+    // Create a font for the text
+    QFont infoFont("Arial", 5);
+
+    // Create a text item
+    QGraphicsSimpleTextItem* bottomAxesLabelItem = new QGraphicsSimpleTextItem("Simple Text");
+    bottomAxesLabelItem->setBrush(Qt::white);
+    bottomAxesLabelItem->setFont(infoFont);
+
+    // Calculate the position for bottom center
+    QRectF bounds = bottomAxesLabelItem->boundingRect();
+    qreal x = (scene->width() - bounds.width()) / 2;  // Center horizontally
+    qreal y = scene->height() - bounds.height() - 5; // 5 pixels from bottom
+
+    bottomAxesLabelItem->setPos(x, y);
+    scene->addItem(bottomAxesLabelItem);
+
+    // Left axis label
+    QGraphicsSimpleTextItem* leftAxesLabelItem = new QGraphicsSimpleTextItem("Left Axis");
+    leftAxesLabelItem->setBrush(Qt::white);
+    leftAxesLabelItem->setFont(infoFont);
+
+    QRectF leftBounds = leftAxesLabelItem->boundingRect();
+    qreal leftX = 5; // 5 pixels from left edge
+    qreal leftY = (scene->height() - leftBounds.height()) / 2; // Center vertically
+
+    leftAxesLabelItem->setPos(leftX, leftY);
+    scene->addItem(leftAxesLabelItem);
+
+    // Right axis label
+    QGraphicsSimpleTextItem* rightAxesLabelItem = new QGraphicsSimpleTextItem("Right Axis");
+    rightAxesLabelItem->setBrush(Qt::white);
+    rightAxesLabelItem->setFont(infoFont);
+
+    QRectF rightBounds = rightAxesLabelItem->boundingRect();
+    qreal rightX = scene->width() - rightBounds.width() - 5; // 5 pixels from right edge
+    qreal rightY = (scene->height() - rightBounds.height()) / 2; // Center vertically
+
+    rightAxesLabelItem->setPos(rightX, rightY);
+    scene->addItem(rightAxesLabelItem);
+}
+
+void twoaxisgraph::drawInfoArea()
+{
+    if (!scene)
+        return;
+
+    // Draw axes labels
+    drawAxesLabels();
+
+}
 
 QRectF twoaxisgraph::getGraphDrawArea() const
 {
     //
-    if (!scene->sceneRect().isValid()) {
+    if (!scene->sceneRect().isValid())
+    {
         return QRectF();
     }
 
     // This is the area where we reserve to draw the graph
     QRectF sceneRect = scene->sceneRect();
 
-    if (!sceneRect.isValid()) {
+    if (!sceneRect.isValid())
+    {
         return QRectF();
     }
 
@@ -120,5 +199,4 @@ QRectF twoaxisgraph::getGraphDrawArea() const
 
     graphArea.adjust(hMargin, vMargin, -hMargin, -vMargin);
     return graphArea;
-
 }
