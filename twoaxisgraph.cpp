@@ -202,8 +202,7 @@ void twoaxisgraph::drawAxesLabels()
         return;
 
     // Create a font for the text
-    // Create a font for the text
-    QFont infoFont("Arial", 5);
+    QFont infoFont("Arial", 8);
 
     // Create a text item
     QGraphicsSimpleTextItem* bottomAxesLabelItem = new QGraphicsSimpleTextItem("Simple Text");
@@ -301,6 +300,28 @@ QPointF twoaxisgraph::getSceneCoordinates(const QPoint& widgetPos) const
     return QPointF(x * 100, y * 100); // Scale to 0-100 range
 }
 
+QGraphicsTextItem* twoaxisgraph::createAxisLabel(const QString& text,
+                                               const QColor& textColor,
+                                               const QColor& borderColor,
+                                               const QColor& backgroundColor)
+{
+    QGraphicsTextItem* textItem = new QGraphicsTextItem();
+    textItem->setPlainText(text);
+    textItem->setDefaultTextColor(textColor);
+    textItem->setFont(QFont("Arial", 8));
+
+    // Create background rectangle
+    QRectF rect = textItem->boundingRect();
+    rect.adjust(-4, -2, 4, 2);  // Add padding
+    
+    // QGraphicsRectItem* background = new QGraphicsRectItem(rect, textItem);
+    // background->setBrush(backgroundColor);
+    // background->setPen(QPen(borderColor));
+    // background->setZValue(-1);  // Place behind text
+    
+    return textItem;
+}
+
 void twoaxisgraph::drawCursor()
 {
     if (!scene) return;
@@ -325,6 +346,34 @@ void twoaxisgraph::drawCursor()
     scene->addLine(graphArea.left(), currentMousePos.y(),
                   graphArea.right(), currentMousePos.y(),
                   cursorPen);
+
+    // Get normalized coordinates
+    QPointF coords = getSceneCoordinates(currentMousePos);
+    
+    // Create coordinate labels
+    QString leftText = QString::number(coords.y(), 'f', 1);
+    QString rightText = QString::number(coords.y(), 'f', 1);
+    QString bottomText = QString::number(coords.x(), 'f', 1);
+    
+    // Create and position left axis label (yellow)
+    QGraphicsTextItem* leftLabel = createAxisLabel(leftText, Qt::yellow, Qt::darkYellow, Qt::black);
+    leftLabel->setPos(graphArea.left() - leftLabel->boundingRect().width() - 8,
+                     currentMousePos.y() - leftLabel->boundingRect().height() / 2);
+    
+    // Create and position right axis label (green)
+    QGraphicsTextItem* rightLabel = createAxisLabel(rightText, Qt::green, Qt::darkGreen, Qt::black);
+    rightLabel->setPos(graphArea.right() + 8,
+                      currentMousePos.y() - rightLabel->boundingRect().height() / 2);
+    
+    // Create and position bottom axis label (white)
+    QGraphicsTextItem* bottomLabel = createAxisLabel(bottomText, Qt::white, Qt::gray, Qt::black);
+    bottomLabel->setPos(currentMousePos.x() - bottomLabel->boundingRect().width() / 2,
+                       graphArea.bottom() + 8);
+    
+    // Add labels to scene
+    scene->addItem(leftLabel);
+    scene->addItem(rightLabel);
+    scene->addItem(bottomLabel);
 }
 
 QRectF twoaxisgraph::getGraphDrawArea() const

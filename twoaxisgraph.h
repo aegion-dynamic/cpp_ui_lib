@@ -52,6 +52,12 @@ private:
     // Utility functions
     QRectF getGraphDrawArea() const;
     QPointF getSceneCoordinates(const QPoint& widgetPos) const;
+    
+    // Text rendering
+    QGraphicsTextItem* createAxisLabel(const QString& text, 
+                                     const QColor& textColor,
+                                     const QColor& borderColor,
+                                     const QColor& backgroundColor);
 
 };
 #endif // TWOAXISGRAPH_H
