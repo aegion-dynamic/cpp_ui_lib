@@ -33,6 +33,7 @@ private:
     void draw();
     void drawBackground();
     void drawGraphArea();
+    void drawAxes();  // New method for drawing axes
     void drawTestPattern();
     void drawInfoArea();
     void drawAxesLabels();

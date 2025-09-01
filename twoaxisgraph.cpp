@@ -81,8 +81,9 @@ void twoaxisgraph::draw()
     // Draw in layers from back to front
     drawBackground();
     drawGraphArea();
+    drawAxes();
     drawInfoArea();
-    drawTestPattern();
+    // drawTestPattern();
     drawCursor();
 
     qDebug() << "Draw completed - Scene rect:" << scene->sceneRect();
@@ -101,11 +102,83 @@ void twoaxisgraph::drawGraphArea()
     if (!scene)
         return;
 
-    QPen axisPen(Qt::white, 2);
-    axisPen.setCapStyle(Qt::RoundCap);
+    QPen areaPen(Qt::gray, 1);
+    areaPen.setStyle(Qt::DashLine);
 
-    // Draw the graph area rectangle
-    scene->addRect(getGraphDrawArea(), axisPen);
+    // Draw the graph area rectangle as a light boundary
+    scene->addRect(getGraphDrawArea(), areaPen);
+}
+
+void twoaxisgraph::drawAxes()
+{
+    if (!scene)
+        return;
+
+    QRectF graphArea = getGraphDrawArea();
+    
+    // Set up pens for different axes
+    QPen leftAxisPen(Qt::yellow, 1);
+    QPen rightAxisPen(Qt::green, 1);
+    QPen bottomAxisPen(Qt::white, 1);
+    
+    // All pens use round cap for clean endings
+    leftAxisPen.setCapStyle(Qt::RoundCap);
+    rightAxisPen.setCapStyle(Qt::RoundCap);
+    bottomAxisPen.setCapStyle(Qt::RoundCap);
+
+    // Draw left Y axis (Yellow)
+    scene->addLine(
+        graphArea.left(), graphArea.top(),
+        graphArea.left(), graphArea.bottom(),
+        leftAxisPen
+    );
+
+    // Draw right Y axis (Green)
+    scene->addLine(
+        graphArea.right(), graphArea.top(),
+        graphArea.right(), graphArea.bottom(),
+        rightAxisPen
+    );
+
+    // Draw bottom X axis (White)
+    scene->addLine(
+        graphArea.left(), graphArea.bottom(),
+        graphArea.right(), graphArea.bottom(),
+        bottomAxisPen
+    );
+
+    // Add tick marks
+    const int tickLength = 5;  // Length of tick marks in pixels
+    const int numTicks = 10;   // Number of ticks per axis
+
+    // Draw Y-axis ticks (left and right)
+    for (int i = 0; i <= numTicks; ++i) {
+        qreal y = graphArea.top() + (i * graphArea.height() / numTicks);
+        
+        // Left ticks (Yellow)
+        scene->addLine(
+            graphArea.left() - tickLength, y,
+            graphArea.left(), y,
+            leftAxisPen
+        );
+        
+        // Right ticks (Green)
+        scene->addLine(
+            graphArea.right(), y,
+            graphArea.right() + tickLength, y,
+            rightAxisPen
+        );
+    }
+
+    // Draw X-axis ticks (White)
+    for (int i = 0; i <= numTicks; ++i) {
+        qreal x = graphArea.left() + (i * graphArea.width() / numTicks);
+        scene->addLine(
+            x, graphArea.bottom(),
+            x, graphArea.bottom() + tickLength,
+            bottomAxisPen
+        );
+    }
 }
 
 void twoaxisgraph::drawTestPattern()
@@ -277,7 +350,7 @@ QRectF twoaxisgraph::getGraphDrawArea() const
 
     // Reserve 20% of each side for labels/info
     qreal hMargin = graphArea.width() * 0.10;
-    qreal vMargin = graphArea.height() * 0.10;
+    qreal vMargin = graphArea.height() * 0.15;
 
     graphArea.adjust(hMargin, vMargin, -hMargin, -vMargin);
     return graphArea;
