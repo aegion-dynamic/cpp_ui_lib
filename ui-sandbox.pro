@@ -20,13 +20,15 @@ SOURCES += \
     tacticalsolutionview.cpp \
     twoaxisdata.cpp \
     twoaxisgraph.cpp \
-    widget.cpp
+    widget.cpp \
+    drawutils.cpp
 
 HEADERS += \
     tacticalsolutionview.h \
     twoaxisdata.h \
     twoaxisgraph.h \
-    widget.h
+    widget.h \
+    drawutils.h
 
 FORMS += \
     tacticalsolutionview.ui \

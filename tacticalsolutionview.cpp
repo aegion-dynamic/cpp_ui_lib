@@ -1,13 +1,19 @@
 #include "tacticalsolutionview.h"
 #include "ui_tacticalsolutionview.h"
+#include "drawutils.h"
 
+
+/**
+ * @brief Construct a new Tactical Solution View:: Tactical Solution View object
+ *
+ * @param parent
+ */
 TacticalSolutionView::TacticalSolutionView(QWidget *parent)
-    : QWidget(parent)
-    , ui(new Ui::TacticalSolutionView)
+    : QWidget(parent), ui(new Ui::TacticalSolutionView)
 {
     ui->setupUi(this);
 
-        // Set black background
+    // Set black background
     QPalette pal = palette();
     pal.setColor(QPalette::Window, Qt::black);
     setPalette(pal);
@@ -25,7 +31,6 @@ TacticalSolutionView::TacticalSolutionView(QWidget *parent)
 
     // Enable mouse tracking
     // setMouseTracking(true);
-
 }
 
 TacticalSolutionView::~TacticalSolutionView()
@@ -52,9 +57,10 @@ void TacticalSolutionView::draw()
     drawBackground();
     drawTestPattern();
 
+    drawVectors(QPointF(50, 50), QPointF(150, 100), QPointF(100, 200));
+
     qDebug() << "Draw completed - Scene rect:" << scene->sceneRect();
 }
-
 
 /**
  * @brief Draw a test pattern for debugging purposes.
@@ -74,7 +80,6 @@ void TacticalSolutionView::drawTestPattern()
     // Draw diagonal line to show extent
     scene->addLine(0, 0, width(), height(), testPen);
 }
-
 
 /**
  * @brief Draw the background for the graph.
@@ -109,4 +114,37 @@ void TacticalSolutionView::paintEvent(QPaintEvent *event)
     }
 
     qDebug() << "Paint event - Widget size:" << width() << "x" << height();
+}
+
+void TacticalSolutionView::drawVectors(QPointF ownShipPosition, QPointF selectedTrackPosition, QPointF adoptedPosition)
+{
+    
+    if (!scene)
+    {
+        return;
+    }
+    int magnitude = 100;
+    double bearing = 45; // degrees
+
+    // Draw a figure (circle) at each position
+    drawCourseVector(scene, ownShipPosition, magnitude, bearing, Qt::red);
+    drawCourseVector(scene, selectedTrackPosition, magnitude, bearing, Qt::green);
+    drawCourseVector(scene, adoptedPosition, magnitude, bearing, Qt::blue);
+}
+
+
+
+void TacticalSolutionView::drawCourseVector(QGraphicsScene* scene , QPointF startPoint, double magnitude, double bearing, const QColor& color)
+{
+    QPen pen(color);
+    QBrush brush(color);
+    int radius = 5;
+    scene->addEllipse(startPoint.x() - radius, startPoint.y() - radius, radius * 2, radius * 2, pen, brush);
+
+    // Calulate endpoint
+
+    auto endpoint = DrawUtils::calculateEndpoint(startPoint, magnitude, bearing);
+
+    pen.setWidth(2);
+    scene->addLine(QLineF(startPoint, endpoint), pen);
 }

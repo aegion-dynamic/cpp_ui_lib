@@ -5,9 +5,11 @@
 #include <QPainter>
 #include <QDebug>
 #include <QGraphicsScene>
+#include "drawutils.h"
 
-namespace Ui {
-class TacticalSolutionView;
+namespace Ui
+{
+    class TacticalSolutionView;
 }
 
 class TacticalSolutionView : public QWidget
@@ -22,12 +24,16 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     // void resizeEvent(QResizeEvent *event) override;
     // void mouseMoveEvent(QMouseEvent *event) override;
-    
+
 private:
     // Drawing functions
     void draw();
     void drawBackground();
     void drawTestPattern();
+
+    void drawVectors(QPointF ownShipPosition, QPointF selectedTrackPosition, QPointF adoptedPosition);
+    void drawCourseVector(QGraphicsScene* scene, QPointF startPoint, double magnitude, double bearing, const QColor& color);
+    
 
 private:
     Ui::TacticalSolutionView *ui;
