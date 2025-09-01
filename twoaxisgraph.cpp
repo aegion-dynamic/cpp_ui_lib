@@ -10,8 +10,8 @@ const int MAX_EVENT_COUNT = 100;
  *
  * @param parent
  */
-twoaxisgraph::twoaxisgraph(QWidget *parent)
-    : QWidget(parent), ui(new Ui::twoaxisgraph), scene(nullptr)
+TwoAxisGraph::TwoAxisGraph(QWidget *parent)
+    : QWidget(parent), ui(new Ui::TwoAxisGraph), scene(nullptr)
 {
     ui->setupUi(this);
 
@@ -41,7 +41,7 @@ twoaxisgraph::twoaxisgraph(QWidget *parent)
  * @brief Destroy the twoaxisgraph::twoaxisgraph object
  *
  */
-twoaxisgraph::~twoaxisgraph()
+TwoAxisGraph::~TwoAxisGraph()
 {
     delete ui;
 }
@@ -51,7 +51,7 @@ twoaxisgraph::~twoaxisgraph()
  *
  * @param event
  */
-void twoaxisgraph::paintEvent(QPaintEvent *event)
+void TwoAxisGraph::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event);
     QPainter painter(this);
@@ -74,7 +74,7 @@ void twoaxisgraph::paintEvent(QPaintEvent *event)
  *
  * @param event
  */
-void twoaxisgraph::resizeEvent(QResizeEvent *event)
+void TwoAxisGraph::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
     if (scene)
@@ -90,7 +90,7 @@ void twoaxisgraph::resizeEvent(QResizeEvent *event)
  * @brief Draw the entire graph.
  *
  */
-void twoaxisgraph::draw()
+void TwoAxisGraph::draw()
 {
     if (!scene)
         return;
@@ -117,7 +117,7 @@ void twoaxisgraph::draw()
  * @brief Draw the background for the graph.
  *
  */
-void twoaxisgraph::drawBackground()
+void TwoAxisGraph::drawBackground()
 {
     if (!scene)
         return;
@@ -129,7 +129,7 @@ void twoaxisgraph::drawBackground()
  * @brief Draw the graph area for the plot.
  *
  */
-void twoaxisgraph::drawGraphArea()
+void TwoAxisGraph::drawGraphArea()
 {
     if (!scene)
         return;
@@ -150,7 +150,7 @@ void twoaxisgraph::drawGraphArea()
  * @return true
  * @return false
  */
-bool twoaxisgraph::setData(const std::vector<double> &x,
+bool TwoAxisGraph::setData(const std::vector<double> &x,
                            const std::vector<double> &y1,
                            const std::vector<double> &y2)
 {
@@ -166,7 +166,7 @@ bool twoaxisgraph::setData(const std::vector<double> &x,
  * @brief Draw the axes for the graph.
  *
  */
-void twoaxisgraph::drawAxes()
+void TwoAxisGraph::drawAxes()
 {
     if (!scene)
         return;
@@ -238,7 +238,7 @@ void twoaxisgraph::drawAxes()
  * @brief Draw a test pattern for debugging purposes.
  *
  */
-void twoaxisgraph::drawTestPattern()
+void TwoAxisGraph::drawTestPattern()
 {
     if (!scene)
         return;
@@ -257,7 +257,7 @@ void twoaxisgraph::drawTestPattern()
  * @brief Draw the data lines for the graph.
  *
  */
-void twoaxisgraph::drawData()
+void TwoAxisGraph::drawData()
 {
     if (!scene)
         return;
@@ -308,7 +308,7 @@ void twoaxisgraph::drawData()
  * @brief Draw the axis labels for the graph.
  *
  */
-void twoaxisgraph::drawAxesLabels()
+void TwoAxisGraph::drawAxesLabels()
 {
     if (!scene)
         return;
@@ -358,7 +358,7 @@ void twoaxisgraph::drawAxesLabels()
  * @brief Draw the information area for the graph.
  *
  */
-void twoaxisgraph::drawInfoArea()
+void TwoAxisGraph::drawInfoArea()
 {
     if (!scene)
         return;
@@ -372,7 +372,7 @@ void twoaxisgraph::drawInfoArea()
  *
  * @return true if the event should be processed, false otherwise.
  */
-bool twoaxisgraph::shouldProcessEvent()
+bool TwoAxisGraph::shouldProcessEvent()
 {
     eventCount++;
 
@@ -393,7 +393,7 @@ bool twoaxisgraph::shouldProcessEvent()
  *
  * @param event
  */
-void twoaxisgraph::mouseMoveEvent(QMouseEvent *event)
+void TwoAxisGraph::mouseMoveEvent(QMouseEvent *event)
 {
     if (!scene) return;
 
@@ -418,7 +418,7 @@ void twoaxisgraph::mouseMoveEvent(QMouseEvent *event)
  * @param widgetPos
  * @return qreal
  */
-qreal twoaxisgraph::getSceneCoordinates(const QPoint &widgetPos) const
+qreal TwoAxisGraph::getSceneCoordinates(const QPoint &widgetPos) const
 {
     // Get the graph area
     QRectF graphArea = getGraphDrawArea();
@@ -441,7 +441,7 @@ qreal twoaxisgraph::getSceneCoordinates(const QPoint &widgetPos) const
  * @param backgroundColor
  * @return QGraphicsTextItem*
  */
-QGraphicsTextItem *twoaxisgraph::createAxisLabel(const QString &text,
+QGraphicsTextItem *TwoAxisGraph::createAxisLabel(const QString &text,
                                                  const QColor &textColor,
                                                  const QColor &borderColor,
                                                  const QColor &backgroundColor)
@@ -467,7 +467,7 @@ QGraphicsTextItem *twoaxisgraph::createAxisLabel(const QString &text,
  * @brief Draw the cursor for the graph.
  *
  */
-void twoaxisgraph::drawCursor()
+void TwoAxisGraph::drawCursor()
 {
     if (!scene)
         return;
@@ -545,7 +545,7 @@ void twoaxisgraph::drawCursor()
  *
  * @return QRectF
  */
-QRectF twoaxisgraph::getGraphDrawArea() const
+QRectF TwoAxisGraph::getGraphDrawArea() const
 {
     //
     if (!scene->sceneRect().isValid())

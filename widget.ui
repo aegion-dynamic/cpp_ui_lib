@@ -6,27 +6,37 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>898</width>
+    <height>355</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Widget</string>
   </property>
-  <widget class="twoaxisgraph" name="widget" native="true">
+  <widget class="TwoAxisGraph" name="widget" native="true">
    <property name="geometry">
     <rect>
-     <x>150</x>
-     <y>180</y>
-     <width>471</width>
-     <height>231</height>
+     <x>30</x>
+     <y>80</y>
+     <width>531</width>
+     <height>171</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QWidget" name="widget_2" native="true">
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>30</y>
+     <width>226</width>
+     <height>240</height>
     </rect>
    </property>
   </widget>
  </widget>
  <customwidgets>
   <customwidget>
-   <class>twoaxisgraph</class>
+   <class>TwoAxisGraph</class>
    <extends>QWidget</extends>
    <header>twoaxisgraph.h</header>
    <container>1</container>

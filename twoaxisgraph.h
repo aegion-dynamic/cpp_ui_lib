@@ -8,16 +8,16 @@
 #include "twoaxisdata.h"
 
 namespace Ui {
-class twoaxisgraph;
+class TwoAxisGraph;
 }
 
-class twoaxisgraph : public QWidget
+class TwoAxisGraph : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit twoaxisgraph(QWidget *parent = nullptr);
-    ~twoaxisgraph();
+    explicit TwoAxisGraph(QWidget *parent = nullptr);
+    ~TwoAxisGraph();
 
     // Set the percentage of events to drop (0-100)
     void setEventDropPercentage(int percentage) {
@@ -47,7 +47,7 @@ private:
     void drawData();
 
 private:
-    Ui::twoaxisgraph *ui;
+    Ui::TwoAxisGraph *ui;
     QGraphicsScene *scene;
     QPoint currentMousePos;  // Store current mouse position
     TwoAxisData data;       // Store the plotting data
