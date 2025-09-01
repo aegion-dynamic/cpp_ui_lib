@@ -17,10 +17,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     main.cpp \
+    twoaxisdata.cpp \
     twoaxisgraph.cpp \
     widget.cpp
 
 HEADERS += \
+    twoaxisdata.h \
     twoaxisgraph.h \
     widget.h
 
