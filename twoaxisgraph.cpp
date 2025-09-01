@@ -3,6 +3,8 @@
 #include <QtGui/QResizeEvent>
 #include <QtWidgets/QGraphicsSimpleTextItem>
 
+const int MAX_EVENT_COUNT = 100;
+
 twoaxisgraph::twoaxisgraph(QWidget *parent)
     : QWidget(parent), ui(new Ui::twoaxisgraph), scene(nullptr)
 {
@@ -81,6 +83,7 @@ void twoaxisgraph::draw()
     drawGraphArea();
     drawInfoArea();
     drawTestPattern();
+    drawCursor();
 
     qDebug() << "Draw completed - Scene rect:" << scene->sceneRect();
 }
@@ -185,7 +188,7 @@ bool twoaxisgraph::shouldProcessEvent()
     bool shouldProcess = (eventCount % 100) > dropPercentage;
     
     // Reset counter to prevent overflow
-    if (eventCount > 1000000) {
+    if (eventCount > MAX_EVENT_COUNT) {
         eventCount = 0;
     }
     
@@ -197,17 +200,20 @@ void twoaxisgraph::mouseMoveEvent(QMouseEvent *event)
     if (!scene) return;
 
     // Apply debounce
-    if (!shouldProcessEvent()) {
-        return;
-    }
+    // if (!shouldProcessEvent()) {
+    //     return;
+    // }
 
-    QPoint pos = event->pos();
-    QPointF scenePos = getSceneCoordinates(pos);
+    currentMousePos = event->pos();
+    QPointF scenePos = getSceneCoordinates(currentMousePos);
     
     qDebug() << "Mouse Position [" << eventCount << "] -" 
-             << "Widget:" << pos
-             << "Graph:" << scenePos
-             << "(Processed" << (100 - dropPercentage) << "% of events)";
+             << "Widget:" << currentMousePos
+             << "Graph:" << scenePos;
+            //  << "(Processed" << (100 - dropPercentage) << "% of events)";
+    
+    // Trigger redraw to update cursor
+    update();
 }
 
 QPointF twoaxisgraph::getSceneCoordinates(const QPoint& widgetPos) const
@@ -220,6 +226,34 @@ QPointF twoaxisgraph::getSceneCoordinates(const QPoint& widgetPos) const
     qreal y = 1.0 - (widgetPos.y() - graphArea.top()) / graphArea.height(); // Invert Y
     
     return QPointF(x * 100, y * 100); // Scale to 0-100 range
+}
+
+void twoaxisgraph::drawCursor()
+{
+    if (!scene) return;
+
+    QRectF graphArea = getGraphDrawArea();
+    
+    // Only draw cursor if it's within the graph area
+    if (!graphArea.contains(currentMousePos)) {
+        return;
+    }
+
+    // Create a cross hair cursor
+    QPen cursorPen(Qt::red, 1);  // Red color for visibility
+    cursorPen.setStyle(Qt::SolidLine);
+    
+    const int crossSize = 10;  // Size of the cross in pixels
+    
+    // Draw vertical line
+    scene->addLine(currentMousePos.x(), currentMousePos.y() - crossSize,
+                  currentMousePos.x(), currentMousePos.y() + crossSize,
+                  cursorPen);
+    
+    // Draw horizontal line
+    scene->addLine(currentMousePos.x() - crossSize, currentMousePos.y(),
+                  currentMousePos.x() + crossSize, currentMousePos.y(),
+                  cursorPen);
 }
 
 QRectF twoaxisgraph::getGraphDrawArea() const

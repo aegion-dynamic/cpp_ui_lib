@@ -36,10 +36,12 @@ private:
     void drawTestPattern();
     void drawInfoArea();
     void drawAxesLabels();
+    void drawCursor();
 
 private:
     Ui::twoaxisgraph *ui;
     QGraphicsScene *scene;
+    QPoint currentMousePos;  // Store current mouse position
 
     // Debounce settings
     int eventCount = 0;
