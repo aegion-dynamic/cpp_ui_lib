@@ -5,6 +5,7 @@
 #include <QPainter>
 #include <QDebug>
 #include <QGraphicsScene>
+#include "twoaxisdata.h"
 
 namespace Ui {
 class twoaxisgraph;
@@ -23,6 +24,11 @@ public:
         dropPercentage = qBound(0, percentage, 100);
     }
 
+    // Data handling
+    bool setData(const std::vector<double>& x, 
+                const std::vector<double>& y1, 
+                const std::vector<double>& y2);
+
 protected:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
@@ -38,11 +44,13 @@ private:
     void drawInfoArea();
     void drawAxesLabels();
     void drawCursor();
+    void drawData();
 
 private:
     Ui::twoaxisgraph *ui;
     QGraphicsScene *scene;
     QPoint currentMousePos;  // Store current mouse position
+    TwoAxisData data;       // Store the plotting data
 
     // Debounce settings
     int eventCount = 0;
@@ -51,7 +59,7 @@ private:
 
     // Utility functions
     QRectF getGraphDrawArea() const;
-    QPointF getSceneCoordinates(const QPoint& widgetPos) const;
+    qreal getSceneCoordinates(const QPoint& widgetPos) const;
     
     // Text rendering
     QGraphicsTextItem* createAxisLabel(const QString& text, 
