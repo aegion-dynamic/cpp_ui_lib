@@ -23,6 +23,9 @@ twoaxisgraph::twoaxisgraph(QWidget *parent)
 
     // Make sure widget expands
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    
+    // Enable mouse tracking
+    setMouseTracking(true);
 
     // Initial draw will happen in paintEvent
 }
@@ -172,6 +175,30 @@ void twoaxisgraph::drawInfoArea()
     // Draw axes labels
     drawAxesLabels();
 
+}
+
+void twoaxisgraph::mouseMoveEvent(QMouseEvent *event)
+{
+    if (!scene) return;
+
+    QPoint pos = event->pos();
+    QPointF scenePos = getSceneCoordinates(pos);
+    
+    qDebug() << "Mouse Position -" 
+             << "Widget:" << pos
+             << "Graph:" << scenePos;
+}
+
+QPointF twoaxisgraph::getSceneCoordinates(const QPoint& widgetPos) const
+{
+    // Get the graph area
+    QRectF graphArea = getGraphDrawArea();
+    
+    // Convert widget coordinates to graph coordinates
+    qreal x = (widgetPos.x() - graphArea.left()) / graphArea.width();
+    qreal y = 1.0 - (widgetPos.y() - graphArea.top()) / graphArea.height(); // Invert Y
+    
+    return QPointF(x * 100, y * 100); // Scale to 0-100 range
 }
 
 QRectF twoaxisgraph::getGraphDrawArea() const

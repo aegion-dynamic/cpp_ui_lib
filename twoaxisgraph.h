@@ -21,6 +21,7 @@ public:
 protected:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
     // Drawing functions
@@ -37,6 +38,7 @@ private:
 
     // Utility functions
     QRectF getGraphDrawArea() const;
+    QPointF getSceneCoordinates(const QPoint& widgetPos) const;
 
 };
 #endif // TWOAXISGRAPH_H
