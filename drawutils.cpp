@@ -80,3 +80,19 @@ QPointF DrawUtils::bearingToCartesian(qreal magnitude, qreal bearing, QRectF win
 
     return QPointF(x, y);
 }
+
+void DrawUtils::addTestPattern(QGraphicsScene* scene, QRectF rectToDraw)
+{
+    if (!scene)
+    {
+        qDebug() << "No scene found, existing DrawUtils::addTestPattern";
+        return;
+    }
+
+    QPen testPen(Qt::white, 1);
+    testPen.setStyle(Qt::DashLine);
+
+    // Draw test rectangle showing full bounds
+    scene->addRect(rectToDraw, testPen);
+
+}

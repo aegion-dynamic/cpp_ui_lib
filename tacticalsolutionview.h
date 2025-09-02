@@ -48,6 +48,8 @@ private:
         qreal selectedTrackBearing
     );
 
+    QRectF getZoomBoxFromGuideBox(const QRectF guidebox);
+
 private:
     Ui::TacticalSolutionView *ui;
     QGraphicsScene *scene;

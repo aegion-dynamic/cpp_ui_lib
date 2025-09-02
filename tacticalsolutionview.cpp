@@ -2,6 +2,9 @@
 #include "ui_tacticalsolutionview.h"
 #include "drawutils.h"
 
+const qreal SPEED_NORMALIZATION_FACTOR = 1;
+const qreal ZOOMBOX_EXPANSION_FACTOR = 1.2;
+
 /**
  * @brief Construct a new Tactical Solution View:: Tactical Solution View object
  *
@@ -126,27 +129,51 @@ void TacticalSolutionView::drawVectors()
     {
         return;
     }
-    int magnitude = 30;
-    double bearing = 45; // degrees
-    qreal selectedTrackSpeed = 50;
-    qreal selectedTrackBearing = 200;
+
+    // Our ship
+    qreal ownShipSpeed = 30;
+    qreal ownShipBearing = 45; //  Nautical degrees
 
     qreal sensorBearing = 250;
 
-    qreal adoptedTrackSpeed = 100;
+    // selected track
+    qreal selectedTrackSpeed = 30;
+    qreal selectedTrackRange = 50;
+    qreal selectedTrackBearing = 200;
+
+    // adopted track
+    qreal adoptedTrackSpeed = 30;
+    qreal adoptedTrackRange = 100;
     qreal adoptedTrackBearing = 300;
 
-    QPointF selectedTrackPosition = QPointF(150, 100);
-    QPointF adoptedPosition = QPointF(100, 200);
-
     // Draw the ownship vector
-    drawOwnShipVector(magnitude, bearing);
+    drawOwnShipVector(ownShipSpeed, ownShipBearing);
 
     // Draw the selected track vector
-    drawSelectedTrackVector(sensorBearing, selectedTrackSpeed, selectedTrackBearing, magnitude);
+    drawSelectedTrackVector(sensorBearing, selectedTrackRange, selectedTrackBearing, selectedTrackSpeed);
 
     // Adopted track vector
-    drawAdoptedTrackVector(sensorBearing, adoptedTrackSpeed, adoptedTrackBearing, magnitude);
+    drawAdoptedTrackVector(sensorBearing, adoptedTrackRange, adoptedTrackBearing, adoptedTrackSpeed);
+
+    // Get guidebox
+    QRectF guidebox = getGuideBox(
+        ownShipSpeed,
+        ownShipBearing,
+        sensorBearing,
+        adoptedTrackRange,
+        adoptedTrackSpeed,
+        adoptedTrackBearing,
+        selectedTrackRange,
+        selectedTrackSpeed,
+        selectedTrackBearing);
+
+    QRectF zoomBox = getZoomBoxFromGuideBox(guidebox);
+
+    qDebug() << "Guide Box: width: " << guidebox.width() << ", height: " << guidebox.height();
+    qDebug() << "Zoom Box: width:" << zoomBox.width() << ", height: " << zoomBox.height();
+
+    DrawUtils::addTestPattern(scene, guidebox);
+    DrawUtils::addTestPattern(scene, zoomBox);
 }
 
 /**
@@ -162,8 +189,9 @@ void TacticalSolutionView::drawOwnShipVector(qreal ownShipSpeed, qreal ownShipBe
         0,
         0,
         this->scene->sceneRect());
+
     // Draw a figure (circle) at each position
-    DrawUtils::drawCourseVector(scene, ownShipPosition, ownShipSpeed, ownShipBearing, Qt::cyan);
+    DrawUtils::drawCourseVector(scene, ownShipPosition, ownShipSpeed / SPEED_NORMALIZATION_FACTOR, ownShipBearing, Qt::cyan);
 }
 
 /**
@@ -181,7 +209,7 @@ void TacticalSolutionView::drawSelectedTrackVector(qreal sensorBearing, qreal se
         sensorBearing,
         this->scene->sceneRect());
     // Draw a figure (circle) at each position
-    DrawUtils::drawCourseVector(scene, selectedTrackPosition, selectedTrackSpeed, selectedTrackBearing, Qt::yellow);
+    DrawUtils::drawCourseVector(scene, selectedTrackPosition, selectedTrackSpeed / SPEED_NORMALIZATION_FACTOR, selectedTrackBearing, Qt::yellow);
 }
 
 /**
@@ -199,7 +227,7 @@ void TacticalSolutionView::drawAdoptedTrackVector(qreal sensorBearing, qreal ado
         sensorBearing,
         this->scene->sceneRect());
     // Draw a figure (circle) at each position
-    DrawUtils::drawCourseVector(scene, adoptedTrackPosition, adoptedTrackSpeed, adoptedTrackBearing, Qt::red);
+    DrawUtils::drawCourseVector(scene, adoptedTrackPosition, adoptedTrackSpeed / SPEED_NORMALIZATION_FACTOR, adoptedTrackBearing, Qt::red);
 }
 
 QRectF TacticalSolutionView::getGuideBox(
@@ -211,18 +239,124 @@ QRectF TacticalSolutionView::getGuideBox(
     qreal adoptedTrackBearing,
     qreal selectedTrackRange,
     qreal selectedTrackSpeed,
-    qreal selectedTrackBearing
-)
+    qreal selectedTrackBearing)
 {
     std::vector<QPointF> guideBoxPoints;
 
-    // Own ship position
+    // Own Ship Vector
     QPointF ownShipBearingPosition = QPointF(0, 0);
+
     QPointF ownShipPosition = DrawUtils::bearingToCartesian(
         0,
         0,
         this->scene->sceneRect());
 
-    // Add it to the guideBoxPoints
+    auto endpoint = DrawUtils::calculateEndpoint(ownShipPosition, ownShipSpeed, ownShipBearing);
+
+    // Add to the guidebox list
     guideBoxPoints.push_back(ownShipPosition);
+    guideBoxPoints.push_back(endpoint);
+
+    // Selected Track Vector
+    QPointF selectedTrackPosition = DrawUtils::bearingToCartesian(
+        selectedTrackRange,
+        sensorBearing,
+        this->scene->sceneRect());
+
+    endpoint = DrawUtils::calculateEndpoint(selectedTrackPosition, selectedTrackSpeed, selectedTrackBearing);
+
+    // Add to the guidebox list
+    guideBoxPoints.push_back(selectedTrackPosition);
+    guideBoxPoints.push_back(endpoint);
+
+    // Adopted Track Vector
+    QPointF adoptedTrackPosition = DrawUtils::bearingToCartesian(
+        adoptedTrackRange,
+        sensorBearing,
+        this->scene->sceneRect());
+
+    endpoint = DrawUtils::calculateEndpoint(adoptedTrackPosition, adoptedTrackSpeed, adoptedTrackBearing);
+
+    // Add to the guidebox list
+    guideBoxPoints.push_back(adoptedTrackPosition);
+    guideBoxPoints.push_back(endpoint);
+
+    // Loop throught the guidebox points and find the min/max x,y co-ordinates amongt
+    qreal xmin = 0;
+    qreal xmax = 0;
+    qreal ymin = 0;
+    qreal ymax = 0;
+
+    QPointF firstelement = guideBoxPoints.front();
+
+    xmin = firstelement.x();
+    xmax = firstelement.x();
+
+    ymin = firstelement.y();
+    ymax = firstelement.y();
+
+    // Loop through all the points to find the extent of the guidebox
+    for (const QPointF &element : guideBoxPoints)
+    {
+        if (element.x() > xmax)
+        {
+            xmax = element.x();
+        }
+
+        if (element.x() < xmin)
+        {
+            xmin = element.x();
+        }
+
+        if (element.y() > ymax)
+        {
+            ymax = element.y();
+        }
+
+        if (element.y() < ymin)
+        {
+            ymin = element.y();
+        }
+    }
+
+    // Here's the box needed
+    QRectF guidebox = QRectF(
+        xmin,
+        ymin,
+        xmax - xmin,
+        ymax - ymin);
+
+    return guidebox;
+}
+
+QRectF TacticalSolutionView::getZoomBoxFromGuideBox(const QRectF guidebox)
+{
+    // Look for the biggest side and save it
+    qreal largestSide;
+
+    if (guidebox.width() > guidebox.height())
+    {
+        largestSide = guidebox.width();
+    } else {
+        largestSide = guidebox.height();
+    }
+
+    // Now expand the dimension
+    largestSide = ZOOMBOX_EXPANSION_FACTOR * largestSide;
+
+    // Now create a new rectagle with the same center as the previous
+
+    qreal deltax = (largestSide - guidebox.width())/2;
+    qreal deltay = (largestSide - guidebox.height())/2;
+
+    QRectF zoomBox = QRectF(guidebox);
+
+    zoomBox.adjust(
+        -deltax,
+        -deltay,
+        deltax,
+        deltay
+    );
+
+    return zoomBox;
 }
