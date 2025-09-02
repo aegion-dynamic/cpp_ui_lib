@@ -188,7 +188,7 @@ void TacticalSolutionView::drawVectors()
     auto distance = getFarthestDistance(&pointStore, p1, p2);
 
     // Generate the perpendicular lines
-    auto lines = getOutlineLines(QLineF(p1, p2), distance/3);
+    auto lines = getOutlineLines(QLineF(p1, p2), distance);
 
     DrawUtils::addTestLine(scene, lines.first);
 
@@ -399,7 +399,7 @@ QRectF TacticalSolutionView::getGuideBox(
     guideBoxPoints.push_back(endpoint);
 
     // Store the points
-    pointStore->ownShipPoints = qMakePair(selectedTrackPosition, endpoint);
+    pointStore->selectedTrackPoints = qMakePair(selectedTrackPosition, endpoint);
 
     // Adopted Track Vector
     QPointF adoptedTrackPosition = DrawUtils::bearingToCartesian(
@@ -414,7 +414,7 @@ QRectF TacticalSolutionView::getGuideBox(
     guideBoxPoints.push_back(endpoint);
 
     // Store the points
-    pointStore->ownShipPoints = qMakePair(adoptedTrackPosition, endpoint);
+    pointStore->adoptedTrackPoints = qMakePair(adoptedTrackPosition, endpoint);
 
     // Loop throught the guidebox points and find the min/max x,y co-ordinates amongt
     qreal xmin = 0;
