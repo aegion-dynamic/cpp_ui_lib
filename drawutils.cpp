@@ -144,3 +144,89 @@ void DrawUtils::drawDefaultTestPattern(QGraphicsScene* scene)
     // Draw diagonal line to show extent
     scene->addLine(0, 0, scene->sceneRect().width(), scene->sceneRect().height(), testPen);
 }
+
+
+
+
+/**
+ * Computes a transformation matrix to transform sourceRect to fit within targetRect.
+ * The transformation will:
+ * 1. Scale sourceRect so its largest dimension equals targetRect's smallest dimension
+ * 2. Center the scaled sourceRect within targetRect
+ * 
+ * @param sourceRect The rectangle to be transformed
+ * @param targetRect The target rectangle to fit within
+ * @return QTransform matrix that applies the required transformation
+ */
+QTransform DrawUtils::computeTransformationMatrix(const QRectF& sourceRect, const QRectF& targetRect)
+{
+    // Handle degenerate cases
+    if (sourceRect.isEmpty() || targetRect.isEmpty()) {
+        return QTransform(); // Return identity transform
+    }
+    
+    // Get dimensions of both rectangles
+    qreal sourceWidth = sourceRect.width();
+    qreal sourceHeight = sourceRect.height();
+    qreal targetWidth = targetRect.width();
+    qreal targetHeight = targetRect.height();
+    
+    // Find the largest dimension of source rectangle
+    qreal sourceLargestDimension = std::max(sourceWidth, sourceHeight);
+    
+    // Find the smallest dimension of target rectangle
+    qreal targetSmallestDimension = std::min(targetWidth, targetHeight);
+    
+    // Calculate scale factor
+    qreal scaleFactor = targetSmallestDimension / sourceLargestDimension;
+    
+    // Calculate the centers of both rectangles
+    QPointF sourceCenter = sourceRect.center();
+    QPointF targetCenter = targetRect.center();
+    
+    // Create the transformation matrix
+    QTransform transform;
+    
+    // Step 1: Translate source rectangle so its center is at origin
+    transform.translate(-sourceCenter.x(), -sourceCenter.y());
+    
+    // Step 2: Apply uniform scaling
+    transform.scale(scaleFactor, scaleFactor);
+    
+    // Step 3: Translate to target center
+    transform.translate(targetCenter.x(), targetCenter.y());
+    
+    return transform;
+}
+
+/**
+ * Alternative version that returns the transformed rectangle for verification
+ */
+QPair<QTransform, QRectF> DrawUtils::computeTransformationWithResult(const QRectF& sourceRect, const QRectF& targetRect)
+{
+    QTransform transform = computeTransformationMatrix(sourceRect, targetRect);
+    QRectF transformedRect = transform.mapRect(sourceRect);
+    
+    return qMakePair(transform, transformedRect);
+}
+
+// /**
+//  * Example usage function
+//  */
+// void exampleUsage()
+// {
+//     // Example rectangles
+//     QRectF sourceRect(10, 20, 100, 50);  // Rectangle at (10,20) with size 100x50
+//     QRectF targetRect(0, 0, 200, 300);   // Rectangle at (0,0) with size 200x300
+    
+//     // Compute transformation
+//     QTransform transform = computeTransformationMatrix(sourceRect, targetRect);
+    
+//     // Apply transformation to source rectangle
+//     QRectF transformedRect = transform.mapRect(sourceRect);
+    
+//     // The transformed rectangle should now be centered in targetRect
+//     // with its largest dimension (100) scaled to match targetRect's smallest dimension (200)
+//     // So the scale factor would be 200/100 = 2.0
+//     // Final size would be 200x100, centered at (100, 150)
+// }

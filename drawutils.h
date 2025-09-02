@@ -3,6 +3,10 @@
 
 #include <QGraphicsItem>
 #include <QGraphicsScene>
+#include <QTransform>
+#include <QRectF>
+#include <QPointF>
+#include <algorithm>
 
 class DrawUtils{
 
@@ -16,7 +20,8 @@ class DrawUtils{
         static QPointF bearingToCartesian(qreal magnitude, qreal bearing, QRectF window);
         static void addTestPattern(QGraphicsScene* scene, QRectF rectToDraw);
         static void drawDefaultTestPattern(QGraphicsScene* scene);
-
+        static QTransform computeTransformationMatrix(const QRectF& sourceRect, const QRectF& targetRect);
+        static QPair<QTransform, QRectF> computeTransformationWithResult(const QRectF& sourceRect, const QRectF& targetRect);
 };
 
 #endif //DRAWUTILS_H
