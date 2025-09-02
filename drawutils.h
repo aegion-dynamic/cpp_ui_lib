@@ -15,6 +15,8 @@ class DrawUtils{
         static void drawCourseVector(QGraphicsScene* scene, QPointF startPoint, double magnitude, double bearing, const QColor& color);
         static QPointF bearingToCartesian(qreal magnitude, qreal bearing, QRectF window);
         static void addTestPattern(QGraphicsScene* scene, QRectF rectToDraw);
+        static void drawDefaultTestPattern(QGraphicsScene* scene);
+
 };
 
 #endif //DRAWUTILS_H

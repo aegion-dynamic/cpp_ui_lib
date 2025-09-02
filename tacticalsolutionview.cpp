@@ -60,31 +60,13 @@ void TacticalSolutionView::draw()
 
     // Draw in layers from back to front
     drawBackground();
-    drawTestPattern();
+    DrawUtils::drawDefaultTestPattern(scene);
 
     drawVectors();
 
     qDebug() << "Draw completed - Scene rect:" << scene->sceneRect();
 }
 
-/**
- * @brief Draw a test pattern for debugging purposes.
- *
- */
-void TacticalSolutionView::drawTestPattern()
-{
-    if (!scene)
-        return;
-
-    QPen testPen(Qt::white, 1);
-    testPen.setStyle(Qt::DashLine);
-
-    // Draw test rectangle showing full bounds
-    scene->addRect(scene->sceneRect(), testPen);
-
-    // Draw diagonal line to show extent
-    scene->addLine(0, 0, width(), height(), testPen);
-}
 
 /**
  * @brief Draw the background for the graph.

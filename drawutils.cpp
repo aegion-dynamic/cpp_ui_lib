@@ -124,3 +124,23 @@ void DrawUtils::addTestPattern(QGraphicsScene* scene, QRectF rectToDraw)
     scene->addRect(rectToDraw, testPen);
 
 }
+
+
+/**
+ * @brief Draw a test pattern for debugging purposes.
+ *
+ */
+void DrawUtils::drawDefaultTestPattern(QGraphicsScene* scene)
+{
+    if (!scene)
+        return;
+
+    QPen testPen(Qt::white, 1);
+    testPen.setStyle(Qt::DashLine);
+
+    // Draw test rectangle showing full bounds
+    scene->addRect(scene->sceneRect(), testPen);
+
+    // Draw diagonal line to show extent
+    scene->addLine(0, 0, scene->sceneRect().width(), scene->sceneRect().height(), testPen);
+}
