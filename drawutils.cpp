@@ -149,7 +149,7 @@ void DrawUtils::drawDefaultTestPattern(QGraphicsScene* scene)
 
 
 /**
- * Computes a transformation matrix to transform sourceRect to fit within targetRect.
+ * @brief Computes a transformation matrix to transform sourceRect to fit within targetRect.
  * The transformation will:
  * 1. Scale sourceRect so its largest dimension equals targetRect's smallest dimension
  * 2. Center the scaled sourceRect within targetRect
@@ -180,6 +180,8 @@ QTransform DrawUtils::computeTransformationMatrix(const QRectF& sourceRect, cons
     // Calculate scale factor
     qreal scaleFactor = targetSmallestDimension / sourceLargestDimension;
     
+    qDebug() << "Scale Factor: " << scaleFactor;
+
     // Calculate the centers of both rectangles
     QPointF sourceCenter = sourceRect.center();
     QPointF targetCenter = targetRect.center();
@@ -190,17 +192,21 @@ QTransform DrawUtils::computeTransformationMatrix(const QRectF& sourceRect, cons
     // Step 1: Translate source rectangle so its center is at origin
     transform.translate(-sourceCenter.x(), -sourceCenter.y());
     
-    // Step 2: Apply uniform scaling
-    transform.scale(scaleFactor, scaleFactor);
-    
-    // Step 3: Translate to target center
+    // Step 2: Translate to target center
     transform.translate(targetCenter.x(), targetCenter.y());
     
+    // // Step 3: Apply uniform scaling
+    // transform.scale(scaleFactor, scaleFactor);
+
     return transform;
 }
 
 /**
- * Alternative version that returns the transformed rectangle for verification
+ * @brief Alternative version that returns the transformed rectangle for verification
+ * 
+ * @param sourceRect 
+ * @param targetRect 
+ * @return QPair<QTransform, QRectF> 
  */
 QPair<QTransform, QRectF> DrawUtils::computeTransformationWithResult(const QRectF& sourceRect, const QRectF& targetRect)
 {
@@ -208,6 +214,32 @@ QPair<QTransform, QRectF> DrawUtils::computeTransformationWithResult(const QRect
     QRectF transformedRect = transform.mapRect(sourceRect);
     
     return qMakePair(transform, transformedRect);
+}
+
+
+/**
+ * @brief Transforms all the items in the scene
+ * 
+ * @param scene 
+ * @param transform 
+ */
+void DrawUtils::transformAllSceneItems(QGraphicsScene* scene, const QTransform& transform)
+{
+    if (!scene) return;
+    
+    // Get all items in the scene
+    QList<QGraphicsItem*> items = scene->items();
+    
+    // Apply transformation to each item
+    for (QGraphicsItem* item : items) {
+        if (item) {
+            // Option A: Set the item's transform directly
+            item->setTransform(transform, true); // true = combine with existing transform
+            
+            // Option B: Or replace the existing transform completely
+            // item->setTransform(transform, false);
+        }
+    }
 }
 
 // /**

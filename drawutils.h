@@ -22,6 +22,8 @@ class DrawUtils{
         static void drawDefaultTestPattern(QGraphicsScene* scene);
         static QTransform computeTransformationMatrix(const QRectF& sourceRect, const QRectF& targetRect);
         static QPair<QTransform, QRectF> computeTransformationWithResult(const QRectF& sourceRect, const QRectF& targetRect);
+        static void transformAllSceneItems(QGraphicsScene* scene, const QTransform& transform);
+
 };
 
 #endif //DRAWUTILS_H

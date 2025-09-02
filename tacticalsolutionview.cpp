@@ -60,7 +60,7 @@ void TacticalSolutionView::draw()
 
     // Draw in layers from back to front
     drawBackground();
-    DrawUtils::drawDefaultTestPattern(scene);
+    // DrawUtils::drawDefaultTestPattern(scene);
 
     drawVectors();
 
@@ -164,6 +164,14 @@ void TacticalSolutionView::drawVectors()
 
     DrawUtils::addTestPattern(scene, guidebox);
     DrawUtils::addTestPattern(scene, zoomBox);
+
+    // Compute the transformation to adjust the zooming and panning
+    QTransform zoomtransform = DrawUtils::computeTransformationMatrix(zoomBox, scene->sceneRect());
+    qDebug() << "Scene Box: width:" << scene->sceneRect().width() << ", height: " << scene->sceneRect().height();
+
+    // Apply the transform
+    DrawUtils::transformAllSceneItems(scene, zoomtransform);
+
 }
 
 /**
