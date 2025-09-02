@@ -194,17 +194,6 @@ void TacticalSolutionView::drawVectors()
 
     DrawUtils::addTestLine(scene, lines.second);
 
-    // // Apply the transform
-    // DrawUtils::transformAllSceneItems(scene, zoomtransform);
-
-    // // Transform stored points
-    // pointStore.ownShipPoints.first  = zoomtransform.map(pointStore.ownShipPoints.first);
-    // pointStore.ownShipPoints.second = zoomtransform.map(pointStore.ownShipPoints.second);
-    // pointStore.selectedTrackPoints.first  = zoomtransform.map(pointStore.selectedTrackPoints.first);
-    // pointStore.selectedTrackPoints.second = zoomtransform.map(pointStore.selectedTrackPoints.second);
-    // pointStore.adoptedTrackPoints.first  = zoomtransform.map(pointStore.adoptedTrackPoints.first);
-    // pointStore.adoptedTrackPoints.second = zoomtransform.map(pointStore.adoptedTrackPoints.second);
-
     QPointF ownShipEnd = pointStore.ownShipPoints.second;
 
     // Decide which outline line is closer to ownship end
@@ -216,6 +205,21 @@ void TacticalSolutionView::drawVectors()
 
     qDebug() << "Chosen Line: " << chosenLine;
     qDebug() << "Opposite Line: " << oppositeLine;
+
+    // Apply the transform
+    DrawUtils::transformAllSceneItems(scene, zoomtransform);
+
+    // Transform stored points
+    pointStore.ownShipPoints.first  = zoomtransform.map(pointStore.ownShipPoints.first);
+    pointStore.ownShipPoints.second = zoomtransform.map(pointStore.ownShipPoints.second);
+    pointStore.selectedTrackPoints.first  = zoomtransform.map(pointStore.selectedTrackPoints.first);
+    pointStore.selectedTrackPoints.second = zoomtransform.map(pointStore.selectedTrackPoints.second);
+    pointStore.adoptedTrackPoints.first  = zoomtransform.map(pointStore.adoptedTrackPoints.first);
+    pointStore.adoptedTrackPoints.second = zoomtransform.map(pointStore.adoptedTrackPoints.second);
+
+    // Transform the lines
+    oppositeLine = zoomtransform.map(oppositeLine);
+
 
     std::vector<QPointF> shadedPolygon;
 
