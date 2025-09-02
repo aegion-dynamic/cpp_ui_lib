@@ -239,48 +239,6 @@ void TacticalSolutionView::drawVectors()
         DrawUtils::drawShadedPolygon(scene, halfA);
     }
    
-
-    
-
-    // DrawUtils::drawShadedPolygon(scene, halfB);
-
-    // Once we know what is teh closest, we pick the other line and 
-    // identify the intersection points with the sceneRect() add them to 
-    // the shared polygon points
-    // for (auto point: intersections)
-    // {
-    //     shadedPolygon.push_back(point)
-    // }
-
-    
-    // Now create two polygons with the bisecting points, see which one 
-    // has the ownship point within the polygon, share the other polygon 
-    // with grey hatch and a white outline
-
-        // Clip scene rect by opposite line
-    // QPolygonF scenePoly(scene->sceneRect());
-    // QPolygonF halfA, halfB;
-    // QPointF mid = oppositeLine.pointAt(0.5);
-    // QPointF dir = oppositeLine.p2() - oppositeLine.p1();
-    // QPointF normal(-dir.y(), dir.x()); // perpendicular vector
-
-    // for (const QPointF &corner : scenePoly) {
-    //     QPointF vec = corner - mid;
-    //     if (QPointF::dotProduct(vec, normal) >= 0) {
-    //         halfA << corner;
-    //     } else {
-    //         halfB << corner;
-    //     }
-    // }
-
-    // // Ensure valid polygons (close the loop)
-    // if (halfA.size() >= 3 && halfB.size() >= 3) {
-    //     if (QPolygonF(halfA).containsPoint(ownShipEnd, Qt::OddEvenFill)) {
-    //         scene->addPolygon(halfB, QPen(Qt::white), QBrush(Qt::Dense4Pattern));
-    //     } else {
-    //         scene->addPolygon(halfA, QPen(Qt::white), QBrush(Qt::Dense4Pattern));
-    //     }
-    // }
 }
 
 /**
