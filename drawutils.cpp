@@ -1,5 +1,11 @@
 #include "drawutils.h"
 
+/**
+ * @brief converts to bearing to radians
+ * 
+ * @param bearing 
+ * @return double 
+ */
 double DrawUtils::bearingtoRadians(double bearing) {
 
     auto degree = (90.0f - bearing);
@@ -7,6 +13,14 @@ double DrawUtils::bearingtoRadians(double bearing) {
     return qDegreesToRadians(degree);
 }
 
+/**
+ * @brief calculates the endpoint from a start point and the polar arguments
+ * 
+ * @param startPoint 
+ * @param magnitude 
+ * @param bearing 
+ * @return QPointF 
+ */
 QPointF DrawUtils::calculateEndpoint(QPointF startPoint, double magnitude, double bearing)
 {
     // Convert bearing to radians
@@ -60,6 +74,14 @@ void DrawUtils::drawCourseVector(QGraphicsScene *scene, QPointF startPoint, doub
     
 }
 
+/**
+ * @brief Converts bearing to cartesian points
+ * 
+ * @param magnitude 
+ * @param bearing 
+ * @param window 
+ * @return QPointF 
+ */
 QPointF DrawUtils::bearingToCartesian(qreal magnitude, qreal bearing, QRectF window)
 {
     // Center coorindate
@@ -81,6 +103,12 @@ QPointF DrawUtils::bearingToCartesian(qreal magnitude, qreal bearing, QRectF win
     return QPointF(x, y);
 }
 
+/**
+ * @brief Added the test pattern
+ * 
+ * @param scene 
+ * @param rectToDraw 
+ */
 void DrawUtils::addTestPattern(QGraphicsScene* scene, QRectF rectToDraw)
 {
     if (!scene)

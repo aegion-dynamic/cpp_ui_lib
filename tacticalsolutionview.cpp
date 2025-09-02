@@ -230,6 +230,20 @@ void TacticalSolutionView::drawAdoptedTrackVector(qreal sensorBearing, qreal ado
     DrawUtils::drawCourseVector(scene, adoptedTrackPosition, adoptedTrackSpeed / SPEED_NORMALIZATION_FACTOR, adoptedTrackBearing, Qt::red);
 }
 
+/**
+ * @brief Calculate the Guide Box
+ * 
+ * @param ownShipSpeed 
+ * @param ownShipBearing 
+ * @param sensorBearing 
+ * @param adoptedTrackRange 
+ * @param adoptedTrackSpeed 
+ * @param adoptedTrackBearing 
+ * @param selectedTrackRange 
+ * @param selectedTrackSpeed 
+ * @param selectedTrackBearing 
+ * @return QRectF 
+ */
 QRectF TacticalSolutionView::getGuideBox(
     qreal ownShipSpeed,
     qreal ownShipBearing,
@@ -329,6 +343,12 @@ QRectF TacticalSolutionView::getGuideBox(
     return guidebox;
 }
 
+/**
+ * @brief Returns the zoom box from the guidebox
+ * 
+ * @param guidebox 
+ * @return QRectF 
+ */
 QRectF TacticalSolutionView::getZoomBoxFromGuideBox(const QRectF guidebox)
 {
     // Look for the biggest side and save it
