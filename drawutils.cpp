@@ -168,7 +168,7 @@ void DrawUtils::drawDefaultTestPattern(QGraphicsScene *scene)
  */
 QTransform DrawUtils::computeTransformationMatrix(const QRectF &sourceRect, const QRectF &targetRect)
 {
-    // Handle degenerate cases
+// Handle degenerate cases
     if (sourceRect.isEmpty() || targetRect.isEmpty())
     {
         return QTransform(); // Return identity transform
@@ -180,37 +180,26 @@ QTransform DrawUtils::computeTransformationMatrix(const QRectF &sourceRect, cons
     qreal targetWidth = targetRect.width();
     qreal targetHeight = targetRect.height();
 
-    // Find the largest dimension of source rectangle
+    // Largest dimension of source vs smallest of target
     qreal sourceLargestDimension = std::max(sourceWidth, sourceHeight);
-
-    // Find the smallest dimension of target rectangle
     qreal targetSmallestDimension = std::min(targetWidth, targetHeight);
 
-    // Calculate scale factor
+    // Uniform scale factor
     qreal scaleFactor = targetSmallestDimension / sourceLargestDimension;
-
     qDebug() << "Scale Factor: " << scaleFactor;
 
-    // Calculate the centers of both rectangles
     QPointF sourceCenter = sourceRect.center();
     QPointF targetCenter = targetRect.center();
 
-    // Create the transformation matrix
     QTransform transform;
-
-    // Step 1: Translate source rectangle so its center is at origin
+    // Step 1: move source center to origin
     transform.translate(-sourceCenter.x(), -sourceCenter.y());
-
-
-    // // Step 2: Apply uniform scaling
+    // Step 2: scale around origin
     // transform.scale(scaleFactor, scaleFactor);
-
-    // Step 3: Translate to target center
+    // Step 3: move to target center
     transform.translate(targetCenter.x(), targetCenter.y());
 
-
-    return transform;
-}
+    return transform;}
 
 /**
  * @brief Alternative version that returns the transformed rectangle for verification
