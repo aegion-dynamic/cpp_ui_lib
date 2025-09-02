@@ -431,7 +431,7 @@ bool DrawUtils::splitRectWithLine(const QLineF &line, const QRectF &rect,
     return true;
 }
 
-void DrawUtils::drawShadedPolygon(QGraphicsScene *scene, QVector<QPointF> &poly)
+void DrawUtils::drawShadedPolygon(QGraphicsScene *scene, QVector<QPointF> &poly, const QPen& pen, const QBrush& brush)
 {
     if (!scene || poly.size() < 3) // must be at least a triangle
     {
@@ -441,11 +441,6 @@ void DrawUtils::drawShadedPolygon(QGraphicsScene *scene, QVector<QPointF> &poly)
     QPolygonF polygon(poly);
 
     // Customize pen/brush as needed
-    QPen pen(Qt::white);
-    pen.setWidth(2);
-
-    QBrush brush(Qt::red, Qt::BDiagPattern); // hatch shading
-
     scene->addPolygon(polygon, pen, brush);
 }
 

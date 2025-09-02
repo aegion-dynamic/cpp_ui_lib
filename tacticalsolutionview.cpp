@@ -232,15 +232,19 @@ void TacticalSolutionView::drawVectors()
 
     DrawUtils::splitRectWithLine(oppositeLine, scene->sceneRect(), halfA, halfB);
 
+    QPen pen(Qt::white);
+    pen.setWidth(2);
+
+    QBrush brush(Qt::white, Qt::BDiagPattern);
     // check if halfA or halfB is within the polygon
     if (QPolygonF(halfA).containsPoint(ownShipEnd, Qt::OddEvenFill))
     {
         // Shade Half B
-        DrawUtils::drawShadedPolygon(scene, halfB);
+        DrawUtils::drawShadedPolygon(scene, halfB, pen, brush);
     } else 
     {
         // Shade Half A
-        DrawUtils::drawShadedPolygon(scene, halfA);
+        DrawUtils::drawShadedPolygon(scene, halfA, pen, brush);
     }
    
 }
