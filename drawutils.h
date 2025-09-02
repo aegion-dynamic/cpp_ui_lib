@@ -30,6 +30,7 @@ public:
     static qreal computeCartesianDistance(QPointF source, QPointF target);
     static void addTestLine(QGraphicsScene* scene, QLineF lineToDraw);
     static qreal flipBearing(qreal bearing);
+    static qreal calculatePerpendicularDistance(const QPointF &point, const QPointF &linePoint1, const QPointF &linePoint2);
 
 
 };

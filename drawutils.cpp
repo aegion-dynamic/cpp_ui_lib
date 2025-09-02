@@ -2,11 +2,12 @@
 
 /**
  * @brief converts to bearing to radians
- * 
- * @param bearing 
- * @return double 
+ *
+ * @param bearing
+ * @return double
  */
-double DrawUtils::bearingtoRadians(double bearing) {
+double DrawUtils::bearingtoRadians(double bearing)
+{
 
     auto degree = (90.0f - bearing);
 
@@ -15,11 +16,11 @@ double DrawUtils::bearingtoRadians(double bearing) {
 
 /**
  * @brief calculates the endpoint from a start point and the polar arguments
- * 
- * @param startPoint 
- * @param magnitude 
- * @param bearing 
- * @return QPointF 
+ *
+ * @param startPoint
+ * @param magnitude
+ * @param bearing
+ * @return QPointF
  */
 QPointF DrawUtils::calculateEndpoint(QPointF startPoint, double magnitude, double bearing)
 {
@@ -34,11 +35,11 @@ QPointF DrawUtils::calculateEndpoint(QPointF startPoint, double magnitude, doubl
 }
 
 /// @brief Draw individual course vectors
-/// @param scene 
-/// @param startPoint 
-/// @param magnitude 
-/// @param bearing 
-/// @param color 
+/// @param scene
+/// @param startPoint
+/// @param magnitude
+/// @param bearing
+/// @param color
 void DrawUtils::drawCourseVector(QGraphicsScene *scene, QPointF startPoint, double magnitude, double bearing, const QColor &color)
 {
 
@@ -49,7 +50,7 @@ void DrawUtils::drawCourseVector(QGraphicsScene *scene, QPointF startPoint, doub
     QBrush brush(color);
     int radius = 5;
 
-    scene->addEllipse(startPoint.x() - radius, startPoint.y() - radius, radius * 2, radius * 2, pen, brush);    // Calulate endpoint
+    scene->addEllipse(startPoint.x() - radius, startPoint.y() - radius, radius * 2, radius * 2, pen, brush); // Calulate endpoint
 
     auto endpoint = DrawUtils::calculateEndpoint(startPoint, magnitude, bearing);
 
@@ -63,31 +64,29 @@ void DrawUtils::drawCourseVector(QGraphicsScene *scene, QPointF startPoint, doub
 
     QPointF h1(endpoint.x() + headLen * qCos(a1), endpoint.y() + headLen * qSin(a1));
     QPointF h2(endpoint.x() + headLen * qCos(a2), endpoint.y() + headLen * qSin(a2));
-    
+
     // Draw arrow head as filled polygon
-    QPolygonF head; 
-    
+    QPolygonF head;
+
     head << endpoint << h1 << h2;
-    
+
     scene->addPolygon(head, pen, brush);
-    
 }
 
 /**
  * @brief Converts bearing to cartesian points
- * 
- * @param magnitude 
- * @param bearing 
- * @param window 
- * @return QPointF 
+ *
+ * @param magnitude
+ * @param bearing
+ * @param window
+ * @return QPointF
  */
 QPointF DrawUtils::bearingToCartesian(qreal magnitude, qreal bearing, QRectF window)
 {
     // Center coorindate
     QPointF center = QPointF(
-        window.x() + window.width()/2,
-        window.y() + window.height()/2
-    );
+        window.x() + window.width() / 2,
+        window.y() + window.height() / 2);
 
     // Convert the bearing to a normal degree angle
     auto degree = 90 - bearing;
@@ -104,11 +103,11 @@ QPointF DrawUtils::bearingToCartesian(qreal magnitude, qreal bearing, QRectF win
 
 /**
  * @brief Added the test pattern
- * 
- * @param scene 
- * @param rectToDraw 
+ *
+ * @param scene
+ * @param rectToDraw
  */
-void DrawUtils::addTestPattern(QGraphicsScene* scene, QRectF rectToDraw)
+void DrawUtils::addTestPattern(QGraphicsScene *scene, QRectF rectToDraw)
 {
     if (!scene)
     {
@@ -121,10 +120,9 @@ void DrawUtils::addTestPattern(QGraphicsScene* scene, QRectF rectToDraw)
 
     // Draw test rectangle showing full bounds
     scene->addRect(rectToDraw, testPen);
-
 }
 
-void DrawUtils::addTestLine(QGraphicsScene* scene, QLineF lineToDraw)
+void DrawUtils::addTestLine(QGraphicsScene *scene, QLineF lineToDraw)
 {
     if (!scene)
     {
@@ -137,15 +135,13 @@ void DrawUtils::addTestLine(QGraphicsScene* scene, QLineF lineToDraw)
 
     // Draw test rectangle showing full bounds
     scene->addLine(lineToDraw, testPen);
-
 }
-
 
 /**
  * @brief Draw a test pattern for debugging purposes.
  *
  */
-void DrawUtils::drawDefaultTestPattern(QGraphicsScene* scene)
+void DrawUtils::drawDefaultTestPattern(QGraphicsScene *scene)
 {
     if (!scene)
         return;
@@ -160,57 +156,54 @@ void DrawUtils::drawDefaultTestPattern(QGraphicsScene* scene)
     scene->addLine(0, 0, scene->sceneRect().width(), scene->sceneRect().height(), testPen);
 }
 
-
-
-
-
 /**
  * @brief Computes a transformation matrix to transform sourceRect to fit within targetRect.
  * The transformation will:
  * 1. Scale sourceRect so its largest dimension equals targetRect's smallest dimension
  * 2. Center the scaled sourceRect within targetRect
- * 
+ *
  * @param sourceRect The rectangle to be transformed
  * @param targetRect The target rectangle to fit within
  * @return QTransform matrix that applies the required transformation
  */
-QTransform DrawUtils::computeTransformationMatrix(const QRectF& sourceRect, const QRectF& targetRect)
+QTransform DrawUtils::computeTransformationMatrix(const QRectF &sourceRect, const QRectF &targetRect)
 {
     // Handle degenerate cases
-    if (sourceRect.isEmpty() || targetRect.isEmpty()) {
+    if (sourceRect.isEmpty() || targetRect.isEmpty())
+    {
         return QTransform(); // Return identity transform
     }
-    
+
     // Get dimensions of both rectangles
     qreal sourceWidth = sourceRect.width();
     qreal sourceHeight = sourceRect.height();
     qreal targetWidth = targetRect.width();
     qreal targetHeight = targetRect.height();
-    
+
     // Find the largest dimension of source rectangle
     qreal sourceLargestDimension = std::max(sourceWidth, sourceHeight);
-    
+
     // Find the smallest dimension of target rectangle
     qreal targetSmallestDimension = std::min(targetWidth, targetHeight);
-    
+
     // Calculate scale factor
     qreal scaleFactor = targetSmallestDimension / sourceLargestDimension;
-    
+
     qDebug() << "Scale Factor: " << scaleFactor;
 
     // Calculate the centers of both rectangles
     QPointF sourceCenter = sourceRect.center();
     QPointF targetCenter = targetRect.center();
-    
+
     // Create the transformation matrix
     QTransform transform;
-    
+
     // Step 1: Translate source rectangle so its center is at origin
     transform.translate(-sourceCenter.x(), -sourceCenter.y());
-    
+
     // Step 2: Translate to target center
     transform.translate(targetCenter.x(), targetCenter.y());
-    
+
     // // Step 3: Apply uniform scaling
     // transform.scale(scaleFactor, scaleFactor);
 
@@ -219,74 +212,103 @@ QTransform DrawUtils::computeTransformationMatrix(const QRectF& sourceRect, cons
 
 /**
  * @brief Alternative version that returns the transformed rectangle for verification
- * 
- * @param sourceRect 
- * @param targetRect 
- * @return QPair<QTransform, QRectF> 
+ *
+ * @param sourceRect
+ * @param targetRect
+ * @return QPair<QTransform, QRectF>
  */
-QPair<QTransform, QRectF> DrawUtils::computeTransformationWithResult(const QRectF& sourceRect, const QRectF& targetRect)
+QPair<QTransform, QRectF> DrawUtils::computeTransformationWithResult(const QRectF &sourceRect, const QRectF &targetRect)
 {
     QTransform transform = computeTransformationMatrix(sourceRect, targetRect);
     QRectF transformedRect = transform.mapRect(sourceRect);
-    
+
     return qMakePair(transform, transformedRect);
 }
 
-
 /**
  * @brief Transforms all the items in the scene
- * 
- * @param scene 
- * @param transform 
+ *
+ * @param scene
+ * @param transform
  */
-void DrawUtils::transformAllSceneItems(QGraphicsScene* scene, const QTransform& transform)
+void DrawUtils::transformAllSceneItems(QGraphicsScene *scene, const QTransform &transform)
 {
-    if (!scene) return;
-    
+    if (!scene)
+        return;
+
     // Get all items in the scene
-    QList<QGraphicsItem*> items = scene->items();
-    
+    QList<QGraphicsItem *> items = scene->items();
+
     // Apply transformation to each item
-    for (QGraphicsItem* item : items) {
-        if (item) {
+    for (QGraphicsItem *item : items)
+    {
+        if (item)
+        {
             // Option A: Set the item's transform directly
             item->setTransform(transform, true); // true = combine with existing transform
-            
+
             // Option B: Or replace the existing transform completely
             // item->setTransform(transform, false);
         }
     }
 }
 
-
-QGraphicsLineItem* DrawUtils::createLineFromPointAndAngle(const QPointF& startPoint, 
-                                                 qreal angleInDegrees, 
-                                                 qreal length)
+QGraphicsLineItem *DrawUtils::createLineFromPointAndAngle(const QPointF &startPoint,
+                                                          qreal angleInDegrees,
+                                                          qreal length)
 {
     // Create line using QLineF's fromPolar method
     QLineF line = QLineF::fromPolar(length, angleInDegrees);
-    
+
     // Translate to start point
     line.translate(startPoint);
-    
+
     return new QGraphicsLineItem(line);
 }
 
 qreal DrawUtils::computeCartesianDistance(QPointF source, QPointF target)
 {
-    return sqrt(pow(target.x() - source.x(),2) + pow(target.y() - source.y(),2));
+    return sqrt(pow(target.x() - source.x(), 2) + pow(target.y() - source.y(), 2));
 }
 
 qreal DrawUtils::flipBearing(qreal bearing)
 {
-    if (bearing < 180) 
+    if (bearing < 180)
     {
         return bearing + 180;
-    } else {
+    }
+    else
+    {
         return bearing - 180;
     }
 }
 
+qreal DrawUtils::calculatePerpendicularDistance(const QPointF &point, const QPointF &linePoint1, const QPointF &linePoint2)
+{
+    // Vector from linePoint1 to linePoint2
+    double dx = linePoint2.x() - linePoint1.x();
+    double dy = linePoint2.y() - linePoint1.y();
+
+    // If the line points are the same, return distance to that point
+    if (dx == 0 && dy == 0)
+    {
+        return qSqrt(qPow(point.x() - linePoint1.x(), 2) + qPow(point.y() - linePoint1.y(), 2));
+    }
+
+    // Using the formula: |ax + by + c| / sqrt(a² + b²)
+    // Where the line equation is ax + by + c = 0
+    // For a line through two points, we can derive:
+    // a = (y2 - y1), b = (x1 - x2), c = (x2*y1 - x1*y2)
+
+    double a = dy;
+    double b = -dx;
+    double c = linePoint2.x() * linePoint1.y() - linePoint1.x() * linePoint2.y();
+
+    // Calculate perpendicular distance
+    double distance = qAbs(a * point.x() + b * point.y() + c) / qSqrt(a * a + b * b);
+
+    return distance;
+}
 
 // /**
 //  * Example usage function
@@ -296,13 +318,13 @@ qreal DrawUtils::flipBearing(qreal bearing)
 //     // Example rectangles
 //     QRectF sourceRect(10, 20, 100, 50);  // Rectangle at (10,20) with size 100x50
 //     QRectF targetRect(0, 0, 200, 300);   // Rectangle at (0,0) with size 200x300
-    
+
 //     // Compute transformation
 //     QTransform transform = computeTransformationMatrix(sourceRect, targetRect);
-    
+
 //     // Apply transformation to source rectangle
 //     QRectF transformedRect = transform.mapRect(sourceRect);
-    
+
 //     // The transformed rectangle should now be centered in targetRect
 //     // with its largest dimension (100) scaled to match targetRect's smallest dimension (200)
 //     // So the scale factor would be 200/100 = 2.0

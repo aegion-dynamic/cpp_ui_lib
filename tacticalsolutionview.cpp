@@ -36,7 +36,7 @@ TacticalSolutionView::TacticalSolutionView(QWidget *parent)
 
 /**
  * @brief Destroy the Tactical Solution View:: Tactical Solution View object
- * 
+ *
  */
 TacticalSolutionView::~TacticalSolutionView()
 {
@@ -66,7 +66,6 @@ void TacticalSolutionView::draw()
 
     qDebug() << "Draw completed - Scene rect:" << scene->sceneRect();
 }
-
 
 /**
  * @brief Draw the background for the graph.
@@ -154,10 +153,7 @@ void TacticalSolutionView::drawVectors()
         selectedTrackRange,
         selectedTrackSpeed,
         selectedTrackBearing,
-        &pointStore
-    );
-
-
+        &pointStore);
 
     QRectF zoomBox = getZoomBoxFromGuideBox(guidebox);
 
@@ -174,21 +170,121 @@ void TacticalSolutionView::drawVectors()
     // Draw test line that goes through a point for a given angle
     // Get the largest distance
     auto largestRange = std::max(adoptedTrackRange, selectedTrackRange);
-    QPointF ownShipPosition = DrawUtils::bearingToCartesian(0,0, scene->sceneRect());
+    QPointF ownShipPosition = DrawUtils::bearingToCartesian(0, 0, scene->sceneRect());
 
     // Use this to draw the bearings line and the bisection ref line
-    auto p1 = DrawUtils::calculateEndpoint(ownShipPosition, largestRange*5, sensorBearing);
-    auto p2 = DrawUtils::calculateEndpoint(ownShipPosition, largestRange*5, DrawUtils::flipBearing(sensorBearing));
+    auto p1 = DrawUtils::calculateEndpoint(ownShipPosition, largestRange * 5, sensorBearing);
+    auto p2 = DrawUtils::calculateEndpoint(ownShipPosition, largestRange * 5, DrawUtils::flipBearing(sensorBearing));
 
+    QPen bearingPen(Qt::green, 2);
+
+    scene->addLine(QLineF(ownShipPosition, p1), bearingPen);
 
     // Draw a refernce Line
     DrawUtils::addTestLine(scene, QLineF(p1, p2));
     // Draw the Bearing Line
 
-    // Apply the transform
-    // DrawUtils::transformAllSceneItems(scene, zoomtransform);
+    // Get the farthest perpedicular point from the line
+    auto distance = getFarthestDistance(&pointStore, p1, p2);
 
+    // Generate the perpendicular lines
+    auto lines = getOutlineLines(QLineF(p1, p2), distance/3);
+
+    DrawUtils::addTestLine(scene, lines.first);
+
+    DrawUtils::addTestLine(scene, lines.second);
+
+    // Apply the transform
+    DrawUtils::transformAllSceneItems(scene, zoomtransform);
+
+    // TODO: Transform all the positions in this pointstore
+
+    // We find the intersection between the parallel line that is the 
+    // opposite of the ownShip course direction, we can calculate
+    // this by seeing which of the distances is the closest the endpoint 
+    // of the ownship vector to the outline lines
     
+    // Once we know what is teh closest, we pick the other line and 
+    // identify the intersection points with the sceneRect() add them to 
+    // the shared polygon points
+
+    // Now create two polygons with the bisecting points, see which one 
+    // has the ownship point within the polygon, share the other polygon 
+    // with grey hatch and a white outline
+}
+
+/**
+ * @brief Returns two parallel lines as offset lines
+ *
+ * @param line The original line to create parallel lines from
+ * @param distance The perpendicular distance from the original line
+ * @return QPair<QLineF, QLineF> Two parallel lines, one on each side of the original
+ */
+QPair<QLineF, QLineF> TacticalSolutionView::getOutlineLines(const QLineF& line, const qreal distance)
+{
+    // Calculate the direction vector of the line
+    QPointF direction = line.p2() - line.p1();
+    
+    // Calculate the length of the direction vector
+    qreal length = std::sqrt(direction.x() * direction.x() + direction.y() * direction.y());
+    
+    // Handle degenerate case where line has zero length
+    if (qFuzzyIsNull(length)) {
+        return QPair<QLineF, QLineF>(line, line);
+    }
+    
+    // Normalize the direction vector
+    QPointF unitDirection = QPointF(direction.x() / length, direction.y() / length);
+    
+    // Calculate the perpendicular vector (rotate 90 degrees counterclockwise)
+    QPointF perpendicular = QPointF(-unitDirection.y(), unitDirection.x());
+    
+    // Scale the perpendicular vector by the desired distance
+    // Since the caller passes distance/2, this creates lines at the correct offset
+    QPointF offset = QPointF(perpendicular.x() * distance, perpendicular.y() * distance);
+    
+    // Create the first parallel line (offset in positive perpendicular direction)
+    QPointF p1_offset_pos = line.p1() + offset;
+    QPointF p2_offset_pos = line.p2() + offset;
+    QLineF line1(p1_offset_pos, p2_offset_pos);
+    
+    // Create the second parallel line (offset in negative perpendicular direction)
+    QPointF p1_offset_neg = line.p1() - offset;
+    QPointF p2_offset_neg = line.p2() - offset;
+    QLineF line2(p1_offset_neg, p2_offset_neg);
+    
+    return QPair<QLineF, QLineF>(line1, line2);
+}
+
+double TacticalSolutionView::getFarthestDistance(VectorPointPairs *pointStore, const QPointF &linePoint1, const QPointF &linePoint2)
+{
+    auto d1 = DrawUtils::calculatePerpendicularDistance(
+        pointStore->ownShipPoints.second,
+        linePoint1,
+        linePoint2);
+
+    auto d2 = DrawUtils::calculatePerpendicularDistance(
+        pointStore->adoptedTrackPoints.second,
+        linePoint1,
+        linePoint2);
+
+    auto d3 = DrawUtils::calculatePerpendicularDistance(
+        pointStore->selectedTrackPoints.second,
+        linePoint1,
+        linePoint2);
+
+    std::vector<qreal> distances = {d1, d2, d3};
+    auto maxref = std::max_element(distances.begin(), distances.end());
+
+    qDebug() << "own ship: " << d1;
+    qDebug() << "adopted tracl: " << d2;
+    qDebug() << "selected tracl: " << d3;
+
+    qreal maxValue = *maxref;
+
+    qDebug() << "max distance: " << maxValue;
+
+    return maxValue;
 }
 
 /**
@@ -247,17 +343,17 @@ void TacticalSolutionView::drawAdoptedTrackVector(qreal sensorBearing, qreal ado
 
 /**
  * @brief Calculate the Guide Box
- * 
- * @param ownShipSpeed 
- * @param ownShipBearing 
- * @param sensorBearing 
- * @param adoptedTrackRange 
- * @param adoptedTrackSpeed 
- * @param adoptedTrackBearing 
- * @param selectedTrackRange 
- * @param selectedTrackSpeed 
- * @param selectedTrackBearing 
- * @return QRectF 
+ *
+ * @param ownShipSpeed
+ * @param ownShipBearing
+ * @param sensorBearing
+ * @param adoptedTrackRange
+ * @param adoptedTrackSpeed
+ * @param adoptedTrackBearing
+ * @param selectedTrackRange
+ * @param selectedTrackSpeed
+ * @param selectedTrackBearing
+ * @return QRectF
  */
 QRectF TacticalSolutionView::getGuideBox(
     qreal ownShipSpeed,
@@ -269,8 +365,7 @@ QRectF TacticalSolutionView::getGuideBox(
     qreal selectedTrackRange,
     qreal selectedTrackSpeed,
     qreal selectedTrackBearing,
-    VectorPointPairs* pointStore
-)
+    VectorPointPairs *pointStore)
 {
     std::vector<QPointF> guideBoxPoints;
 
@@ -302,7 +397,7 @@ QRectF TacticalSolutionView::getGuideBox(
     // Add to the guidebox list
     guideBoxPoints.push_back(selectedTrackPosition);
     guideBoxPoints.push_back(endpoint);
-    
+
     // Store the points
     pointStore->ownShipPoints = qMakePair(selectedTrackPosition, endpoint);
 
@@ -317,7 +412,7 @@ QRectF TacticalSolutionView::getGuideBox(
     // Add to the guidebox list
     guideBoxPoints.push_back(adoptedTrackPosition);
     guideBoxPoints.push_back(endpoint);
-    
+
     // Store the points
     pointStore->ownShipPoints = qMakePair(adoptedTrackPosition, endpoint);
 
@@ -371,9 +466,9 @@ QRectF TacticalSolutionView::getGuideBox(
 
 /**
  * @brief Returns the zoom box from the guidebox
- * 
- * @param guidebox 
- * @return QRectF 
+ *
+ * @param guidebox
+ * @return QRectF
  */
 QRectF TacticalSolutionView::getZoomBoxFromGuideBox(const QRectF guidebox)
 {
@@ -383,7 +478,9 @@ QRectF TacticalSolutionView::getZoomBoxFromGuideBox(const QRectF guidebox)
     if (guidebox.width() > guidebox.height())
     {
         largestSide = guidebox.width();
-    } else {
+    }
+    else
+    {
         largestSide = guidebox.height();
     }
 
@@ -392,8 +489,8 @@ QRectF TacticalSolutionView::getZoomBoxFromGuideBox(const QRectF guidebox)
 
     // Now create a new rectagle with the same center as the previous
 
-    qreal deltax = (largestSide - guidebox.width())/2;
-    qreal deltay = (largestSide - guidebox.height())/2;
+    qreal deltax = (largestSide - guidebox.width()) / 2;
+    qreal deltay = (largestSide - guidebox.height()) / 2;
 
     QRectF zoomBox = QRectF(guidebox);
 
@@ -401,8 +498,7 @@ QRectF TacticalSolutionView::getZoomBoxFromGuideBox(const QRectF guidebox)
         -deltax,
         -deltay,
         deltax,
-        deltay
-    );
+        deltay);
 
     return zoomBox;
 }

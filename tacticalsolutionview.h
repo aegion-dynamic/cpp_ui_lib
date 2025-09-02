@@ -42,6 +42,8 @@ private:
     void drawOwnShipVector(qreal ownShipSpeed, qreal ownShipBearing);
     void drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackRange, qreal selectedTrackBearing, qreal selectedTrackSpeed);
     void drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackRange,  qreal adoptedTrackBearing, qreal adoptedTrackSpeed);
+    double getFarthestDistance(VectorPointPairs* pointStore, const QPointF& linePoint1, const QPointF& linePoint2);
+    QPair<QLineF, QLineF> getOutlineLines(const QLineF& line, const qreal distance);
 
     QRectF getGuideBox(
         qreal ownShipSpeed,
