@@ -28,11 +28,13 @@ public:
                                                           qreal angleInDegrees,
                                                           qreal length);
     static qreal computeCartesianDistance(QPointF source, QPointF target);
-    static void addTestLine(QGraphicsScene* scene, QLineF lineToDraw);
+    static void addTestLine(QGraphicsScene *scene, QLineF lineToDraw);
     static qreal flipBearing(qreal bearing);
     static qreal calculatePerpendicularDistance(const QPointF &point, const QPointF &linePoint1, const QPointF &linePoint2);
-
-
+    static QVector<QPointF> getLineRectIntersections(const QLineF &line, const QRectF &rect);
+    static bool splitRectWithLine(const QLineF &line, const QRectF &rect,
+                                  QVector<QPointF> &poly1, QVector<QPointF> &poly2);
+    static void drawShadedPolygon(QGraphicsScene *scene, QVector<QPointF> &poly);
 };
 
 #endif // DRAWUTILS_H

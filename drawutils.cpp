@@ -310,6 +310,154 @@ qreal DrawUtils::calculatePerpendicularDistance(const QPointF &point, const QPoi
     return distance;
 }
 
+/**
+ * @brief Get all intersection points between a line and a rectangle
+ *
+ * @param line The line to check
+ * @param rect The rectangle
+ * @return QVector<QPointF> List of intersection points (0, 1, or 2 points)
+ */
+QVector<QPointF> DrawUtils::getLineRectIntersections(const QLineF &line, const QRectF &rect)
+{
+    QVector<QPointF> intersections;
+
+    // Rectangle edges
+    QLineF top(rect.topLeft(), rect.topRight());
+    QLineF bottom(rect.bottomLeft(), rect.bottomRight());
+    QLineF left(rect.topLeft(), rect.bottomLeft());
+    QLineF right(rect.topRight(), rect.bottomRight());
+
+    QPointF ip;
+
+    auto checkIntersect = [&](const QLineF &edge)
+    {
+        QLineF::IntersectType type = line.intersects(edge, &ip);
+        if (type == QLineF::BoundedIntersection)
+        {
+            intersections.append(ip);
+        }
+    };
+
+    checkIntersect(top);
+    checkIntersect(bottom);
+    checkIntersect(left);
+    checkIntersect(right);
+
+    return intersections;
+}
+
+/**
+ * @brief Split a rectangle into two polygons using a bisecting line
+ *
+ * @param line The line that cuts the rectangle
+ * @param rect The rectangle to be split
+ * @param poly1 Output: first polygon (as QVector<QPointF>)
+ * @param poly2 Output: second polygon (as QVector<QPointF>)
+ * @return true if successful (line intersects in 2 points), false otherwise
+ */
+bool DrawUtils::splitRectWithLine(const QLineF &line, const QRectF &rect,
+                                  QVector<QPointF> &poly1, QVector<QPointF> &poly2)
+{
+    poly1.clear();
+    poly2.clear();
+
+    // Rectangle corners in CCW order
+    QVector<QPointF> rectPts = {
+        rect.topLeft(),
+        rect.topRight(),
+        rect.bottomRight(),
+        rect.bottomLeft()};
+
+    // Edges
+    QVector<QLineF> edges = {
+        QLineF(rect.topLeft(), rect.topRight()),
+        QLineF(rect.topRight(), rect.bottomRight()),
+        QLineF(rect.bottomRight(), rect.bottomLeft()),
+        QLineF(rect.bottomLeft(), rect.topLeft())};
+
+    QVector<QPointF> intersections;
+    QPointF ip;
+
+    // Collect intersections
+    for (auto &edge : edges)
+    {
+        if (line.intersects(edge, &ip) == QLineF::BoundedIntersection)
+        {
+            // Avoid duplicates
+            if (std::none_of(intersections.begin(), intersections.end(),
+                             [&](const QPointF &p)
+                             { return QLineF(p, ip).length() < 1e-6; }))
+            {
+                intersections.append(ip);
+            }
+        }
+    }
+
+    if (intersections.size() != 2)
+    {
+        return false; // Can't bisect if not exactly 2 intersections
+    }
+
+    // Insert intersection points into rectangle polygon
+    QVector<QPointF> augmented;
+    for (int i = 0; i < rectPts.size(); ++i)
+    {
+        QPointF a = rectPts[i];
+        QPointF b = rectPts[(i + 1) % rectPts.size()];
+        augmented.append(a);
+
+        QLineF edge(a, b);
+        for (auto &ip : intersections)
+        {
+            if (QLineF(a, ip).length() + QLineF(ip, b).length() - edge.length() < 1e-6)
+            {
+                augmented.append(ip); // Insert intersection into sequence
+            }
+        }
+    }
+
+    // Now walk augmented polygon to split into two
+    int idx1 = augmented.indexOf(intersections[0]);
+    int idx2 = augmented.indexOf(intersections[1]);
+
+    if (idx1 == -1 || idx2 == -1)
+        return false;
+
+    // Polygon 1: walk from idx1 -> idx2
+    for (int i = idx1; i != idx2; i = (i + 1) % augmented.size())
+    {
+        poly1.append(augmented[i]);
+    }
+    poly1.append(augmented[idx2]);
+
+    // Polygon 2: walk from idx2 -> idx1
+    for (int i = idx2; i != idx1; i = (i + 1) % augmented.size())
+    {
+        poly2.append(augmented[i]);
+    }
+    poly2.append(augmented[idx1]);
+
+    return true;
+}
+
+void DrawUtils::drawShadedPolygon(QGraphicsScene *scene, QVector<QPointF> &poly)
+{
+    if (!scene || poly.size() < 3) // must be at least a triangle
+    {
+        return;
+    }
+
+    QPolygonF polygon(poly);
+
+    // Customize pen/brush as needed
+    QPen pen(Qt::white);
+    pen.setWidth(2);
+
+    QBrush brush(QColor(100,100,100,150), Qt::BDiagPattern); // hatch shading
+
+    scene->addPolygon(polygon, pen, brush);
+}
+
 // /**
 //  * Example usage function
 //  */

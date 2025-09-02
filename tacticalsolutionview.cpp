@@ -194,23 +194,93 @@ void TacticalSolutionView::drawVectors()
 
     DrawUtils::addTestLine(scene, lines.second);
 
-    // Apply the transform
-    DrawUtils::transformAllSceneItems(scene, zoomtransform);
+    // // Apply the transform
+    // DrawUtils::transformAllSceneItems(scene, zoomtransform);
 
-    // TODO: Transform all the positions in this pointstore
+    // // Transform stored points
+    // pointStore.ownShipPoints.first  = zoomtransform.map(pointStore.ownShipPoints.first);
+    // pointStore.ownShipPoints.second = zoomtransform.map(pointStore.ownShipPoints.second);
+    // pointStore.selectedTrackPoints.first  = zoomtransform.map(pointStore.selectedTrackPoints.first);
+    // pointStore.selectedTrackPoints.second = zoomtransform.map(pointStore.selectedTrackPoints.second);
+    // pointStore.adoptedTrackPoints.first  = zoomtransform.map(pointStore.adoptedTrackPoints.first);
+    // pointStore.adoptedTrackPoints.second = zoomtransform.map(pointStore.adoptedTrackPoints.second);
+
+    QPointF ownShipEnd = pointStore.ownShipPoints.second;
+
+    // Decide which outline line is closer to ownship end
+    qreal d1 = DrawUtils::calculatePerpendicularDistance(ownShipEnd, lines.first.p1(), lines.first.p2());
+    qreal d2 = DrawUtils::calculatePerpendicularDistance(ownShipEnd, lines.second.p1(), lines.second.p2());
+
+    QLineF chosenLine   = (d1 < d2) ? lines.first : lines.second;
+    QLineF oppositeLine = (d1 < d2) ? lines.second : lines.first;
+
+    qDebug() << "Chosen Line: " << chosenLine;
+    qDebug() << "Opposite Line: " << oppositeLine;
+
+    std::vector<QPointF> shadedPolygon;
 
     // We find the intersection between the parallel line that is the 
     // opposite of the ownShip course direction, we can calculate
     // this by seeing which of the distances is the closest the endpoint 
     // of the ownship vector to the outline lines
+
+    QVector<QPointF> halfA, halfB;
+
+    DrawUtils::splitRectWithLine(oppositeLine, scene->sceneRect(), halfA, halfB);
+
+    // check if halfA or halfB is within the polygon
+    if (QPolygonF(halfA).containsPoint(ownShipEnd, Qt::OddEvenFill))
+    {
+        // Shade Half B
+        DrawUtils::drawShadedPolygon(scene, halfB);
+    } else 
+    {
+        // Shade Half A
+        DrawUtils::drawShadedPolygon(scene, halfA);
+    }
+   
+
     
+
+    // DrawUtils::drawShadedPolygon(scene, halfB);
+
     // Once we know what is teh closest, we pick the other line and 
     // identify the intersection points with the sceneRect() add them to 
     // the shared polygon points
+    // for (auto point: intersections)
+    // {
+    //     shadedPolygon.push_back(point)
+    // }
 
+    
     // Now create two polygons with the bisecting points, see which one 
     // has the ownship point within the polygon, share the other polygon 
     // with grey hatch and a white outline
+
+        // Clip scene rect by opposite line
+    // QPolygonF scenePoly(scene->sceneRect());
+    // QPolygonF halfA, halfB;
+    // QPointF mid = oppositeLine.pointAt(0.5);
+    // QPointF dir = oppositeLine.p2() - oppositeLine.p1();
+    // QPointF normal(-dir.y(), dir.x()); // perpendicular vector
+
+    // for (const QPointF &corner : scenePoly) {
+    //     QPointF vec = corner - mid;
+    //     if (QPointF::dotProduct(vec, normal) >= 0) {
+    //         halfA << corner;
+    //     } else {
+    //         halfB << corner;
+    //     }
+    // }
+
+    // // Ensure valid polygons (close the loop)
+    // if (halfA.size() >= 3 && halfB.size() >= 3) {
+    //     if (QPolygonF(halfA).containsPoint(ownShipEnd, Qt::OddEvenFill)) {
+    //         scene->addPolygon(halfB, QPen(Qt::white), QBrush(Qt::Dense4Pattern));
+    //     } else {
+    //         scene->addPolygon(halfA, QPen(Qt::white), QBrush(Qt::Dense4Pattern));
+    //     }
+    // }
 }
 
 /**
