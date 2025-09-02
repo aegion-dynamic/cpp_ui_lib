@@ -1,6 +1,5 @@
 #include "tacticalsolutionview.h"
 #include "ui_tacticalsolutionview.h"
-#include "drawutils.h"
 
 const qreal SPEED_NORMALIZATION_FACTOR = 1;
 const qreal ZOOMBOX_EXPANSION_FACTOR = 1.2;
@@ -35,6 +34,10 @@ TacticalSolutionView::TacticalSolutionView(QWidget *parent)
     // setMouseTracking(true);
 }
 
+/**
+ * @brief Destroy the Tactical Solution View:: Tactical Solution View object
+ * 
+ */
 TacticalSolutionView::~TacticalSolutionView()
 {
     delete ui;
@@ -146,6 +149,9 @@ void TacticalSolutionView::drawVectors()
     qreal adoptedTrackRange = 100;
     qreal adoptedTrackBearing = 300;
 
+    // Create store for all the Vector Points
+    VectorPointPairs pointStore;
+
     // Draw the ownship vector
     drawOwnShipVector(ownShipSpeed, ownShipBearing);
 
@@ -165,7 +171,9 @@ void TacticalSolutionView::drawVectors()
         adoptedTrackBearing,
         selectedTrackRange,
         selectedTrackSpeed,
-        selectedTrackBearing);
+        selectedTrackBearing,
+        &pointStore
+    );
 
     QRectF zoomBox = getZoomBoxFromGuideBox(guidebox);
 
@@ -253,7 +261,9 @@ QRectF TacticalSolutionView::getGuideBox(
     qreal adoptedTrackBearing,
     qreal selectedTrackRange,
     qreal selectedTrackSpeed,
-    qreal selectedTrackBearing)
+    qreal selectedTrackBearing,
+    VectorPointPairs* pointStore
+)
 {
     std::vector<QPointF> guideBoxPoints;
 
@@ -271,6 +281,9 @@ QRectF TacticalSolutionView::getGuideBox(
     guideBoxPoints.push_back(ownShipPosition);
     guideBoxPoints.push_back(endpoint);
 
+    // Store the points
+    pointStore->ownShipPoints = qMakePair(ownShipBearingPosition, endpoint);
+
     // Selected Track Vector
     QPointF selectedTrackPosition = DrawUtils::bearingToCartesian(
         selectedTrackRange,
@@ -282,6 +295,9 @@ QRectF TacticalSolutionView::getGuideBox(
     // Add to the guidebox list
     guideBoxPoints.push_back(selectedTrackPosition);
     guideBoxPoints.push_back(endpoint);
+    
+    // Store the points
+    pointStore->ownShipPoints = qMakePair(selectedTrackPosition, endpoint);
 
     // Adopted Track Vector
     QPointF adoptedTrackPosition = DrawUtils::bearingToCartesian(
@@ -294,6 +310,9 @@ QRectF TacticalSolutionView::getGuideBox(
     // Add to the guidebox list
     guideBoxPoints.push_back(adoptedTrackPosition);
     guideBoxPoints.push_back(endpoint);
+    
+    // Store the points
+    pointStore->ownShipPoints = qMakePair(adoptedTrackPosition, endpoint);
 
     // Loop throught the guidebox points and find the min/max x,y co-ordinates amongt
     qreal xmin = 0;

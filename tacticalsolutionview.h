@@ -20,6 +20,13 @@ public:
     explicit TacticalSolutionView(QWidget *parent = nullptr);
     ~TacticalSolutionView();
 
+    struct VectorPointPairs 
+    {
+        QPair<QPointF, QPointF> ownShipPoints;
+        QPair<QPointF, QPointF> adoptedTrackPoints;
+        QPair<QPointF, QPointF> selectedTrackPoints;
+    };
+
 protected:
     void paintEvent(QPaintEvent *event) override;
     // void resizeEvent(QResizeEvent *event) override;
@@ -45,7 +52,8 @@ private:
         qreal adoptedTrackBearing,
         qreal selectedTrackRange,
         qreal selectedTrackSpeed,
-        qreal selectedTrackBearing
+        qreal selectedTrackBearing,
+        VectorPointPairs* pointStore
     );
 
     QRectF getZoomBoxFromGuideBox(const QRectF guidebox);
