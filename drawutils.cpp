@@ -125,6 +125,22 @@ void DrawUtils::addTestPattern(QGraphicsScene* scene, QRectF rectToDraw)
 
 }
 
+void DrawUtils::addTestLine(QGraphicsScene* scene, QLineF lineToDraw)
+{
+    if (!scene)
+    {
+        qDebug() << "No scene found, existing DrawUtils::addTestPattern";
+        return;
+    }
+
+    QPen testPen(Qt::white, 1);
+    testPen.setStyle(Qt::DashLine);
+
+    // Draw test rectangle showing full bounds
+    scene->addLine(lineToDraw, testPen);
+
+}
+
 
 /**
  * @brief Draw a test pattern for debugging purposes.
@@ -144,6 +160,7 @@ void DrawUtils::drawDefaultTestPattern(QGraphicsScene* scene)
     // Draw diagonal line to show extent
     scene->addLine(0, 0, scene->sceneRect().width(), scene->sceneRect().height(), testPen);
 }
+
 
 
 
@@ -241,6 +258,36 @@ void DrawUtils::transformAllSceneItems(QGraphicsScene* scene, const QTransform& 
         }
     }
 }
+
+
+QGraphicsLineItem* DrawUtils::createLineFromPointAndAngle(const QPointF& startPoint, 
+                                                 qreal angleInDegrees, 
+                                                 qreal length)
+{
+    // Create line using QLineF's fromPolar method
+    QLineF line = QLineF::fromPolar(length, angleInDegrees);
+    
+    // Translate to start point
+    line.translate(startPoint);
+    
+    return new QGraphicsLineItem(line);
+}
+
+qreal DrawUtils::computeCartesianDistance(QPointF source, QPointF target)
+{
+    return sqrt(pow(target.x() - source.x(),2) + pow(target.y() - source.y(),2));
+}
+
+qreal DrawUtils::flipBearing(qreal bearing)
+{
+    if (bearing < 180) 
+    {
+        return bearing + 180;
+    } else {
+        return bearing - 180;
+    }
+}
+
 
 // /**
 //  * Example usage function

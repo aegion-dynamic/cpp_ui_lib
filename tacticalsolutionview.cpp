@@ -117,7 +117,7 @@ void TacticalSolutionView::drawVectors()
 
     // Our ship
     qreal ownShipSpeed = 30;
-    qreal ownShipBearing = 45; //  Nautical degrees
+    qreal ownShipBearing = 90; //  Nautical degrees
 
     qreal sensorBearing = 250;
 
@@ -157,6 +157,8 @@ void TacticalSolutionView::drawVectors()
         &pointStore
     );
 
+
+
     QRectF zoomBox = getZoomBoxFromGuideBox(guidebox);
 
     qDebug() << "Guide Box: width: " << guidebox.width() << ", height: " << guidebox.height();
@@ -169,9 +171,24 @@ void TacticalSolutionView::drawVectors()
     QTransform zoomtransform = DrawUtils::computeTransformationMatrix(zoomBox, scene->sceneRect());
     qDebug() << "Scene Box: width:" << scene->sceneRect().width() << ", height: " << scene->sceneRect().height();
 
-    // Apply the transform
-    DrawUtils::transformAllSceneItems(scene, zoomtransform);
+    // Draw test line that goes through a point for a given angle
+    // Get the largest distance
+    auto largestRange = std::max(adoptedTrackRange, selectedTrackRange);
+    QPointF ownShipPosition = DrawUtils::bearingToCartesian(0,0, zoomBox);
 
+    // Use this to draw the bearings line and the bisection ref line
+    auto p1 = DrawUtils::calculateEndpoint(ownShipPosition, largestRange*5, sensorBearing);
+    auto p2 = DrawUtils::calculateEndpoint(ownShipPosition, largestRange*5, DrawUtils::flipBearing(sensorBearing));
+
+
+    // Draw a refernce Line
+    DrawUtils::addTestLine(scene, QLineF(p1, p2));
+    // Draw the Bearing Line
+
+    // Apply the transform
+    // DrawUtils::transformAllSceneItems(scene, zoomtransform);
+
+    
 }
 
 /**
