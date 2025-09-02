@@ -201,11 +201,13 @@ QTransform DrawUtils::computeTransformationMatrix(const QRectF &sourceRect, cons
     // Step 1: Translate source rectangle so its center is at origin
     transform.translate(-sourceCenter.x(), -sourceCenter.y());
 
-    // Step 2: Translate to target center
+
+    // // Step 2: Apply uniform scaling
+    // transform.scale(scaleFactor, scaleFactor);
+
+    // Step 3: Translate to target center
     transform.translate(targetCenter.x(), targetCenter.y());
 
-    // // Step 3: Apply uniform scaling
-    // transform.scale(scaleFactor, scaleFactor);
 
     return transform;
 }
@@ -453,7 +455,7 @@ void DrawUtils::drawShadedPolygon(QGraphicsScene *scene, QVector<QPointF> &poly)
     QPen pen(Qt::white);
     pen.setWidth(2);
 
-    QBrush brush(QColor(100,100,100,150), Qt::BDiagPattern); // hatch shading
+    QBrush brush(Qt::red, Qt::BDiagPattern); // hatch shading
 
     scene->addPolygon(polygon, pen, brush);
 }
