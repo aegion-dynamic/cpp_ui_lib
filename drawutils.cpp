@@ -48,9 +48,8 @@ void DrawUtils::drawCourseVector(QGraphicsScene *scene, QPointF startPoint, doub
     QPen pen(color);
     QBrush brush(color);
     int radius = 5;
-    scene->addEllipse(startPoint.x() - radius, startPoint.y() - radius, radius * 2, radius * 2, pen, brush);
 
-    // Calulate endpoint
+    scene->addEllipse(startPoint.x() - radius, startPoint.y() - radius, radius * 2, radius * 2, pen, brush);    // Calulate endpoint
 
     auto endpoint = DrawUtils::calculateEndpoint(startPoint, magnitude, bearing);
 
