@@ -10,7 +10,7 @@ const qreal ZOOMBOX_EXPANSION_FACTOR = 1.2;
  * @param parent
  */
 TacticalSolutionView::TacticalSolutionView(QWidget *parent)
-    : QWidget(parent), ui(new Ui::TacticalSolutionView)
+    : QGraphicsView(parent), ui(new Ui::TacticalSolutionView)
 {
     ui->setupUi(this);
 
@@ -26,12 +26,22 @@ TacticalSolutionView::TacticalSolutionView(QWidget *parent)
     // Initialize scene
     scene = new QGraphicsScene(this);
     scene->setSceneRect(0, 0, width(), height());
+    setScene(scene);
+    
+    // Optimize QGraphicsView performance
+    setViewportUpdateMode(QGraphicsView::FullViewportUpdate);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setRenderHint(QPainter::Antialiasing);
 
     // Make sure widget expands
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     // Enable mouse tracking
     // setMouseTracking(true);
+    
+    // Initial draw
+    draw();
 }
 
 /**
@@ -59,7 +69,7 @@ void TacticalSolutionView::draw()
     scene->setSceneRect(0, 0, width(), height());
 
     // Draw in layers from back to front
-    drawBackground();
+    drawCustomBackground();
     // DrawUtils::drawDefaultTestPattern(scene);
 
     drawVectors();
@@ -71,7 +81,7 @@ void TacticalSolutionView::draw()
  * @brief Draw the background for the graph.
  *
  */
-void TacticalSolutionView::drawBackground()
+void TacticalSolutionView::drawCustomBackground()
 {
     if (!scene)
         return;
@@ -79,28 +89,7 @@ void TacticalSolutionView::drawBackground()
     // Draw the background - currently empty as we use widget background
 }
 
-/**
- * @brief Handle paint events for the graph.
- *
- * @param event
- */
-void TacticalSolutionView::paintEvent(QPaintEvent *event)
-{
-    Q_UNUSED(event);
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing);
 
-    if (scene)
-    {
-        // Draw all elements
-        draw();
-
-        // Render the scene to the widget
-        scene->render(&painter, rect(), scene->sceneRect());
-    }
-
-    qDebug() << "Paint event - Widget size:" << width() << "x" << height();
-}
 
 /// @brief Draws the various vectors
 /// @param ownShipPosition
@@ -559,7 +548,7 @@ void TacticalSolutionView::setData(
         this->selectedTrackSpeed = selectedTrackSpeed;
         this->adoptedTrackRange = adoptedTrackRange;
         this->selectedTrackRange = selectedTrackRange;
-        this->update();
+        this->draw();
         return;
     }
 
@@ -600,7 +589,7 @@ void TacticalSolutionView::setData(
     // ------------------------------
     // Step 5: Trigger redraw
     // ------------------------------
-    this->update();
+    this->draw();
 }
 
 qreal TacticalSolutionView::normalizeAngle(qreal angle)
@@ -613,4 +602,5 @@ qreal TacticalSolutionView::normalizeAngle(qreal angle)
         angle -= 360.0;
     }
     return angle;
+
 }

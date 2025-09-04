@@ -1,7 +1,7 @@
 #ifndef TACTICALSOLUTIONVIEW_H
 #define TACTICALSOLUTIONVIEW_H
 
-#include <QWidget>
+#include <QGraphicsView>
 #include <QPainter>
 #include <QDebug>
 #include <QGraphicsScene>
@@ -12,7 +12,7 @@ namespace Ui
     class TacticalSolutionView;
 }
 
-class TacticalSolutionView : public QWidget
+class TacticalSolutionView : public QGraphicsView
 {
     Q_OBJECT
 
@@ -42,14 +42,13 @@ public:
     );
 
 protected:
-    void paintEvent(QPaintEvent *event) override;
     // void resizeEvent(QResizeEvent *event) override;
     // void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
     // Drawing functions
     void draw();
-    void drawBackground();
+    void drawCustomBackground();
     void drawTestPattern();
 
     void drawVectors();
