@@ -36,7 +36,10 @@ public:
         const qreal &adoptedTrackBearing,
         const qreal &selectedTrackRange,
         const qreal &selectedTrackSpeed,
-        const qreal &selectedTrackBearing);
+        const qreal &selectedTrackBearing,
+        const qreal &adoptedTrackCourse,
+        const qreal &selectedTrackCourse
+    );
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -69,6 +72,9 @@ private:
         VectorPointPairs *pointStore);
 
     QRectF getZoomBoxFromGuideBox(const QRectF guidebox);
+    
+    // Utility function to normalize angles to 0-360 degree range
+    qreal normalizeAngle(qreal angle);
 
 private:
     Ui::TacticalSolutionView *ui;
@@ -81,9 +87,11 @@ private:
     qreal adoptedTrackRange;
     qreal adoptedTrackSpeed;
     qreal adoptedTrackBearing;
+    qreal adoptedTrackCourse;
     qreal selectedTrackRange;
     qreal selectedTrackSpeed;
     qreal selectedTrackBearing;
+    qreal selectedTrackCourse;
 };
 
 #endif // TACTICALSOLUTIONVIEW_H

@@ -534,13 +534,18 @@ void TacticalSolutionView::setData(
     const qreal &adoptedTrackBearing,
     const qreal &selectedTrackRange,
     const qreal &selectedTrackSpeed,
-    const qreal &selectedTrackBearing)
+    const qreal &selectedTrackBearing,
+    const qreal &adoptedTrackCourse,
+    const qreal &selectedTrackCourse
+)
 {
     // Store bearings as-is (angles don’t scale)
-    this->ownShipBearing = ownShipBearing;
-    this->sensorBearing = sensorBearing;
-    this->adoptedTrackBearing = adoptedTrackBearing;
-    this->selectedTrackBearing = selectedTrackBearing;
+    this->ownShipBearing = normalizeAngle(ownShipBearing);
+    this->sensorBearing = normalizeAngle(sensorBearing);
+    this->adoptedTrackBearing = normalizeAngle(adoptedTrackBearing);
+    this->selectedTrackBearing = normalizeAngle(selectedTrackBearing);
+    this->adoptedTrackCourse = normalizeAngle(adoptedTrackCourse);
+    this->selectedTrackCourse = normalizeAngle(selectedTrackCourse);
 
     if (!scene || scene->sceneRect().isEmpty())
     {
@@ -592,4 +597,16 @@ void TacticalSolutionView::setData(
     // Step 5: Trigger redraw
     // ------------------------------
     this->update();
+}
+
+qreal TacticalSolutionView::normalizeAngle(qreal angle)
+{
+    // Normalize angle to 0-360 degree range
+    while (angle < 0) {
+        angle += 360.0;
+    }
+    while (angle >= 360.0) {
+        angle -= 360.0;
+    }
+    return angle;
 }
