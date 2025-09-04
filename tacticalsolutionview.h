@@ -54,8 +54,8 @@ private:
 
     void drawVectors();
     void drawOwnShipVector(qreal ownShipSpeed, qreal ownShipBearing);
-    void drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackRange, qreal selectedTrackBearing, qreal selectedTrackSpeed);
-    void drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackRange, qreal adoptedTrackBearing, qreal adoptedTrackSpeed);
+    void drawSelectedTrackVector(qreal sensorBearing, qreal selectedTrackRange, qreal selectedTrackBearing, qreal selectedTrackSpeed, qreal selectedTrackCourse);
+    void drawAdoptedTrackVector(qreal sensorBearing, qreal adoptedTrackRange, qreal adoptedTrackBearing, qreal adoptedTrackSpeed, qreal adoptedTrackCourse);
     double getFarthestDistance(VectorPointPairs *pointStore, const QPointF &linePoint1, const QPointF &linePoint2);
     QPair<QLineF, QLineF> getOutlineLines(const QLineF &line, const qreal distance);
 
@@ -69,6 +69,8 @@ private:
         qreal selectedTrackRange,
         qreal selectedTrackSpeed,
         qreal selectedTrackBearing,
+        qreal adoptedTrackCourse,
+        qreal selectedTrackCourse,
         VectorPointPairs *pointStore);
 
     QRectF getZoomBoxFromGuideBox(const QRectF guidebox);
