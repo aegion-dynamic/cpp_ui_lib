@@ -40,6 +40,11 @@ private:
     QGraphicsTextItem *m_centerText;
     QGraphicsTextItem *m_rightText;
     
+    // Label values
+    qreal leftLabelValue = 0.0;
+    qreal centerLabelValue = 0.5;
+    qreal rightLabelValue = 1.0;
+
     void setupGraphicsView();
     void createBackFrame();
     void createIndicator();
