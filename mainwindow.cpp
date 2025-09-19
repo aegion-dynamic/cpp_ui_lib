@@ -212,5 +212,10 @@ void MainWindow::configureZoomPanel()
         
     // Initialize zoom panel with a default value
     ui->zoomPanel->setIndicatorValue(0.3);
+    
+    // Initialize label values
+    ui->zoomPanel->setLeftLabelValue(0.0);
+    ui->zoomPanel->setCenterLabelValue(0.5);
+    ui->zoomPanel->setRightLabelValue(1.0);
 }
 

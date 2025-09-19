@@ -7,8 +7,15 @@ ZoomPanel::ZoomPanel(QWidget *parent)
     , m_scene(nullptr)
     , m_backFrame(nullptr)
     , m_indicator(nullptr)
+    , m_leftText(nullptr)
+    , m_centerText(nullptr)
+    , m_rightText(nullptr)
 {
     ui->setupUi(this);
+    
+    // Set black background
+    this->setStyleSheet("background-color: black;");
+    
     setupGraphicsView();
 }
 
@@ -34,6 +41,7 @@ void ZoomPanel::setupGraphicsView()
     // Create the visual elements
     createBackFrame();
     createIndicator();
+    createTextItems();
 }
 
 void ZoomPanel::createBackFrame()
@@ -75,6 +83,35 @@ void ZoomPanel::createIndicator()
     m_scene->addItem(m_indicator);
 }
 
+void ZoomPanel::createTextItems()
+{
+    QRect drawArea = this->rect();
+    
+    // Create font for text
+    QFont textFont("Arial", 8);
+    
+    // Create left text item
+    m_leftText = new QGraphicsTextItem("0.00");
+    m_leftText->setFont(textFont);
+    m_leftText->setDefaultTextColor(Qt::white);
+    m_leftText->setPos(5, 5);
+    m_scene->addItem(m_leftText);
+    
+    // Create center text item
+    m_centerText = new QGraphicsTextItem("0.50");
+    m_centerText->setFont(textFont);
+    m_centerText->setDefaultTextColor(Qt::white);
+    m_centerText->setPos(drawArea.width()/2 - 15, 5); // Center horizontally
+    m_scene->addItem(m_centerText);
+    
+    // Create right text item
+    m_rightText = new QGraphicsTextItem("1.00");
+    m_rightText->setFont(textFont);
+    m_rightText->setDefaultTextColor(Qt::white);
+    m_rightText->setPos(drawArea.width() - 35, 5); // Right aligned
+    m_scene->addItem(m_rightText);
+}
+
 void ZoomPanel::setIndicatorValue(double value)
 {
     updateIndicator(value);
@@ -104,4 +141,25 @@ void ZoomPanel::updateIndicator(double value)
     // Update indicator rectangle with centered position
     QRectF rect(indicatorX, indicatorY, width, indicatorHeight);
     m_indicator->setRect(rect);
+}
+
+void ZoomPanel::setLeftLabelValue(qreal value)
+{
+    if (m_leftText) {
+        m_leftText->setPlainText(QString::number(value, 'f', 2));
+    }
+}
+
+void ZoomPanel::setCenterLabelValue(qreal value)
+{
+    if (m_centerText) {
+        m_centerText->setPlainText(QString::number(value, 'f', 2));
+    }
+}
+
+void ZoomPanel::setRightLabelValue(qreal value)
+{
+    if (m_rightText) {
+        m_rightText->setPlainText(QString::number(value, 'f', 2));
+    }
 }
