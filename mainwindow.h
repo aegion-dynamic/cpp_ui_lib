@@ -30,6 +30,8 @@ private:
     QTimer *timeUpdateTimer; ///< Timer for updating current time
     
     void configureTimeVisualizer();
+    void configureTimelineView();
+    void updateTimeline();
 
     long simTick;
 
