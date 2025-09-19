@@ -11,7 +11,7 @@
 #include "timelineutils.h"
 
 // Compile-time parameters
-#define TIMELINE_VIEW_BUTTON_SIZE 32
+#define TIMELINE_VIEW_BUTTON_SIZE 64
 #define TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH 128
 
 
@@ -63,7 +63,10 @@ public:
     ~TimelineView();
     
            // No time selection methods needed for TimelineView
-    void setTimeLineLength(TimeInterval interval) { m_visualizerWidget->setTimeLineLength(timeIntervalToQTime(interval)); }
+    void setTimeLineLength(TimeInterval interval) { 
+        m_visualizerWidget->setTimeLineLength(timeIntervalToQTime(interval)); 
+        updateButtonText(interval);
+    }
     void setCurrentTime(const QTime& currentTime) { m_visualizerWidget->setCurrentTime(currentTime); }
     void setNumberOfDivisions(int divisions) { m_visualizerWidget->setNumberOfDivisions(divisions); }
 
@@ -73,8 +76,11 @@ private:
     QPushButton *m_button;
     TimelineVisualizerWidget *m_visualizerWidget;
     QVBoxLayout *m_layout;
+    
+    void updateButtonText(TimeInterval interval);
 
-// No button click handler needed for TimelineView
+private slots:
+    void onButtonClicked();
 
 };
 

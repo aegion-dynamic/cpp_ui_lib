@@ -156,7 +156,7 @@ TimelineView::TimelineView(QWidget *parent)
     m_layout->setSpacing(0);
     
     // Create button with grey background and white border
-    m_button = new QPushButton("H", this);
+    m_button = new QPushButton("Abs:\ndt: 00:15", this);
     m_button->setFixedSize(TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH, TIMELINE_VIEW_BUTTON_SIZE);
     m_button->setStyleSheet(
         "QPushButton {"
@@ -180,16 +180,41 @@ TimelineView::TimelineView(QWidget *parent)
     m_layout->addWidget(m_button);
     m_layout->addWidget(m_visualizerWidget, 1); // Stretch factor of 1 to fill remaining space
     
-    // No button click handler needed for TimelineView
+    // Connect button click to internal handler
+    connect(m_button, &QPushButton::clicked, this, &TimelineView::onButtonClicked);
     
     // Set the layout
     setLayout(m_layout);
     
     // Set the TimelineView widget width to match button and graphics view width
     setFixedWidth(TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH);
+
+    // Set the default time interval to be 15 minutes
+    this->setTimeLineLength(TimeInterval::FifteenMinutes);
+    
+    // Initialize button text with default interval
+    updateButtonText(TimeInterval::FifteenMinutes);
+
+    
 }
 
 TimelineView::~TimelineView()
 {
     delete ui;
 }
+
+void TimelineView::updateButtonText(TimeInterval interval)
+{
+    QTime timeInterval = timeIntervalToQTime(interval);
+    QString timeString = timeInterval.toString("HH:mm");
+    QString buttonText = QString("Abs:\ndt: %1").arg(timeString);
+    m_button->setText(buttonText);
+}
+
+void TimelineView::onButtonClicked()
+{
+    qDebug() << "TimelineView button clicked!";
+    // Set the default time interval to be 15 minutes
+    this->setTimeLineLength(TimeInterval::FifteenMinutes);
+}
+
