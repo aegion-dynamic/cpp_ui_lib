@@ -3,6 +3,9 @@
 
 #include <QTime>
 #include <QString>
+#include <vector>
+
+
 
 enum class TimeInterval {
     OneMinute = 1,      // 1 minute
@@ -11,11 +14,23 @@ enum class TimeInterval {
     ThirtyMinutes = 30,  // 30 minutes
     OneHour = 60,        // 1 hour
     TwoHours = 120,      // 2 hours
+    ThreeHours = 180,    // 3 hours
     FourHours = 240,     // 4 hours
-    EightHours = 480,    // 8 hours
+    SixHours = 360,     // 6 hours
     TwelveHours = 720,   // 12 hours
-    TwentyFourHours = 1440 // 24 hours
 };
+
+inline std::vector<TimeInterval> getValidTimeIntervals() {
+    return std::vector<TimeInterval>{
+        TimeInterval::FifteenMinutes,
+        TimeInterval::ThirtyMinutes,
+        TimeInterval::OneHour,
+        TimeInterval::TwoHours,
+        TimeInterval::ThreeHours,
+        TimeInterval::SixHours,
+        TimeInterval::TwelveHours,
+    };
+}
 
 struct TimeSelectionSpan {
     QTime startTime;
@@ -40,10 +55,10 @@ inline QString timeIntervalToString(TimeInterval interval) {
         case TimeInterval::ThirtyMinutes: return "30 minutes";
         case TimeInterval::OneHour: return "1 hour";
         case TimeInterval::TwoHours: return "2 hours";
+        case TimeInterval::ThreeHours: return "3 hours";
         case TimeInterval::FourHours: return "4 hours";
-        case TimeInterval::EightHours: return "8 hours";
+        case TimeInterval::SixHours: return "6 hours";
         case TimeInterval::TwelveHours: return "12 hours";
-        case TimeInterval::TwentyFourHours: return "24 hours";
         default: return "Unknown";
     }
 }

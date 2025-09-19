@@ -76,6 +76,7 @@ private:
     QPushButton *m_button;
     TimelineVisualizerWidget *m_visualizerWidget;
     QVBoxLayout *m_layout;
+    int intervalIndex = 0;
     
     void updateButtonText(TimeInterval interval);
 

@@ -70,10 +70,8 @@ void TimelineVisualizerWidget::drawSegment(QPainter &painter, int segmentNumber)
     // Calculate segment height
     double segmentHeight = static_cast<double>(widgetHeight) / m_numberOfDivisions;
     
-    // Calculate Y position for this segment
-    double y = segmentNumber * segmentHeight;
-    int segmentY = static_cast<int>(y);
-    int segmentH = static_cast<int>(segmentHeight);
+           // Calculate Y position for this segment
+           double y = segmentNumber * segmentHeight;
     
     
     // Calculate timestamp for this segment
@@ -119,7 +117,7 @@ void TimelineVisualizerWidget::drawSegment(QPainter &painter, int segmentNumber)
 
 }
 
-void TimelineVisualizerWidget::paintEvent(QPaintEvent *event)
+void TimelineVisualizerWidget::paintEvent(QPaintEvent * /* event */)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
@@ -214,7 +212,18 @@ void TimelineView::updateButtonText(TimeInterval interval)
 void TimelineView::onButtonClicked()
 {
     qDebug() << "TimelineView button clicked!";
-    // Set the default time interval to be 15 minutes
-    this->setTimeLineLength(TimeInterval::FifteenMinutes);
+    // Cycle through valid time intervals on each button click
+    static const std::vector<TimeInterval> intervals = getValidTimeIntervals();
+    static int intervalIndex = 0;
+    
+    // Advance to next interval
+    intervalIndex = (intervalIndex + 1) % intervals.size();
+    qDebug() << "Interval index:" << intervalIndex;
+    qDebug() << "Intervals size:" << intervals.size();
+    qDebug() << "Interval:" << static_cast<int>(intervals[intervalIndex]) << "minutes";
+    TimeInterval nextInterval = intervals[intervalIndex];
+    this->setTimeLineLength(nextInterval);
+    // m_visualizerWidget->update(); // Force redraw/repaint
+    updateButtonText(nextInterval);
 }
 
