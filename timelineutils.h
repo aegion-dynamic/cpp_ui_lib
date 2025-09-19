@@ -42,8 +42,10 @@ struct TimeSelectionSpan {
 
 // Utility function to convert TimeInterval enum to QTime
 inline QTime timeIntervalToQTime(TimeInterval interval) {
-    int minutes = static_cast<int>(interval);
-    return QTime(0, minutes, 0);
+    int totalMinutes = static_cast<int>(interval);
+    int hours = totalMinutes / 60;
+    int minutes = totalMinutes % 60;
+    return QTime(hours, minutes, 0);
 }
 
 // Utility function to get display name for TimeInterval

@@ -52,6 +52,23 @@ QString TimelineVisualizerWidget::getTimeLabel(int segmentNumber)
         
         // Subtract segmentNumber * segmentInterval from currentTime and set label in HH:MM format
         QTime segmentTime = m_currentTime.addSecs(-segmentNumber * segmentIntervalSeconds);
+        
+        // Handle case where time goes into previous day - wrap around
+        if (segmentTime.isNull()) {
+            // If addSecs resulted in invalid time, try adding to start of day
+            int currentSeconds = m_currentTime.hour() * 3600 + m_currentTime.minute() * 60 + m_currentTime.second();
+            int targetSeconds = currentSeconds - (segmentNumber * segmentIntervalSeconds);
+            
+            // Wrap around if negative
+            if (targetSeconds < 0) {
+                targetSeconds += 24 * 3600; // Add 24 hours
+            }
+            
+            int hours = targetSeconds / 3600;
+            int minutes = (targetSeconds % 3600) / 60;
+            segmentTime = QTime(hours, minutes, 0);
+        }
+        
         timestamp = segmentTime.toString("HH:mm");
     }
     return timestamp;
@@ -70,16 +87,19 @@ void TimelineVisualizerWidget::drawSegment(QPainter &painter, int segmentNumber)
     // Calculate segment height
     double segmentHeight = static_cast<double>(widgetHeight) / m_numberOfDivisions;
     
-           // Calculate Y position for this segment
-           double y = segmentNumber * segmentHeight;
+    // Calculate Y position for this segment
+    double y = segmentNumber * segmentHeight;
+    int segmentY = static_cast<int>(y);
+    int segmentH = static_cast<int>(segmentHeight);    
     
+    // Draw segment border
+    painter.setPen(QPen(QColor(100, 100, 100), 1));
+    painter.drawLine(0, segmentY, widgetWidth, segmentY);
     
     // Calculate timestamp for this segment
     QString timestamp = getTimeLabel(segmentNumber);
-    if (timestamp.isNull()) 
-    {
-
-        return;
+    if (timestamp.isNull()) {
+        return; // No timestamp to draw, but segment background is already drawn
     }
     
     // Set text color to white for visibility on dark background
