@@ -73,6 +73,10 @@ public:
     void setCurrentTime(const QTime& currentTime) { m_visualizerWidget->setCurrentTime(currentTime); }
     void setNumberOfDivisions(int divisions) { m_visualizerWidget->setNumberOfDivisions(divisions); }
 
+
+    signals:
+        void intervalChanged(TimeInterval currentInterval);
+
 private:
         Ui::TimelineView *ui;
 

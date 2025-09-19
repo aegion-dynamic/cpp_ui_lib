@@ -286,19 +286,18 @@ void TimelineView::updateButtonText(TimeInterval interval)
 
 void TimelineView::onButtonClicked()
 {
-    qDebug() << "TimelineView button clicked!";
     // Cycle through valid time intervals on each button click
     static const std::vector<TimeInterval> intervals = getValidTimeIntervals();
     static int intervalIndex = 0;
     
     // Advance to next interval
     intervalIndex = (intervalIndex + 1) % intervals.size();
-    qDebug() << "Interval index:" << intervalIndex;
-    qDebug() << "Intervals size:" << intervals.size();
-    qDebug() << "Interval:" << static_cast<int>(intervals[intervalIndex]) << "minutes";
     TimeInterval nextInterval = intervals[intervalIndex];
     this->setTimeLineLength(nextInterval);
-    // m_visualizerWidget->update(); // Force redraw/repaint
     updateButtonText(nextInterval);
+
+    // Trigger the intervalChanged signal
+    emit intervalChanged(nextInterval);
 }
+
 
