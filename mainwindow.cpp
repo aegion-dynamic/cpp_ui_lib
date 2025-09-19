@@ -168,7 +168,7 @@ void MainWindow::configureTimeVisualizer()
 
 void MainWindow::configureTimelineView()
 {
-    ui->timelineView->setTimeLineLength(QTime(0, 15, 0)); // 15 minutes
+    ui->timelineView->setTimeLineLength(TimeInterval::FifteenMinutes); // 15 minutes
     ui->timelineView->setCurrentTime(QTime::currentTime());
     ui->timelineView->setNumberOfDivisions(15); // 15 segments
 

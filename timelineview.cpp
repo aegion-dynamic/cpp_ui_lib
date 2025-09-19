@@ -160,7 +160,7 @@ TimelineView::TimelineView(QWidget *parent)
     m_button->setFixedSize(TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH, TIMELINE_VIEW_BUTTON_SIZE);
     m_button->setStyleSheet(
         "QPushButton {"
-        "    background-color: grey;"
+        "    background-color: black;"
         "    border: 2px solid white;"
         "    color: white;"
         "    font-weight: bold;"

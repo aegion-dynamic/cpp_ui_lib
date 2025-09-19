@@ -52,7 +52,7 @@ private:
     QString getTimeLabel(int segmentNumber);
 
 };
-
+    
 
 class TimelineView : public QWidget
 {
@@ -63,7 +63,7 @@ public:
     ~TimelineView();
     
            // No time selection methods needed for TimelineView
-    void setTimeLineLength(const QTime& length) { m_visualizerWidget->setTimeLineLength(length); }
+    void setTimeLineLength(TimeInterval interval) { m_visualizerWidget->setTimeLineLength(timeIntervalToQTime(interval)); }
     void setCurrentTime(const QTime& currentTime) { m_visualizerWidget->setCurrentTime(currentTime); }
     void setNumberOfDivisions(int divisions) { m_visualizerWidget->setNumberOfDivisions(divisions); }
 
