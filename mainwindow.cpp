@@ -160,11 +160,17 @@ void MainWindow::configureTimeVisualizer()
     ui->timeVisualizer->addTimeSelection(span2);
     ui->timeVisualizer->addTimeSelection(span3);
     ui->timeVisualizer->addTimeSelection(span4);
+    
+    // Configure TimelineView
+    ui->timelineView->setTimeLineLength(QTime(1, 0, 0)); // 1 hour
+    ui->timelineView->setCurrentTime(QTime::currentTime());
+    ui->timelineView->setNumberOfDivisions(15); // 8 segments
 }
 
 void MainWindow::updateCurrentTime()
 {
     // Update the current time to the system time
     ui->timeVisualizer->setCurrentTime(QTime::currentTime());
+    ui->timelineView->setCurrentTime(QTime::currentTime());
 }
 

@@ -12,8 +12,8 @@
 
 // Compile-time parameters
 #define TIMELINE_VIEW_BUTTON_SIZE 32
-#define TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH 32
-#define MAX_TIME_SELECTIONS 5
+#define TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH 128
+
 
 
 namespace Ui {
@@ -28,27 +28,29 @@ public:
     explicit TimelineVisualizerWidget(QWidget *parent = nullptr);
     ~TimelineVisualizerWidget();
     
-    // Time selection management
-    void addTimeSelection(TimeSelectionSpan span);
-    void clearTimeSelections();
+           // No time selection management needed for TimelineView
         
     // Properties
     void setTimeLineLength(const QTime& length);
     void setCurrentTime(const QTime& currentTime);
+    void setNumberOfDivisions(int divisions);
     
     QTime getTimeLineLength() const { return m_timeLineLength; }
     QTime getCurrentTime() const { return m_currentTime; }
+    int getNumberOfDivisions() const { return m_numberOfDivisions; }
 
 protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
-    QList<TimeSelectionSpan> m_timeSelections;
-    QTime m_timeLineLength;
+    QTime m_timeLineLength = QTime(0, 15, 0); // Default to 15 minutes
     QTime m_currentTime;
+    int m_numberOfDivisions = 15; // Default to 15 segments
     
     void updateVisualization();
-    void drawSelection(QPainter &painter, const TimeSelectionSpan &span);
+    void drawSegment(QPainter &painter, int segmentNumber);
+    QString getTimeLabel(int segmentNumber);
+
 };
 
 
@@ -60,11 +62,10 @@ public:
     explicit TimelineView(QWidget *parent = nullptr);
     ~TimelineView();
     
-    // Delegate methods to the visualizer widget
-    void addTimeSelection(TimeSelectionSpan span) { m_visualizerWidget->addTimeSelection(span); }
-    void clearTimeSelections() { m_visualizerWidget->clearTimeSelections(); }
+           // No time selection methods needed for TimelineView
     void setTimeLineLength(const QTime& length) { m_visualizerWidget->setTimeLineLength(length); }
     void setCurrentTime(const QTime& currentTime) { m_visualizerWidget->setCurrentTime(currentTime); }
+    void setNumberOfDivisions(int divisions) { m_visualizerWidget->setNumberOfDivisions(divisions); }
 
 private:
     Ui::TimelineView *ui;
@@ -73,8 +74,7 @@ private:
     TimelineVisualizerWidget *m_visualizerWidget;
     QVBoxLayout *m_layout;
 
-private slots:
-    void onButtonClicked();
+// No button click handler needed for TimelineView
 
 };
 

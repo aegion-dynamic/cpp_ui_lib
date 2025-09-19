@@ -4,8 +4,8 @@
 
 TimelineVisualizerWidget::TimelineVisualizerWidget(QWidget *parent)
     : QWidget(parent)
-    , m_timeLineLength(QTime(0, 0, 0))
-    , m_currentTime(QTime(0, 0, 0))
+    , m_currentTime(QTime::currentTime())
+    , m_numberOfDivisions(15)
 {
     setFixedWidth(TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH);
     setMinimumHeight(50); // Set a minimum height
@@ -23,6 +23,12 @@ void TimelineVisualizerWidget::setCurrentTime(const QTime& currentTime)
     updateVisualization();
 }
 
+void TimelineVisualizerWidget::setNumberOfDivisions(int divisions)
+{
+    m_numberOfDivisions = divisions;
+    updateVisualization();
+}
+
 void TimelineVisualizerWidget::updateVisualization()
 {
     update(); // Trigger a repaint
@@ -32,64 +38,71 @@ TimelineVisualizerWidget::~TimelineVisualizerWidget()
 {
 }
 
-void TimelineVisualizerWidget::addTimeSelection(TimeSelectionSpan span)
+// No time selection methods needed for TimelineView
+
+// No drawSelection method needed for TimelineView
+
+QString TimelineVisualizerWidget::getTimeLabel(int segmentNumber)
 {
-    if (m_timeSelections.size() < MAX_TIME_SELECTIONS) {
-        m_timeSelections.append(span);
-        updateVisualization();
+    QString timestamp;
+    if (!m_timeLineLength.isNull() && !m_currentTime.isNull()) {
+        // Calculate the time interval per segment
+        int totalSeconds = m_timeLineLength.hour() * 3600 + m_timeLineLength.minute() * 60 + m_timeLineLength.second();
+        int segmentIntervalSeconds = totalSeconds / m_numberOfDivisions;
+        
+        // Subtract segmentNumber * segmentInterval from currentTime and set label in HH:MM format
+        QTime segmentTime = m_currentTime.addSecs(-segmentNumber * segmentIntervalSeconds);
+        timestamp = segmentTime.toString("HH:mm");
     }
+    return timestamp;
 }
 
-void TimelineVisualizerWidget::clearTimeSelections()
+void TimelineVisualizerWidget::drawSegment(QPainter &painter, int segmentNumber)
 {
-    m_timeSelections.clear();
-    updateVisualization();
-}
-
-void TimelineVisualizerWidget::drawSelection(QPainter &painter, const TimeSelectionSpan &span)
-{
-    // First get the draw area
     QRect drawArea = rect();
     int widgetHeight = drawArea.height();
     int widgetWidth = drawArea.width();
-
-    // Calculate the total timeline duration in seconds
-    int totalSeconds = m_timeLineLength.hour() * 3600 + m_timeLineLength.minute() * 60 + m_timeLineLength.second();
     
-    if (totalSeconds <= 0 || widgetHeight <= 0) {
+    if (m_numberOfDivisions <= 0 || widgetHeight <= 0) {
         return; // Invalid parameters
     }
-
-    // Calculate pixels per second
-    double pixelsPerSecond = static_cast<double>(widgetHeight) / totalSeconds;
-
-    // Get current time and selection times in seconds
-    int currentTimeSeconds = m_currentTime.hour() * 3600 + m_currentTime.minute() * 60 + m_currentTime.second();
-    int selectionStartSeconds = span.startTime.hour() * 3600 + span.startTime.minute() * 60 + span.startTime.second();
-    int selectionEndSeconds = span.endTime.hour() * 3600 + span.endTime.minute() * 60 + span.endTime.second();
-
-    // Calculate the visible time range (currentTime is at top, currentTime-timespan is at bottom)
-    int timeSpanStartSeconds = currentTimeSeconds - totalSeconds;
-
-    // Check if selection overlaps with visible range
-    if (selectionEndSeconds >= timeSpanStartSeconds && selectionStartSeconds <= currentTimeSeconds) {
-        // Calculate Y positions relative to currentTime (top of widget)
-        int topY = static_cast<int>((currentTimeSeconds - selectionEndSeconds) * pixelsPerSecond);
-        int bottomY = static_cast<int>((currentTimeSeconds - selectionStartSeconds) * pixelsPerSecond);
-
-        // Clamp to widget bounds
-        topY = qMax(0, qMin(widgetHeight, topY));
-        bottomY = qMax(0, qMin(widgetHeight, bottomY));
-
-        // Ensure the rectangle is at least 1 pixel high
-        int rectHeight = qMax(1, bottomY - topY);
-
-        // Now draw the selection
-        painter.fillRect(0, topY, widgetWidth, rectHeight, QColor(255, 255, 255));
-
-        // Now draw the border
-        painter.setPen(QPen(QColor(150, 150, 150), 1));
-        painter.drawRect(0, topY, widgetWidth, rectHeight);
+    
+    // Calculate segment height
+    double segmentHeight = static_cast<double>(widgetHeight) / m_numberOfDivisions;
+    
+    // Calculate Y position for this segment
+    double y = segmentNumber * segmentHeight;
+    int segmentY = static_cast<int>(y);
+    int segmentH = static_cast<int>(segmentHeight);
+    
+    // Alternate segment colors for better visibility
+    QColor segmentColor = (segmentNumber % 2 == 0) ? QColor(40, 40, 40) : QColor(60, 60, 60);
+    
+    // Draw segment background
+    painter.fillRect(0, segmentY, widgetWidth, segmentH, segmentColor);
+    
+    // Draw segment border
+    painter.setPen(QPen(QColor(100, 100, 100), 1));
+    painter.drawLine(0, segmentY, widgetWidth, segmentY);
+    
+    // Calculate timestamp for this segment
+    QString timestamp = getTimeLabel(segmentNumber);
+    if (!timestamp.isNull()) 
+    {
+        // Set text color to white for visibility on dark background
+        painter.setPen(QPen(QColor(255, 255, 255), 1));
+        
+        // Calculate text metrics
+        QFontMetrics fm(painter.font());
+        int textWidth = fm.horizontalAdvance(timestamp);
+        int textHeight = fm.height();
+        
+        // Calculate center position for the text within the segment
+        int centerX = (widgetWidth - textWidth) / 2;
+        int centerY = static_cast<int>(y + segmentHeight / 2 + textHeight / 2);
+        
+        // Draw the timestamp centered in the segment
+        painter.drawText(QPoint(centerX, centerY), timestamp);
     }
 }
 
@@ -98,15 +111,15 @@ void TimelineVisualizerWidget::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
     
-    // Fill with light grey background
-    painter.fillRect(rect(), QColor(200, 200, 200));
+    // Fill with black background
+    painter.fillRect(rect(), QColor(0, 0, 0));
     
-    // Draw time selection rectangles
-    if (!m_timeSelections.isEmpty() && !m_timeLineLength.isNull() && !m_currentTime.isNull()) {
-        for (const TimeSelectionSpan& span : m_timeSelections) {
-            drawSelection(painter, span);
-        }
+    // Draw segments
+    for (int i = 0; i < m_numberOfDivisions; ++i) {
+        drawSegment(painter, i);
     }
+    
+    // No time selections to draw in TimelineView
     
     // Draw a border to make it more visible
     painter.setPen(QPen(QColor(150, 150, 150), 1));
@@ -131,7 +144,7 @@ TimelineView::TimelineView(QWidget *parent)
     
     // Create button with grey background and white border
     m_button = new QPushButton("H", this);
-    m_button->setFixedSize(TIMELINE_VIEW_BUTTON_SIZE, TIMELINE_VIEW_BUTTON_SIZE);
+    m_button->setFixedSize(TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH, TIMELINE_VIEW_BUTTON_SIZE);
     m_button->setStyleSheet(
         "QPushButton {"
         "    background-color: grey;"
@@ -154,8 +167,7 @@ TimelineView::TimelineView(QWidget *parent)
     m_layout->addWidget(m_button);
     m_layout->addWidget(m_visualizerWidget, 1); // Stretch factor of 1 to fill remaining space
     
-    // Connect button click to internal handler
-    connect(m_button, &QPushButton::clicked, this, &TimelineView::onButtonClicked);
+    // No button click handler needed for TimelineView
     
     // Set the layout
     setLayout(m_layout);
@@ -164,10 +176,4 @@ TimelineView::TimelineView(QWidget *parent)
 TimelineView::~TimelineView()
 {
     delete ui;
-}
-
-void TimelineView::onButtonClicked()
-{
-    clearTimeSelections();
-    qDebug() << "Time selections cleared!";
 }
