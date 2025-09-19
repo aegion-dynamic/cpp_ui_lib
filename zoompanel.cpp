@@ -57,12 +57,13 @@ void ZoomPanel::setupGraphicsView()
 void ZoomPanel::createIndicator()
 {
     QRect drawArea = this->rect();
-    int indicatorHeight = drawArea.height() - 20; // 10px margin on each side
+    int margin = qMax(2, drawArea.height() / 10); // Dynamic margin based on height
+    int indicatorHeight = drawArea.height() - (2 * margin);
     int indicatorY = (drawArea.height() - indicatorHeight) / 2; // Center vertically
     int centerX = drawArea.width() / 2; // Center horizontally
     
-    // Create rectangular indicator - starts at 2 pixels thin (value 0) centered
-    m_indicator = new QGraphicsRectItem(centerX - 1, indicatorY, 2, indicatorHeight);
+    // Create rectangular indicator - starts at 10 pixels thin (value 0) centered
+    m_indicator = new QGraphicsRectItem(centerX - 5, indicatorY, 10, indicatorHeight);
     
     QPen indicatorPen(QColor(50, 50, 50)); // Dark grey
     indicatorPen.setWidth(1);
@@ -78,17 +79,22 @@ void ZoomPanel::createTextItems()
 {
     QRect drawArea = this->rect();
     
-    // Create font for text
-    QFont textFont("Arial", 8);
+    // Create font for text with dynamic size
+    int fontSize = qMax(6, qMin(12, drawArea.height() / 4)); // Scale font with height
+    QFont textFont("Arial", fontSize);
     
     // Calculate vertical center position
-    int textY = (drawArea.height() - 8) / 2; // Center vertically (8 is approximate font height)
+    int textY = (drawArea.height() - fontSize) / 2; // Center vertically
+    
+    // Calculate horizontal positions dynamically
+    int leftMargin = qMax(2, drawArea.width() / 20);
+    int rightMargin = qMax(2, drawArea.width() / 20);
     
     // Create left text item
     m_leftText = new QGraphicsTextItem("0.00");
     m_leftText->setFont(textFont);
     m_leftText->setDefaultTextColor(Qt::white);
-    m_leftText->setPos(10, textY);
+    m_leftText->setPos(leftMargin, textY);
     m_scene->addItem(m_leftText);
     
     // Create center text item
@@ -102,7 +108,7 @@ void ZoomPanel::createTextItems()
     m_rightText = new QGraphicsTextItem("1.00");
     m_rightText->setFont(textFont);
     m_rightText->setDefaultTextColor(Qt::white);
-    m_rightText->setPos(drawArea.width() - 35, textY); // Right aligned
+    m_rightText->setPos(drawArea.width() - rightMargin - 30, textY); // Right aligned
     m_scene->addItem(m_rightText);
 }
 
@@ -127,13 +133,14 @@ void ZoomPanel::updateIndicator(double value)
     value = qBound(0.0, value, 1.0);
     
     QRect drawArea = this->rect();
-    int availableWidth = drawArea.width() - 20; // 10px margin on each side
-    int indicatorHeight = drawArea.height() - 20; // 10px margin on each side
+    int margin = qMax(2, drawArea.height() / 10); // Dynamic margin based on height
+    int availableWidth = drawArea.width() - (2 * margin);
+    int indicatorHeight = drawArea.height() - (2 * margin);
     int indicatorY = (drawArea.height() - indicatorHeight) / 2; // Center vertically
     int centerX = drawArea.width() / 2; // Center horizontally
     
-    // Calculate width: minimum 2 pixels, maximum available width
-    double minWidth = 2.0;
+    // Calculate width: minimum 10 pixels, maximum available width
+    double minWidth = 10.0;
     double maxWidth = static_cast<double>(availableWidth);
     double width = minWidth + (maxWidth - minWidth) * value;
     
@@ -257,4 +264,52 @@ void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
         qDebug() << "Updating indicator value to:" << newValue;
         setIndicatorValue(newValue);
     }
+}
+
+void ZoomPanel::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    
+    // Update graphics scene size
+    if (m_scene) {
+        QRect drawArea = this->rect();
+        m_scene->setSceneRect(0, 0, drawArea.width()-1, drawArea.height()-1);
+    }
+    
+    // Update all elements to new size
+    updateAllElements();
+}
+
+void ZoomPanel::updateAllElements()
+{
+    if (!m_scene) return;
+    
+    // Remove existing items
+    if (m_indicator) {
+        m_scene->removeItem(m_indicator);
+        delete m_indicator;
+        m_indicator = nullptr;
+    }
+    if (m_leftText) {
+        m_scene->removeItem(m_leftText);
+        delete m_leftText;
+        m_leftText = nullptr;
+    }
+    if (m_centerText) {
+        m_scene->removeItem(m_centerText);
+        delete m_centerText;
+        m_centerText = nullptr;
+    }
+    if (m_rightText) {
+        m_scene->removeItem(m_rightText);
+        delete m_rightText;
+        m_rightText = nullptr;
+    }
+    
+    // Recreate elements with new size
+    createIndicator();
+    createTextItems();
+    
+    // Update indicator to current value
+    updateIndicator(m_currentValue);
 }

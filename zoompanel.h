@@ -45,6 +45,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
     Ui::ZoomPanel *ui;
@@ -70,6 +71,7 @@ private:
     void createTextItems();
     void updateIndicator(double value);
     void updateValueFromMousePosition(const QPoint &currentPos);
+    void updateAllElements();
 };
 
 #endif // ZOOMPANEL_H
