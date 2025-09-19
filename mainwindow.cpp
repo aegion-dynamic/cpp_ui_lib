@@ -217,5 +217,17 @@ void MainWindow::configureZoomPanel()
     ui->zoomPanel->setLeftLabelValue(0.0);
     ui->zoomPanel->setCenterLabelValue(0.5);
     ui->zoomPanel->setRightLabelValue(1.0);
+    
+    // Initialize the indicator value label
+    ui->indicatorValueLabel->setText("Indicator Value: 0.30");
+    
+    // Connect to zoom panel value changed signal
+    connect(ui->zoomPanel, &ZoomPanel::valueChanged, [this](qreal value) {
+        // Update the indicator value label on main window
+        ui->indicatorValueLabel->setText(QString("Indicator Value: %1").arg(value, 0, 'f', 2));
+        
+        // You can add additional logic here to respond to value changes
+        // For example, update other UI elements or trigger other actions
+    });
 }
 

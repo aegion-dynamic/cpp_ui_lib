@@ -10,11 +10,17 @@ ZoomPanel::ZoomPanel(QWidget *parent)
     , m_leftText(nullptr)
     , m_centerText(nullptr)
     , m_rightText(nullptr)
+    , m_isDragging(false)
+    , m_currentValue(0.5)
+    , m_startedFromRightHalf(false)
 {
     ui->setupUi(this);
     
     // Set black background
     this->setStyleSheet("background-color: black;");
+    
+    // Enable mouse tracking for drag operations
+    this->setMouseTracking(true);
     
     setupGraphicsView();
 }
@@ -40,6 +46,9 @@ void ZoomPanel::setupGraphicsView()
     
     // Set the scene to the graphics view
     ui->graphicsView->setScene(m_scene);
+    
+    // Ensure graphics view doesn't interfere with mouse events
+    ui->graphicsView->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     
     // Create the visual elements
     // createBackFrame();
@@ -120,7 +129,9 @@ void ZoomPanel::createTextItems()
 
 void ZoomPanel::setIndicatorValue(double value)
 {
+    m_currentValue = value;
     updateIndicator(value);
+    emit valueChanged(m_currentValue);
 }
 
 void ZoomPanel::updateIndicator(double value)
@@ -170,5 +181,95 @@ void ZoomPanel::setRightLabelValue(qreal value)
     rightLabelValue = value;
     if (m_rightText) {
         m_rightText->setPlainText(QString::number(value, 'f', 2));
+    }
+}
+
+void ZoomPanel::mousePressEvent(QMouseEvent *event)
+{
+    qDebug() << "Mouse press event received at:" << event->pos();
+    
+    if (event->button() == Qt::LeftButton) {
+        m_isDragging = true;
+        m_initialMousePos = event->pos();
+        
+        // Determine if started from right half
+        QRect drawArea = this->rect();
+        int centerX = drawArea.width() / 2;
+        m_startedFromRightHalf = (event->pos().x() > centerX);
+        
+        qDebug() << "Started dragging from" << (m_startedFromRightHalf ? "right" : "left") << "half";
+        
+        // Set cursor to indicate dragging
+        setCursor(Qt::ClosedHandCursor);
+    }
+    
+    QWidget::mousePressEvent(event);
+}
+
+void ZoomPanel::mouseMoveEvent(QMouseEvent *event)
+{
+    if (m_isDragging) {
+        qDebug() << "Mouse move while dragging at:" << event->pos();
+        updateValueFromMousePosition(event->pos());
+    }
+    
+    QWidget::mouseMoveEvent(event);
+}
+
+void ZoomPanel::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton) {
+        m_isDragging = false;
+        setCursor(Qt::ArrowCursor);
+    }
+    
+    QWidget::mouseReleaseEvent(event);
+}
+
+void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
+{
+    QRect drawArea = this->rect();
+    int centerX = drawArea.width() / 2;
+    
+    // Calculate horizontal movement
+    int deltaX = currentPos.x() - m_initialMousePos.x();
+    
+    qDebug() << "DeltaX:" << deltaX << "Current value:" << m_currentValue;
+    
+    // Determine value change based on starting position and movement
+    qreal valueChange = 0.0;
+    
+    if (m_startedFromRightHalf) {
+        // Started from right half
+        if (deltaX > 0) {
+            // Moving right - increase value
+            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 2.0; // Scale factor
+        } else {
+            // Moving left - decrease value
+            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 2.0; // Scale factor
+        }
+    } else {
+        // Started from left half - reverse the logic
+        if (deltaX > 0) {
+            // Moving right - decrease value (opposite behavior)
+            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 2.0;
+        } else {
+            // Moving left - increase value (opposite behavior)
+            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 2.0;
+        }
+    }
+    
+    // Calculate new value
+    qreal newValue = m_currentValue + valueChange;
+    
+    // Clamp value between 0.0 and 1.0
+    newValue = qBound(0.0, newValue, 1.0);
+    
+    qDebug() << "Value change:" << valueChange << "New value:" << newValue;
+    
+    // Update if value changed
+    if (qAbs(newValue - m_currentValue) > 0.001) { // Small threshold to avoid constant updates
+        qDebug() << "Updating indicator value to:" << newValue;
+        setIndicatorValue(newValue);
     }
 }
