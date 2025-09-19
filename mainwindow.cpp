@@ -65,6 +65,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Configure TimelineView
     configureTimelineView();
+    
+    // Configure Zoom Panel test functionality
+    configureZoomPanel();
 }
 
 MainWindow::~MainWindow()
@@ -190,5 +193,24 @@ void MainWindow::updateCurrentTime()
     // Update the current time to the system time
     ui->timeVisualizer->setCurrentTime(QTime::currentTime());
     ui->timelineView->setCurrentTime(QTime::currentTime());
+}
+
+void MainWindow::configureZoomPanel()
+{
+    // Connect test buttons to zoom panel indicator
+    connect(ui->testButton0, &QPushButton::clicked, [this]() {
+        ui->zoomPanel->setIndicatorValue(0.0);
+    });
+    
+    connect(ui->testButton50, &QPushButton::clicked, [this]() {
+        ui->zoomPanel->setIndicatorValue(0.5);
+    });
+    
+    connect(ui->testButton100, &QPushButton::clicked, [this]() {
+        ui->zoomPanel->setIndicatorValue(1.0);
+    });
+        
+    // Initialize zoom panel with a default value
+    ui->zoomPanel->setIndicatorValue(0.3);
 }
 

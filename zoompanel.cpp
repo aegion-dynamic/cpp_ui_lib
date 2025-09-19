@@ -1,0 +1,107 @@
+#include "zoompanel.h"
+#include "ui_zoompanel.h"
+
+ZoomPanel::ZoomPanel(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::ZoomPanel)
+    , m_scene(nullptr)
+    , m_backFrame(nullptr)
+    , m_indicator(nullptr)
+{
+    ui->setupUi(this);
+    setupGraphicsView();
+}
+
+ZoomPanel::~ZoomPanel()
+{
+    delete ui;
+}
+
+void ZoomPanel::setupGraphicsView()
+{
+    QRect drawArea = this->rect();
+
+    int sceneWidth = drawArea.width();
+    int sceneHeight = drawArea.height();
+
+    // Create graphics scene
+    m_scene = new QGraphicsScene(this);
+    m_scene->setSceneRect(0, 0, sceneWidth-1, sceneHeight-1);
+    
+    // Set the scene to the graphics view
+    ui->graphicsView->setScene(m_scene);
+    
+    // Create the visual elements
+    createBackFrame();
+    createIndicator();
+}
+
+void ZoomPanel::createBackFrame()
+{
+    QRect drawArea = this->rect();
+    int frameWidth = drawArea.width() - 10;  // 5px margin on each side
+    int frameHeight = drawArea.height() - 10; // 5px margin on each side
+    
+    // Create light grey inset frame
+    m_backFrame = new QGraphicsRectItem(5, 5, frameWidth, frameHeight);
+    
+    QPen framePen(QColor(200, 200, 200)); // Light grey
+    framePen.setWidth(2);
+    m_backFrame->setPen(framePen);
+    
+    QBrush frameBrush(QColor(240, 240, 240)); // Very light grey background
+    m_backFrame->setBrush(frameBrush);
+    
+    m_scene->addItem(m_backFrame);
+}
+
+void ZoomPanel::createIndicator()
+{
+    QRect drawArea = this->rect();
+    int indicatorHeight = drawArea.height() - 20; // 10px margin on each side
+    int indicatorY = (drawArea.height() - indicatorHeight) / 2; // Center vertically
+    int centerX = drawArea.width() / 2; // Center horizontally
+    
+    // Create rectangular indicator - starts at 2 pixels thin (value 0) centered
+    m_indicator = new QGraphicsRectItem(centerX - 1, indicatorY, 2, indicatorHeight);
+    
+    QPen indicatorPen(QColor(50, 50, 50)); // Dark grey
+    indicatorPen.setWidth(1);
+    m_indicator->setPen(indicatorPen);
+    
+    QBrush indicatorBrush(QColor(100, 100, 100)); // Medium grey
+    m_indicator->setBrush(indicatorBrush);
+    
+    m_scene->addItem(m_indicator);
+}
+
+void ZoomPanel::setIndicatorValue(double value)
+{
+    updateIndicator(value);
+}
+
+void ZoomPanel::updateIndicator(double value)
+{
+    if (!m_indicator) return;
+    
+    // Clamp value between 0.0 and 1.0
+    value = qBound(0.0, value, 1.0);
+    
+    QRect drawArea = this->rect();
+    int availableWidth = drawArea.width() - 20; // 10px margin on each side
+    int indicatorHeight = drawArea.height() - 20; // 10px margin on each side
+    int indicatorY = (drawArea.height() - indicatorHeight) / 2; // Center vertically
+    int centerX = drawArea.width() / 2; // Center horizontally
+    
+    // Calculate width: minimum 2 pixels, maximum available width
+    double minWidth = 2.0;
+    double maxWidth = static_cast<double>(availableWidth);
+    double width = minWidth + (maxWidth - minWidth) * value;
+    
+    // Calculate X position to center the indicator
+    double indicatorX = centerX - (width / 2);
+    
+    // Update indicator rectangle with centered position
+    QRectF rect(indicatorX, indicatorY, width, indicatorHeight);
+    m_indicator->setRect(rect);
+}
