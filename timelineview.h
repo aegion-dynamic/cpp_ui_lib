@@ -49,7 +49,10 @@ private:
     
     void updateVisualization();
     void drawSegment(QPainter &painter, int segmentNumber);
+    void drawChevron(QPainter &painter, int yOffset);
     QString getTimeLabel(int segmentNumber);
+    void drawChevronLabels(QPainter &painter, int yOffset);
+
 
 };
     
@@ -71,7 +74,7 @@ public:
     void setNumberOfDivisions(int divisions) { m_visualizerWidget->setNumberOfDivisions(divisions); }
 
 private:
-    Ui::TimelineView *ui;
+        Ui::TimelineView *ui;
 
     QPushButton *m_button;
     TimelineVisualizerWidget *m_visualizerWidget;

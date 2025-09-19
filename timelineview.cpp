@@ -89,13 +89,7 @@ void TimelineVisualizerWidget::drawSegment(QPainter &painter, int segmentNumber)
     
     // Calculate Y position for this segment
     double y = segmentNumber * segmentHeight;
-    int segmentY = static_cast<int>(y);
-    int segmentH = static_cast<int>(segmentHeight);    
-    
-    // Draw segment border
-    painter.setPen(QPen(QColor(100, 100, 100), 1));
-    painter.drawLine(0, segmentY, widgetWidth, segmentY);
-    
+        
     // Calculate timestamp for this segment
     QString timestamp = getTimeLabel(segmentNumber);
     if (timestamp.isNull()) {
@@ -137,6 +131,65 @@ void TimelineVisualizerWidget::drawSegment(QPainter &painter, int segmentNumber)
 
 }
 
+void TimelineVisualizerWidget::drawChevron(QPainter &painter, int yOffset)
+{
+    QRect drawArea = rect();
+    int widgetWidth = drawArea.width();
+    
+    // Set pen for blue chevron outline
+    painter.setPen(QPen(QColor(0, 100, 255), 2)); // Blue color, 2px width
+    
+    // Define chevron size (width and height)
+    int chevronWidth = static_cast<int>(widgetWidth * 0.4);  // Chevron width is 40% of widget width
+    int chevronHeight = 8;               // Fixed height of 8 pixels
+    int chevronBoxHeight = 30;
+    
+    // Calculate chevron position (centered horizontally)
+    int chevronX = (widgetWidth - chevronWidth) / 2;
+    int chevronY = yOffset;
+    
+    // Calculate the tip position (bottom center of V)
+    int tipX = chevronX + chevronWidth / 2;
+    int tipY = chevronY + chevronHeight;
+    
+    // Define chevron points (pointing down: V) and the lines to the edges
+    QPoint chevronPoints[8] = {
+        QPoint(0, chevronY - chevronBoxHeight),                           // Start point
+        QPoint(0, chevronY),                           // Left edge
+        QPoint(chevronX, chevronY),                           // Top left point
+        QPoint(tipX, tipY),                                   // Bottom point (tip)
+        QPoint(chevronX + chevronWidth, chevronY),              // Top right point
+        QPoint(widgetWidth, chevronY),                           // Right edge
+        QPoint(widgetWidth, chevronY - chevronBoxHeight),                           // Right edge
+        QPoint(0, chevronY - chevronBoxHeight)                           // Start point
+
+    };
+
+    // Draw the chevron outline
+    painter.drawPolygon(chevronPoints, 8);
+
+    // Draw the 3 labels inside the chevron with a numeric value
+    drawChevronLabels(painter, yOffset);
+
+}
+
+void TimelineVisualizerWidget::drawChevronLabels(QPainter &painter, int yOffset)
+{
+    QRect drawArea = rect();
+    int widgetWidth = drawArea.width();
+    int chevronWidth = static_cast<int>(widgetWidth * 0.4);
+    int chevronX = (widgetWidth - chevronWidth) / 2;
+    int chevronY = yOffset;
+
+
+    // Draw the 3 labels inside the chevron with a numeric value
+    painter.drawText(QPoint(chevronX, chevronY), "1");
+    painter.drawText(QPoint(chevronX + chevronWidth / 2, chevronY), "2");
+    painter.drawText(QPoint(chevronX + chevronWidth, chevronY), "3");
+
+}
+
+
 void TimelineVisualizerWidget::paintEvent(QPaintEvent * /* event */)
 {
     QPainter painter(this);
@@ -150,11 +203,13 @@ void TimelineVisualizerWidget::paintEvent(QPaintEvent * /* event */)
         drawSegment(painter, i);
     }
     
-    // No time selections to draw in TimelineView
+    // Draw a chevron at the top of the visualizer
+    drawChevron(painter, 50); // 50 pixels from the top
     
     // Draw a border to make it more visible
     painter.setPen(QPen(QColor(150, 150, 150), 1));
     painter.drawRect(rect().adjusted(0, 0, -1, -1));
+
 }
 
 
