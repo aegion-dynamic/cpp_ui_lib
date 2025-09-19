@@ -81,7 +81,7 @@ MainWindow::~MainWindow()
 void MainWindow::updateSimulation()
 {
     this->simTick++;
-    qDebug() << "Sim Tick: " << this->simTick;
+    // qDebug() << "Sim Tick: " << this->simTick;
 
     auto randPercent = [](int max)
     {
