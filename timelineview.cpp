@@ -75,35 +75,48 @@ void TimelineVisualizerWidget::drawSegment(QPainter &painter, int segmentNumber)
     int segmentY = static_cast<int>(y);
     int segmentH = static_cast<int>(segmentHeight);
     
-    // Alternate segment colors for better visibility
-    QColor segmentColor = (segmentNumber % 2 == 0) ? QColor(40, 40, 40) : QColor(60, 60, 60);
-    
-    // Draw segment background
-    painter.fillRect(0, segmentY, widgetWidth, segmentH, segmentColor);
-    
-    // Draw segment border
-    painter.setPen(QPen(QColor(100, 100, 100), 1));
-    painter.drawLine(0, segmentY, widgetWidth, segmentY);
     
     // Calculate timestamp for this segment
     QString timestamp = getTimeLabel(segmentNumber);
-    if (!timestamp.isNull()) 
+    if (timestamp.isNull()) 
     {
-        // Set text color to white for visibility on dark background
-        painter.setPen(QPen(QColor(255, 255, 255), 1));
-        
-        // Calculate text metrics
-        QFontMetrics fm(painter.font());
-        int textWidth = fm.horizontalAdvance(timestamp);
-        int textHeight = fm.height();
-        
-        // Calculate center position for the text within the segment
-        int centerX = (widgetWidth - textWidth) / 2;
-        int centerY = static_cast<int>(y + segmentHeight / 2 + textHeight / 2);
-        
-        // Draw the timestamp centered in the segment
-        painter.drawText(QPoint(centerX, centerY), timestamp);
+
+        return;
     }
+    
+    // Set text color to white for visibility on dark background
+    painter.setPen(QPen(QColor(255, 255, 255), 1));
+    
+    // Calculate text metrics
+    QFontMetrics fm(painter.font());
+    int textWidth = fm.horizontalAdvance(timestamp);
+    int textHeight = fm.height();
+    
+    // Calculate center position for the text within the segment
+    int centerX = (widgetWidth - textWidth) / 2;
+    int centerY = static_cast<int>(y + segmentHeight / 2 + textHeight / 2);
+    
+    // Draw the timestamp centered in the segment
+    painter.drawText(QPoint(centerX, centerY), timestamp);
+
+
+    // Draw two ticks which are 15% of the segment width aligned with the text center and to the left and right edges at centerY
+    int tickWidth = static_cast<int>(widgetWidth * 0.15);
+
+    // Left tick startpoint at left edge at center
+    int tickY = centerY; //static_cast<int>(y + segmentHeight / 2);
+    QPoint leftTickStart(0, tickY);
+    QPoint leftTickEnd(tickWidth, tickY);
+    painter.drawLine(leftTickStart, leftTickEnd);
+
+    // Right tick startpoint at right edge at center
+    QPoint rightTickStart(widgetWidth, tickY);
+    QPoint rightTickEnd(widgetWidth - tickWidth, tickY);
+    painter.drawLine(rightTickStart, rightTickEnd);
+
+        
+
+
 }
 
 void TimelineVisualizerWidget::paintEvent(QPaintEvent *event)
@@ -171,6 +184,9 @@ TimelineView::TimelineView(QWidget *parent)
     
     // Set the layout
     setLayout(m_layout);
+    
+    // Set the TimelineView widget width to match button and graphics view width
+    setFixedWidth(TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH);
 }
 
 TimelineView::~TimelineView()
