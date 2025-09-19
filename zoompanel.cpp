@@ -243,19 +243,19 @@ void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
         // Started from right half
         if (deltaX > 0) {
             // Moving right - increase value
-            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 2.0; // Scale factor
+            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.3; // Reduced scale factor
         } else {
             // Moving left - decrease value
-            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 2.0; // Scale factor
+            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.3; // Reduced scale factor
         }
     } else {
         // Started from left half - reverse the logic
         if (deltaX > 0) {
             // Moving right - decrease value (opposite behavior)
-            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 2.0;
+            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.3;
         } else {
             // Moving left - increase value (opposite behavior)
-            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 2.0;
+            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.3;
         }
     }
     
