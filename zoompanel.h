@@ -49,7 +49,6 @@ protected:
 private:
     Ui::ZoomPanel *ui;
     QGraphicsScene *m_scene;
-    QGraphicsRectItem *m_backFrame;
     QGraphicsRectItem *m_indicator;
     QGraphicsTextItem *m_leftText;
     QGraphicsTextItem *m_centerText;
@@ -67,7 +66,6 @@ private:
     bool m_startedFromRightHalf;
 
     void setupGraphicsView();
-    void createBackFrame();
     void createIndicator();
     void createTextItems();
     void updateIndicator(double value);

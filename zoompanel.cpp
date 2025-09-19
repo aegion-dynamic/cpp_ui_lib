@@ -5,7 +5,6 @@ ZoomPanel::ZoomPanel(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::ZoomPanel)
     , m_scene(nullptr)
-    , m_backFrame(nullptr)
     , m_indicator(nullptr)
     , m_leftText(nullptr)
     , m_centerText(nullptr)
@@ -51,28 +50,8 @@ void ZoomPanel::setupGraphicsView()
     ui->graphicsView->setAttribute(Qt::WA_TransparentForMouseEvents, true);
     
     // Create the visual elements
-    // createBackFrame();
     createIndicator();
     createTextItems();
-}
-
-void ZoomPanel::createBackFrame()
-{
-    QRect drawArea = this->rect();
-    int frameWidth = drawArea.width() - 10;  // 5px margin on each side
-    int frameHeight = drawArea.height() - 10; // 5px margin on each side
-    
-    // Create light grey inset frame
-    m_backFrame = new QGraphicsRectItem(5, 5, frameWidth, frameHeight);
-    
-    QPen framePen(QColor(200, 200, 200)); // Light grey
-    framePen.setWidth(2);
-    m_backFrame->setPen(framePen);
-    
-    QBrush frameBrush(QColor(240, 240, 240)); // Very light grey background
-    m_backFrame->setBrush(frameBrush);
-    
-    m_scene->addItem(m_backFrame);
 }
 
 void ZoomPanel::createIndicator()
@@ -249,19 +228,19 @@ void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
         // Started from right half
         if (deltaX > 0) {
             // Moving right - increase value
-            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.3; // Reduced scale factor
+            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.2; // Reduced scale factor
         } else {
             // Moving left - decrease value
-            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.3; // Reduced scale factor
+            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.2; // Reduced scale factor
         }
     } else {
         // Started from left half - reverse the logic
         if (deltaX > 0) {
             // Moving right - decrease value (opposite behavior)
-            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.3;
+            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.2;
         } else {
             // Moving left - increase value (opposite behavior)
-            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.3;
+            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.2;
         }
     }
     
