@@ -131,7 +131,13 @@ void ZoomPanel::setIndicatorValue(double value)
 {
     m_currentValue = value;
     updateIndicator(value);
-    emit valueChanged(m_currentValue);
+    
+    // Calculate bounds: upperbound = center + value*|right-center|, lowerbound = center - value*|center-left|
+    ZoomBounds bounds;
+    bounds.upperbound = centerLabelValue + value * qAbs(rightLabelValue - centerLabelValue);
+    bounds.lowerbound = centerLabelValue - value * qAbs(centerLabelValue - leftLabelValue);
+    
+    emit valueChanged(bounds);
 }
 
 void ZoomPanel::updateIndicator(double value)

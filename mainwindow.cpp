@@ -214,17 +214,17 @@ void MainWindow::configureZoomPanel()
     ui->zoomPanel->setIndicatorValue(0.3);
     
     // Initialize label values
-    ui->zoomPanel->setLeftLabelValue(0.0);
-    ui->zoomPanel->setCenterLabelValue(0.5);
-    ui->zoomPanel->setRightLabelValue(1.0);
+    ui->zoomPanel->setLeftLabelValue(0.0);  // Left reference value
+    ui->zoomPanel->setCenterLabelValue(0.5); // Center value
+    ui->zoomPanel->setRightLabelValue(1.0);  // Range for upper bound
     
     // Initialize the indicator value label
-    ui->indicatorValueLabel->setText("Indicator Value: 0.30");
+    ui->indicatorValueLabel->setText("Bounds: [0.35, 0.80]");
     
     // Connect to zoom panel value changed signal
-    connect(ui->zoomPanel, &ZoomPanel::valueChanged, [this](qreal value) {
-        // Update the indicator value label on main window
-        ui->indicatorValueLabel->setText(QString("Indicator Value: %1").arg(value, 0, 'f', 2));
+    connect(ui->zoomPanel, &ZoomPanel::valueChanged, [this](ZoomBounds bounds) {
+        // Update the indicator value label on main window with bounds
+        ui->indicatorValueLabel->setText(QString("Bounds: [%1, %2]").arg(bounds.lowerbound, 0, 'f', 2).arg(bounds.upperbound, 0, 'f', 2));
         
         // You can add additional logic here to respond to value changes
         // For example, update other UI elements or trigger other actions

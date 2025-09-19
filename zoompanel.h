@@ -17,12 +17,17 @@ namespace Ui {
 class ZoomPanel;
 }
 
+struct ZoomBounds {
+    qreal upperbound;
+    qreal lowerbound;
+};
+
 class ZoomPanel : public QWidget
 {
     Q_OBJECT
 
 signals:
-    void valueChanged(qreal value);
+    void valueChanged(ZoomBounds bounds);
 
 public:
     explicit ZoomPanel(QWidget *parent = nullptr);
@@ -51,9 +56,9 @@ private:
     QGraphicsTextItem *m_rightText;
     
     // Label values
-    qreal leftLabelValue = 0.0;
-    qreal centerLabelValue = 0.5;
-    qreal rightLabelValue = 1.0;
+    qreal leftLabelValue = 0.0;  // Left reference value
+    qreal centerLabelValue = 0.5; // Center value
+    qreal rightLabelValue = 1.0;  // Range for upper bound
     
     // Mouse interaction state
     bool m_isDragging;
