@@ -15,20 +15,24 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView)
     m_comboBox->addItem("Option 1");
     m_comboBox->addItem("Option 2");
     m_comboBox->addItem("Option 3");
+    m_comboBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     
     // Create ZoomPanel
     m_zoomPanel = new ZoomPanel(this);
+    m_zoomPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+    m_zoomPanel->setMaximumHeight(50); // Limit zoom panel height
     
     // Create WaterfallGraph
     m_waterfallGraph = new waterfallgraph(this);
     
+    
     // Add ComboBox, ZoomPanel, and WaterfallGraph to left layout
     m_leftLayout->addWidget(m_comboBox);
     m_leftLayout->addWidget(m_zoomPanel);
-    m_leftLayout->addWidget(m_waterfallGraph);
+    m_leftLayout->addWidget(m_waterfallGraph); // No stretch factor - let it use preferred size
     
-    // Add left layout to main layout
-    m_mainLayout->addLayout(m_leftLayout);
+    // Add left layout to main layout with stretch factor
+    m_mainLayout->addLayout(m_leftLayout, 1); // Give stretch factor of 1 to left layout
     
     // Create TimelineSelectionView
     m_timelineSelectionView = new TimeSelectionVisualizer(this);
