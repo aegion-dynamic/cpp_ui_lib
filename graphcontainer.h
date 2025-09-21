@@ -8,6 +8,7 @@
 #include "waterfallgraph.h"
 #include "timeselectionvisualizer.h"
 #include "timelineview.h"
+#include "zoompanel.h"
 
 class GraphContainer : public QWidget
 {
@@ -24,6 +25,7 @@ private:
     QHBoxLayout *m_mainLayout;
     QVBoxLayout *m_leftLayout;
     QComboBox *m_comboBox;
+    ZoomPanel *m_zoomPanel;
     waterfallgraph *m_waterfallGraph;
     TimeSelectionVisualizer *m_timelineSelectionView;
     TimelineView *m_timelineView;

@@ -3,8 +3,9 @@
 GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView)
     : QWidget{parent}, m_showTimelineView(showTimelineView)
 {
-    // Create main horizontal layout
+    // Create main horizontal layout with 1px spacing
     m_mainLayout = new QHBoxLayout(this);
+    m_mainLayout->setSpacing(1);
     
     // Create left vertical layout
     m_leftLayout = new QVBoxLayout();
@@ -15,11 +16,15 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView)
     m_comboBox->addItem("Option 2");
     m_comboBox->addItem("Option 3");
     
+    // Create ZoomPanel
+    m_zoomPanel = new ZoomPanel(this);
+    
     // Create WaterfallGraph
     m_waterfallGraph = new waterfallgraph(this);
     
-    // Add ComboBox and WaterfallGraph to left layout
+    // Add ComboBox, ZoomPanel, and WaterfallGraph to left layout
     m_leftLayout->addWidget(m_comboBox);
+    m_leftLayout->addWidget(m_zoomPanel);
     m_leftLayout->addWidget(m_waterfallGraph);
     
     // Add left layout to main layout
