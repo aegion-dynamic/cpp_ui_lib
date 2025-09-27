@@ -59,14 +59,14 @@ public:
     std::pair<qreal, qreal> getYRange() const;
     
     // Data options management
-    void addDataOption(const QString& title, WaterfallData& dataSource);
-    void removeDataOption(const QString& title);
+    void addDataOption(const GraphType graphType, WaterfallData& dataSource);
+    void removeDataOption(const GraphType graphType);
     void clearDataOptions();
-    void setCurrentDataOption(const QString& title);
-    QString getCurrentDataOption() const;
-    std::vector<QString> getAvailableDataOptions() const;
-    WaterfallData* getDataOption(const QString& title);
-    bool hasDataOption(const QString& title) const;
+    void setCurrentDataOption(const GraphType graphType);
+    GraphType getCurrentDataOption() const;
+    std::vector<GraphType> getAvailableDataOptions() const;
+    WaterfallData* getDataOption(const GraphType graphType);
+    bool hasDataOption(const GraphType graphType) const;
     
     // Signal subscription method for external components
     void subscribeToIntervalChange(QObject* subscriber, const char* slot);
@@ -93,7 +93,7 @@ public slots:
 private:
     void updateTotalContainerSize();
     void updateComboBoxOptions();
-    void onDataOptionChanged(int index);
+    void onDataOptionChanged(QString title);
     void setupEventConnections();
     WaterfallGraph* createWaterfallGraph(GraphType graphType);
     
@@ -101,13 +101,13 @@ private:
     WaterfallData waterfallData;
     
     // Data options management
-    std::map<QString, WaterfallData*> dataOptions;
-    QString currentDataOption;
+    std::map<GraphType, WaterfallData*> dataOptions;
+    GraphType currentDataOption;
 
 
     // Graph component management
-    std::map<QString, WaterfallGraph*> waterfallGraphs;
-    QString currentWaterfallGraph;
+    std::map<GraphType, WaterfallGraph*> waterfallGraphs;
+    GraphType currentWaterfallGraph;
 
 signals:
     void NewTimeSelectionCreated(qreal startTime, qreal endTime);

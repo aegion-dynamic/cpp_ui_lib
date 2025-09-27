@@ -15,6 +15,18 @@ QString graphTypeToString(GraphType type)
     }
 }
 
+GraphType stringToGraphType(const QString& title)
+{
+    if (title == "BDW") return GraphType::BDW;
+    if (title == "BRW") return GraphType::BRW;
+    if (title == "BTW") return GraphType::BTW;
+    if (title == "FDW") return GraphType::FDW;
+    if (title == "FTW") return GraphType::FTW;
+    if (title == "LTW") return GraphType::LTW;
+    if (title == "RTW") return GraphType::RTW;
+    return GraphType::BDW;
+}
+
 std::vector<GraphType> getAllGraphTypes()
 {
     return {

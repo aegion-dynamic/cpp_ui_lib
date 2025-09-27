@@ -2,7 +2,7 @@
 #include <QDebug>
 
 GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView)
-    : QWidget{parent}, m_showTimelineView(showTimelineView), m_timelineWidth(150), m_graphViewSize(80, 300), currentDataOption("")
+    : QWidget{parent}, m_showTimelineView(showTimelineView), m_timelineWidth(150), m_graphViewSize(80, 300), currentDataOption(GraphType::BDW)
 {
     // Create main horizontal layout with 1px spacing and no margins
     m_mainLayout = new QHBoxLayout(this);
@@ -208,32 +208,32 @@ std::pair<qreal, qreal> GraphContainer::getYRange() const
 
 // Data options management implementation
 
-void GraphContainer::addDataOption(const QString& title, WaterfallData& dataSource)
+void GraphContainer::addDataOption(const GraphType graphType, WaterfallData& dataSource)
 {
-    dataOptions[title] = &dataSource;
+    QString title = graphTypeToString(graphType);
+    dataOptions[graphType] = &dataSource;
     updateComboBoxOptions();
     
     // If this is the first option, set it as current
-    if (currentDataOption.isEmpty()) {
-        setCurrentDataOption(title);
-    }
+    setCurrentDataOption(graphType);
     
     qDebug() << "Added data option:" << title;
 }
 
-void GraphContainer::removeDataOption(const QString& title)
+void GraphContainer::removeDataOption(const GraphType graphType)
 {
-    auto it = dataOptions.find(title);
+    QString title = graphTypeToString(graphType);
+    auto it = dataOptions.find(graphType);
     if (it != dataOptions.end()) {
         dataOptions.erase(it);
         updateComboBoxOptions();
         
         // If we removed the current option, switch to another one or clear
-        if (currentDataOption == title) {
+        if (currentDataOption == graphType) {
             if (!dataOptions.empty()) {
                 setCurrentDataOption(dataOptions.begin()->first);
             } else {
-                currentDataOption.clear();
+                currentDataOption = GraphType::BDW;
                 m_waterfallGraph->setDataSource(waterfallData);
                 // Initialize zoom panel limits for the default data source
                 initializeZoomPanelLimits();
@@ -247,7 +247,7 @@ void GraphContainer::removeDataOption(const QString& title)
 void GraphContainer::clearDataOptions()
 {
     dataOptions.clear();
-    currentDataOption.clear();
+    currentDataOption = GraphType::BDW;
     updateComboBoxOptions();
     m_waterfallGraph->setDataSource(waterfallData);
     
@@ -257,15 +257,16 @@ void GraphContainer::clearDataOptions()
     qDebug() << "Cleared all data options";
 }
 
-void GraphContainer::setCurrentDataOption(const QString& title)
+void GraphContainer::setCurrentDataOption(const GraphType graphType)
 {
-    auto it = dataOptions.find(title);
+    QString title = graphTypeToString(graphType);
+    auto it = dataOptions.find(graphType);
     if (it != dataOptions.end()) {
-        currentDataOption = title;
+        currentDataOption = graphType;
         m_waterfallGraph->setDataSource(*it->second);
         
         // Update combobox selection
-        int index = m_comboBox->findText(title);
+        int index = m_comboBox->findText(graphTypeToString(graphType));
         if (index >= 0) {
             m_comboBox->setCurrentIndex(index);
         }
@@ -277,51 +278,51 @@ void GraphContainer::setCurrentDataOption(const QString& title)
     }
 }
 
-QString GraphContainer::getCurrentDataOption() const
+GraphType GraphContainer::getCurrentDataOption() const
 {
     return currentDataOption;
 }
 
-std::vector<QString> GraphContainer::getAvailableDataOptions() const
-{
-    std::vector<QString> options;
+std::vector<GraphType> GraphContainer::getAvailableDataOptions() const
+{   
+    std::vector<GraphType> options;
     for (const auto& pair : dataOptions) {
         options.push_back(pair.first);
     }
     return options;
 }
 
-WaterfallData* GraphContainer::getDataOption(const QString& title)
+WaterfallData* GraphContainer::getDataOption(const GraphType graphType)
 {
-    auto it = dataOptions.find(title);
+    auto it = dataOptions.find(graphType);
     return (it != dataOptions.end()) ? it->second : nullptr;
 }
 
-bool GraphContainer::hasDataOption(const QString& title) const
+bool GraphContainer::hasDataOption(const GraphType graphType) const
 {
-    return dataOptions.find(title) != dataOptions.end();
+    return dataOptions.find(graphType) != dataOptions.end();
 }
 
 void GraphContainer::updateComboBoxOptions()
 {
     m_comboBox->clear();
     for (const auto& pair : dataOptions) {
-        m_comboBox->addItem(pair.first);
+        m_comboBox->addItem(graphTypeToString(pair.first));
     }
 }
 
-void GraphContainer::onDataOptionChanged(int index)
+void GraphContainer::onDataOptionChanged(QString title)
 {
-    if (index >= 0 && index < m_comboBox->count()) {
-        QString selectedTitle = m_comboBox->itemText(index);
-        setCurrentDataOption(selectedTitle);
+    GraphType graphTypeEnum = stringToGraphType(title);
+    if (graphTypeEnum != currentDataOption) {
+        setCurrentDataOption(graphTypeEnum);
     }
 }
 
 void GraphContainer::setupEventConnections()
 {
     // Connect ComboBox data source selection
-    connect(m_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+    connect(m_comboBox, &QComboBox::currentTextChanged,
             this, &GraphContainer::onDataOptionChanged);
     
     // Connect WaterfallGraph selection events
@@ -451,13 +452,9 @@ void GraphContainer::initializeZoomPanelLimits()
     
     // Get the current data source (either selected option or default waterfallData)
     WaterfallData* currentDataSource = nullptr;
-    if (!currentDataOption.isEmpty()) {
-        auto it = dataOptions.find(currentDataOption);
-        if (it != dataOptions.end()) {
-            currentDataSource = it->second;
-        }
-    } else {
-        currentDataSource = &waterfallData;
+    auto it = dataOptions.find(currentDataOption);
+    if (it != dataOptions.end()) {
+        currentDataSource = it->second;
     }
     
     if (!currentDataSource || currentDataSource->isEmpty()) {

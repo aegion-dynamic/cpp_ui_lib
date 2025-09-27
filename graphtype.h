@@ -18,6 +18,9 @@ enum class GraphType
 // Helper function to get string representation of GraphType
 QString graphTypeToString(GraphType type);
 
+// Helper function to get GraphType from string
+GraphType stringToGraphType(const QString& title);
+
 // Helper function to get all available graph types
 std::vector<GraphType> getAllGraphTypes();
 
