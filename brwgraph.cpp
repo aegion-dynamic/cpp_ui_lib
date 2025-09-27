@@ -30,11 +30,20 @@ BRWGraph::~BRWGraph()
  */
 void BRWGraph::draw()
 {
-    // Call parent draw method first
-    waterfallgraph::draw();
-    
-    // Add BRW-specific scatterplot drawing
-    drawBRWScatterplot();
+    if (!graphicsScene)
+        return;
+
+    graphicsScene->clear();
+    setupDrawingArea();
+
+    if (gridEnabled) {
+        drawGrid();
+    }
+
+    if (dataSource && !dataSource->isEmpty()) {
+        updateDataRanges();
+        drawScatterplot(Qt::yellow, 3.0, Qt::black); // Default scatterplot for BRW
+    }
 }
 
 /**

@@ -30,11 +30,20 @@ RTWGraph::~RTWGraph()
  */
 void RTWGraph::draw()
 {
-    // Call parent draw method first
-    waterfallgraph::draw();
-    
-    // Add RTW-specific scatterplot drawing
-    drawRTWScatterplot();
+    if (!graphicsScene)
+        return;
+
+    graphicsScene->clear();
+    setupDrawingArea();
+
+    if (gridEnabled) {
+        drawGrid();
+    }
+
+    if (dataSource && !dataSource->isEmpty()) {
+        updateDataRanges();
+        drawScatterplot(Qt::blue, 3.0, Qt::white); // Default scatterplot for RTW
+    }
 }
 
 /**

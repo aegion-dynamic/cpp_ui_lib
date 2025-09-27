@@ -30,11 +30,20 @@ FTWGraph::~FTWGraph()
  */
 void FTWGraph::draw()
 {
-    // Call parent draw method first
-    waterfallgraph::draw();
-    
-    // Add FTW-specific scatterplot drawing
-    drawFTWScatterplot();
+    if (!graphicsScene)
+        return;
+
+    graphicsScene->clear();
+    setupDrawingArea();
+
+    if (gridEnabled) {
+        drawGrid();
+    }
+
+    if (dataSource && !dataSource->isEmpty()) {
+        updateDataRanges();
+        drawScatterplot(Qt::white, 3.0, Qt::black); // Default scatterplot for FTW
+    }
 }
 
 /**

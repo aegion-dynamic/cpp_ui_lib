@@ -30,11 +30,20 @@ BDWGraph::~BDWGraph()
  */
 void BDWGraph::draw()
 {
-    // Call parent draw method first
-    waterfallgraph::draw();
-    
-    // Add BDW-specific scatterplot drawing
-    drawBDWScatterplot();
+    if (!graphicsScene)
+        return;
+
+    graphicsScene->clear();
+    setupDrawingArea();
+
+    if (gridEnabled) {
+        drawGrid();
+    }
+
+    if (dataSource && !dataSource->isEmpty()) {
+        updateDataRanges();
+        drawScatterplot(Qt::magenta, 3.0, Qt::white); // Default scatterplot for BDW
+    }
 }
 
 /**

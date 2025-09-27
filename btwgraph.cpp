@@ -30,11 +30,20 @@ BTWGraph::~BTWGraph()
  */
 void BTWGraph::draw()
 {
-    // Call parent draw method first
-    waterfallgraph::draw();
-    
-    // Add BTW-specific scatterplot drawing
-    drawBTWScatterplot();
+    if (!graphicsScene)
+        return;
+
+    graphicsScene->clear();
+    setupDrawingArea();
+
+    if (gridEnabled) {
+        drawGrid();
+    }
+
+    if (dataSource && !dataSource->isEmpty()) {
+        updateDataRanges();
+        drawScatterplot(Qt::red, 3.0, Qt::white); // Default scatterplot for BTW
+    }
 }
 
 /**
