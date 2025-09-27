@@ -10,15 +10,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Create GraphLayout programmatically
     std::vector<QString> dataSourceLabels = {"LTW", "BTW", "RTW"};
-    graphgrid = new GraphLayout(ui->centralwidget, LayoutType::GPW4W, dataSourceLabels);
+    graphgrid = new GraphLayout(ui->originalTab, LayoutType::GPW4W, dataSourceLabels);
     graphgrid->setObjectName("graphgrid");
     graphgrid->setGeometry(QRect(970, 70, 611, 651));
-    
-    // Create Waterfall Graph Example
-    waterfallExample = new waterfallgraph(ui->centralwidget, true, 10, TimeInterval::FifteenMinutes);
-    waterfallExample->setObjectName("waterfallExample");
-    waterfallExample->setGeometry(QRect(10, 220, 531, 200));
-    waterfallExample->setMouseSelectionEnabled(true);
 
     
 
@@ -77,8 +71,8 @@ MainWindow::MainWindow(QWidget *parent)
     // Demonstrate data point methods
     demonstrateDataPointMethods();
     
-    // Setup waterfall graph example
-    setupWaterfallExample();
+    // Setup custom graphs tab
+    setupCustomGraphsTab();
 
     // // Configure TimeSelectionVisualizer 
     // configureTimeVisualizer();
@@ -384,75 +378,138 @@ void MainWindow::demonstrateDataPointMethods()
     qDebug() << "NEW label-based container APIs demonstrated successfully";
 }
 
-void MainWindow::setupWaterfallExample()
+void MainWindow::setupCustomGraphsTab()
 {
-    qDebug() << "=== Setting up Waterfall Graph Example ===";
+    qDebug() << "=== Setting up Custom Graphs Tab ===";
     
-    // Create waterfall data with multiple series
-    WaterfallData* waterfallData = new WaterfallData("Waterfall Example Data");
+    // Create a grid layout for the custom graphs tab
+    QGridLayout *gridLayout = new QGridLayout(ui->customGraphsTab);
+    gridLayout->setSpacing(10);
+    gridLayout->setContentsMargins(10, 10, 10, 10);
     
-    // Add some sample data to the default series
-    std::vector<qreal> yValues = {10.0, 20.0, 15.0, 25.0, 30.0, 22.0, 18.0, 35.0, 28.0, 32.0};
-    std::vector<QDateTime> timestamps;
+    // Create 4 custom waterfall graphs with different styles and colors
+    
+    // Graph 1: Line chart style with blue theme
+    customGraph1 = new CustomWaterfallGraph(ui->customGraphsTab, true, 8, TimeInterval::FifteenMinutes);
+    customGraph1->setObjectName("customGraph1");
+    customGraph1->setMouseSelectionEnabled(true);
+    customGraph1->setDrawingStyle("default");
+    customGraph1->setCustomColors(
+        QColor(100, 150, 255),  // Blue data color
+        QColor(200, 200, 200), // Light gray grid
+        QColor(20, 30, 50)      // Dark blue background
+    );
+    
+    // Graph 2: Area chart style with green theme
+    customGraph2 = new CustomWaterfallGraph(ui->customGraphsTab, true, 6, TimeInterval::FifteenMinutes);
+    customGraph2->setObjectName("customGraph2");
+    customGraph2->setMouseSelectionEnabled(true);
+    customGraph2->setDrawingStyle("area");
+    customGraph2->setCustomColors(
+        QColor(100, 255, 150),  // Green data color
+        QColor(180, 180, 180), // Light gray grid
+        QColor(20, 50, 30)      // Dark green background
+    );
+    
+    // Graph 3: Points style with red theme
+    customGraph3 = new CustomWaterfallGraph(ui->customGraphsTab, true, 10, TimeInterval::FifteenMinutes);
+    customGraph3->setObjectName("customGraph3");
+    customGraph3->setMouseSelectionEnabled(true);
+    customGraph3->setDrawingStyle("points");
+    customGraph3->setCustomColors(
+        QColor(255, 100, 100),  // Red data color
+        QColor(220, 220, 220), // Light gray grid
+        QColor(50, 20, 20)      // Dark red background
+    );
+    
+    // Graph 4: Default style with purple theme
+    customGraph4 = new CustomWaterfallGraph(ui->customGraphsTab, true, 12, TimeInterval::FifteenMinutes);
+    customGraph4->setObjectName("customGraph4");
+    customGraph4->setMouseSelectionEnabled(true);
+    customGraph4->setDrawingStyle("default");
+    customGraph4->setCustomColors(
+        QColor(200, 100, 255),  // Purple data color
+        QColor(200, 200, 200), // Light gray grid
+        QColor(40, 20, 50)      // Dark purple background
+    );
+    
+    // Add graphs to grid layout (2x2)
+    gridLayout->addWidget(customGraph1, 0, 0);
+    gridLayout->addWidget(customGraph2, 0, 1);
+    gridLayout->addWidget(customGraph3, 1, 0);
+    gridLayout->addWidget(customGraph4, 1, 1);
+    
+    // Set equal column and row stretches
+    gridLayout->setColumnStretch(0, 1);
+    gridLayout->setColumnStretch(1, 1);
+    gridLayout->setRowStretch(0, 1);
+    gridLayout->setRowStretch(1, 1);
+    
+    // Create sample data for each graph
+    setupCustomGraphData();
+    
+    qDebug() << "Custom graphs tab setup completed successfully";
+}
+
+void MainWindow::setupCustomGraphData()
+{
+    qDebug() << "=== Setting up Custom Graph Data ===";
+    
     QDateTime now = QDateTime::currentDateTime();
-    for (int i = 0; i < yValues.size(); ++i) {
-        timestamps.push_back(now.addSecs(-i * 60)); // 1 minute intervals going back
+    
+    // Graph 1 Data: Bar chart with ascending values
+    WaterfallData* graph1Data = new WaterfallData("Bar Chart Data");
+    std::vector<qreal> graph1Values = {5.0, 8.0, 12.0, 15.0, 18.0, 22.0, 25.0, 28.0, 30.0, 32.0};
+    std::vector<QDateTime> graph1Timestamps;
+    for (int i = 0; i < graph1Values.size(); ++i) {
+        graph1Timestamps.push_back(now.addSecs(-i * 60));
     }
-    waterfallData->setData(yValues, timestamps);
+    graph1Data->setData(graph1Values, graph1Timestamps);
+    customGraph1->setDataSource(*graph1Data);
     
-    // Add a second data series
-    std::vector<qreal> series2Values = {5.0, 12.0, 8.0, 18.0, 22.0, 16.0, 14.0, 20.0, 25.0, 18.0};
-    std::vector<QDateTime> series2Timestamps;
-    for (int i = 0; i < series2Values.size(); ++i) {
-        series2Timestamps.push_back(now.addSecs(-i * 60));
+    // Graph 2 Data: Area chart with wave pattern
+    WaterfallData* graph2Data = new WaterfallData("Area Chart Data");
+    std::vector<qreal> graph2Values = {10.0, 15.0, 20.0, 18.0, 12.0, 8.0, 14.0, 22.0, 16.0, 11.0};
+    std::vector<QDateTime> graph2Timestamps;
+    for (int i = 0; i < graph2Values.size(); ++i) {
+        graph2Timestamps.push_back(now.addSecs(-i * 60));
     }
-    waterfallData->addDataSeries("Series2", series2Values, series2Timestamps);
+    graph2Data->setData(graph2Values, graph2Timestamps);
+    customGraph2->setDataSource(*graph2Data);
     
-    // Add a third data series
-    std::vector<qreal> series3Values = {35.0, 28.0, 32.0, 26.0, 20.0, 24.0, 30.0, 22.0, 28.0, 25.0};
-    std::vector<QDateTime> series3Timestamps;
-    for (int i = 0; i < series3Values.size(); ++i) {
-        series3Timestamps.push_back(now.addSecs(-i * 60));
+    // Graph 3 Data: Points with random pattern
+    WaterfallData* graph3Data = new WaterfallData("Points Data");
+    std::vector<qreal> graph3Values = {8.0, 25.0, 12.0, 30.0, 15.0, 22.0, 18.0, 28.0, 20.0, 16.0};
+    std::vector<QDateTime> graph3Timestamps;
+    for (int i = 0; i < graph3Values.size(); ++i) {
+        graph3Timestamps.push_back(now.addSecs(-i * 60));
     }
-    waterfallData->addDataSeries("Series3", series3Values, series3Timestamps);
+    graph3Data->setData(graph3Values, graph3Timestamps);
+    customGraph3->setDataSource(*graph3Data);
     
-    // Set the data source
-    waterfallExample->setDataSource(*waterfallData);
+    // Graph 4 Data: Default with mixed pattern
+    WaterfallData* graph4Data = new WaterfallData("Default Data");
+    std::vector<qreal> graph4Values = {15.0, 20.0, 18.0, 25.0, 22.0, 28.0, 24.0, 30.0, 26.0, 23.0};
+    std::vector<QDateTime> graph4Timestamps;
+    for (int i = 0; i < graph4Values.size(); ++i) {
+        graph4Timestamps.push_back(now.addSecs(-i * 60));
+    }
+    graph4Data->setData(graph4Values, graph4Timestamps);
+    customGraph4->setDataSource(*graph4Data);
     
-    // Demonstrate the new drawing methods
-    // Draw some custom points
-    waterfallExample->drawPoint(QPointF(50, 50), QColor(255, 0, 0), 4.0); // Red point
-    waterfallExample->drawPoint(QPointF(100, 80), QColor(0, 255, 0), 3.0); // Green point
-    waterfallExample->drawPoint(QPointF(150, 120), QColor(0, 0, 255), 5.0); // Blue point
+    // Add some custom elements to each graph
+    customGraph1->drawCharacterLabel("Line Chart", QPointF(10, 10), QColor(255, 255, 255), 14);
+    customGraph1->drawPoint(QPointF(50, 50), QColor(255, 255, 0), 6.0);
     
-    // Draw axis lines
-    waterfallExample->drawAxisLine(QPointF(20, 20), QPointF(480, 20), QColor(255, 255, 255, 128)); // Horizontal line
-    waterfallExample->drawAxisLine(QPointF(250, 20), QPointF(250, 180), QColor(255, 255, 255, 128)); // Vertical line
+    customGraph2->drawCharacterLabel("Area Chart", QPointF(10, 10), QColor(255, 255, 255), 14);
+    customGraph2->drawTriangleMarker(QPointF(100, 80), QColor(255, 255, 0), QColor(255, 255, 255), 10.0);
     
-    // Draw character labels
-    waterfallExample->drawCharacterLabel("Point A", QPointF(50, 30), QColor(255, 255, 0), 12);
-    waterfallExample->drawCharacterLabel("Point B", QPointF(100, 60), QColor(255, 255, 0), 12);
-    waterfallExample->drawCharacterLabel("Point C", QPointF(150, 100), QColor(255, 255, 0), 12);
-    waterfallExample->drawCharacterLabel("Axis X", QPointF(480, 10), QColor(255, 255, 255), 10);
-    waterfallExample->drawCharacterLabel("Axis Y", QPointF(260, 20), QColor(255, 255, 255), 10);
+    customGraph3->drawCharacterLabel("Points Chart", QPointF(10, 10), QColor(255, 255, 255), 14);
+    customGraph3->drawAxisLine(QPointF(20, 20), QPointF(180, 20), QColor(255, 255, 255, 128));
     
-    // Draw triangle markers
-    waterfallExample->drawTriangleMarker(QPointF(200, 100), QColor(255, 0, 255), QColor(255, 255, 255), 10.0); // Magenta triangle
-    waterfallExample->drawTriangleMarker(QPointF(300, 130), QColor(0, 255, 255), QColor(255, 255, 255), 8.0); // Cyan triangle
-    waterfallExample->drawTriangleMarker(QPointF(400, 80), QColor(255, 255, 0), QColor(255, 255, 255), 12.0); // Yellow triangle
+    customGraph4->drawCharacterLabel("Default Chart", QPointF(10, 10), QColor(255, 255, 255), 14);
+    customGraph4->drawScatterplot(QColor(255, 255, 0), 4.0, QColor(255, 255, 255));
     
-    // Draw scatterplots for each data series
-    waterfallExample->drawScatterplot("Series2", QColor(255, 100, 100), 4.0, QColor(255, 255, 255)); // Red scatterplot
-    waterfallExample->drawScatterplot("Series3", QColor(100, 255, 100), 3.5, QColor(255, 255, 255)); // Green scatterplot
-    waterfallExample->drawScatterplot(QColor(100, 100, 255), 3.0, QColor(255, 255, 255)); // Blue scatterplot for default series
-    
-    // Print information about the data series
-    qDebug() << "Waterfall data series labels:" << waterfallData->getDataSeriesLabels();
-    qDebug() << "Series2 size:" << waterfallData->getDataSeriesSize("Series2");
-    qDebug() << "Series3 size:" << waterfallData->getDataSeriesSize("Series3");
-    qDebug() << "Combined Y range:" << waterfallData->getCombinedYRange().first << "to" << waterfallData->getCombinedYRange().second;
-    
-    qDebug() << "Scatterplots drawn for default series, Series2, and Series3";
-    qDebug() << "Waterfall graph example setup completed successfully";
+    qDebug() << "Custom graph data setup completed successfully";
 }
 

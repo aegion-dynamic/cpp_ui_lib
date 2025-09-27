@@ -11,6 +11,7 @@
 #include "graphlayout.h"
 #include "waterfallgraph.h"
 #include "waterfalldata.h"
+#include "customwaterfallgraph.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -34,7 +35,12 @@ private:
     QTimer *timeUpdateTimer; ///< Timer for updating current time
     
     GraphLayout *graphgrid; ///< Graph layout widget
-    waterfallgraph *waterfallExample; ///< Waterfall graph example widget
+    
+    // Custom waterfall graphs for the new tab
+    CustomWaterfallGraph *customGraph1; ///< Custom waterfall graph 1
+    CustomWaterfallGraph *customGraph2; ///< Custom waterfall graph 2
+    CustomWaterfallGraph *customGraph3; ///< Custom waterfall graph 3
+    CustomWaterfallGraph *customGraph4; ///< Custom waterfall graph 4
     
     // void configureTimeVisualizer();
     // void configureTimelineView();
@@ -42,7 +48,8 @@ private:
     // void updateTimeline();
     void configureLayoutSelection();
     void demonstrateDataPointMethods();
-    void setupWaterfallExample();
+    void setupCustomGraphsTab();
+    void setupCustomGraphData();
 
     long simTick;
 
