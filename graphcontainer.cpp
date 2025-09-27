@@ -17,10 +17,6 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView)
     m_comboBox = new QComboBox(this);
     m_comboBox->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     
-    // Connect combobox signal to data option change handler
-    connect(m_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
-            this, &GraphContainer::onDataOptionChanged);
-    
     // Create ZoomPanel
     m_zoomPanel = new ZoomPanel(this);
     m_zoomPanel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
@@ -37,14 +33,6 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView)
     
     // Enable range limiting for the waterfall graph
     m_waterfallGraph->setRangeLimitingEnabled(true);
-    
-    // Connect waterfall graph selection signal to our handler
-    connect(m_waterfallGraph, &waterfallgraph::SelectionCreated,
-            this, &GraphContainer::onSelectionCreated);
-    
-    // Connect zoom panel value changed signal to our handler
-    connect(m_zoomPanel, &ZoomPanel::valueChanged,
-            this, &GraphContainer::onZoomValueChanged);
     
     
     // Add ComboBox, ZoomPanel, and WaterfallGraph to left layout
@@ -65,16 +53,15 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView)
     if (m_showTimelineView) {
         m_timelineView = new TimelineView(this);
         m_mainLayout->addWidget(m_timelineView);
-        
-        // Connect TimelineView intervalChanged signal to our slot
-        connect(m_timelineView, &TimelineView::intervalChanged, 
-                this, &GraphContainer::onTimeIntervalChanged);
     } else {
         m_timelineView = nullptr;
     }
     
     // Set layout
     setLayout(m_mainLayout);
+    
+    // Setup all event connections
+    setupEventConnections();
     
     // Initialize container size
     updateTotalContainerSize();
@@ -89,9 +76,8 @@ void GraphContainer::setShowTimelineView(bool showTimelineView)
         m_timelineView = new TimelineView(this);
         m_mainLayout->addWidget(m_timelineView);
         
-        // Connect TimelineView intervalChanged signal to our slot
-        connect(m_timelineView, &TimelineView::intervalChanged, 
-                this, &GraphContainer::onTimeIntervalChanged);
+        // Re-establish event connections to include the new TimelineView
+        setupEventConnections();
     }
     
     // Update container size when timeline view visibility changes
@@ -330,6 +316,29 @@ void GraphContainer::onDataOptionChanged(int index)
         QString selectedTitle = m_comboBox->itemText(index);
         setCurrentDataOption(selectedTitle);
     }
+}
+
+void GraphContainer::setupEventConnections()
+{
+    // Connect ComboBox data source selection
+    connect(m_comboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &GraphContainer::onDataOptionChanged);
+    
+    // Connect WaterfallGraph selection events
+    connect(m_waterfallGraph, &waterfallgraph::SelectionCreated,
+            this, &GraphContainer::onSelectionCreated);
+    
+    // Connect ZoomPanel value changes
+    connect(m_zoomPanel, &ZoomPanel::valueChanged,
+            this, &GraphContainer::onZoomValueChanged);
+    
+    // Connect TimelineView interval changes (if timeline view exists)
+    if (m_timelineView) {
+        connect(m_timelineView, &TimelineView::intervalChanged, 
+                this, &GraphContainer::onTimeIntervalChanged);
+    }
+    
+    qDebug() << "GraphContainer: All event connections established";
 }
 
 void GraphContainer::subscribeToIntervalChange(QObject* subscriber, const char* slot)

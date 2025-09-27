@@ -85,6 +85,7 @@ private:
     void updateTotalContainerSize();
     void updateComboBoxOptions();
     void onDataOptionChanged(int index);
+    void setupEventConnections();
     
     // Data source management
     WaterfallData waterfallData;
