@@ -10,6 +10,7 @@
 #include <map>
 #include "graphcontainer.h"
 #include "waterfalldata.h"
+#include "graphtype.h"
 
 enum class LayoutType
 {
@@ -26,7 +27,7 @@ class GraphLayout : public QWidget
 {
     Q_OBJECT
 public:
-    explicit GraphLayout(QWidget *parent, LayoutType layoutType, const std::vector<QString>& dataSourceLabels);
+    explicit GraphLayout(QWidget *parent, LayoutType layoutType);
     ~GraphLayout();
 
     void setLayoutType(LayoutType layoutType);
@@ -96,6 +97,8 @@ private:
     QHBoxLayout *m_graphContainersRow2Layout;
 
     std::map<QString, WaterfallData *> m_dataSources;
+
+    std::vector<QString> dataSourceLabels;
 
     void attachContainerDataSources();
     void initializeContainers();

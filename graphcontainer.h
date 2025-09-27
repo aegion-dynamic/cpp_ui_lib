@@ -15,6 +15,15 @@
 #include "timelineview.h"
 #include "zoompanel.h"
 #include "timelineutils.h"
+#include "graphtype.h"
+#include "customwaterfallgraph.h"
+#include "fdwgraph.h"
+#include "bdwgraph.h"
+#include "brwgraph.h"
+#include "ltwgraph.h"
+#include "btwgraph.h"
+#include "rtwgraph.h"
+#include "ftwgraph.h"
 
 class GraphContainer : public QWidget
 {
@@ -86,6 +95,7 @@ private:
     void updateComboBoxOptions();
     void onDataOptionChanged(int index);
     void setupEventConnections();
+    WaterfallGraph* createWaterfallGraph(GraphType graphType);
     
     // Data source management
     WaterfallData waterfallData;

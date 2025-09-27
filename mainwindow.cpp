@@ -8,9 +8,8 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    // Create GraphLayout programmatically
-    std::vector<QString> dataSourceLabels = {"BDW", "BRW",  "BTW", "FDW", "FTW" ,"LTW", "RTW"};
-    graphgrid = new GraphLayout(ui->originalTab, LayoutType::GPW4W, dataSourceLabels);
+    // Create GraphLayout programmatically with default graph types
+    graphgrid = new GraphLayout(ui->originalTab, LayoutType::GPW4W);
     graphgrid->setObjectName("graphgrid");
     graphgrid->setGeometry(QRect(970, 70, 611, 651));
 

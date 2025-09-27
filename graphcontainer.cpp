@@ -341,6 +341,29 @@ void GraphContainer::setupEventConnections()
     qDebug() << "GraphContainer: All event connections established";
 }
 
+WaterfallGraph* GraphContainer::createWaterfallGraph(GraphType graphType)
+{
+    switch (graphType) {
+        case GraphType::BDW:
+            return new BDWGraph(this);
+        case GraphType::BRW:
+            return new BRWGraph(this);
+        case GraphType::BTW:
+            return new BTWGraph(this);
+        case GraphType::FDW:
+            return new FDWGraph(this);
+        case GraphType::FTW:
+            return new FTWGraph(this);
+        case GraphType::LTW:
+            return new LTWGraph(this);
+        case GraphType::RTW:
+            return new RTWGraph(this);
+        default:
+            qWarning() << "Unknown graph type, defaulting to BDWGraph";
+            return new BDWGraph(this);
+    }
+}
+
 void GraphContainer::subscribeToIntervalChange(QObject* subscriber, const char* slot)
 {
     if (subscriber && slot) {

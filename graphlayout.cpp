@@ -1,10 +1,13 @@
 #include "graphlayout.h"
 #include <QDebug>
 
-GraphLayout::GraphLayout(QWidget *parent, LayoutType layoutType, const std::vector<QString>& dataSourceLabels)
+GraphLayout::GraphLayout(QWidget *parent, LayoutType layoutType)
     : QWidget{parent}
     , m_layoutType(layoutType)
 {
+
+    dataSourceLabels = getAllGraphTypeStrings();
+
     // Initialize data sources based on provided labels
     for (const QString& label : dataSourceLabels) {
         m_dataSources[label] = new WaterfallData(label);
@@ -175,6 +178,7 @@ void GraphLayout::setGraphViewSize(int width, int height)
     }
     updateLayoutSizing();
 }
+
 
 void GraphLayout::initializeContainers()
 {
