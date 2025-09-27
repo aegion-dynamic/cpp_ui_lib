@@ -5,6 +5,10 @@
 #include <QGraphicsView>
 #include <QGraphicsScene>
 #include <QGraphicsRectItem>
+#include <QGraphicsTextItem>
+#include <QGraphicsEllipseItem>
+#include <QGraphicsLineItem>
+#include <QGraphicsPolygonItem>
 #include <QMouseEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QResizeEvent>
@@ -15,6 +19,9 @@
 #include <QTimer>
 #include <QCoreApplication>
 #include <QTime>
+#include <QColor>
+#include <QFont>
+#include <QPolygonF>
 #include <vector>
 #include "drawutils.h"
 #include "waterfalldata.h"
@@ -145,6 +152,14 @@ public:
     
     // Time range update method
     void updateTimeRange();
+    
+    // Drawing methods for custom elements
+    void drawPoint(const QPointF& position, const QColor& color = Qt::white, qreal size = 2.0);
+    void drawAxisLine(const QPointF& startPos, const QPointF& endPos, const QColor& color = QColor(255, 255, 255, 128));
+    void drawCharacterLabel(const QString& text, const QPointF& position, const QColor& color = Qt::white, int fontSize = 12);
+    void drawTriangleMarker(const QPointF& position, const QColor& fillColor = Qt::red, const QColor& outlineColor = Qt::black, qreal size = 8.0);
+    void drawScatterplot(const QString& seriesLabel, const QColor& pointColor = Qt::white, qreal pointSize = 3.0, const QColor& outlineColor = Qt::black);
+    void drawScatterplot(const QColor& pointColor = Qt::white, qreal pointSize = 3.0, const QColor& outlineColor = Qt::black);
 
 signals:
     void SelectionCreated(const TimeSelectionSpan& selection);

@@ -13,6 +13,12 @@ MainWindow::MainWindow(QWidget *parent)
     graphgrid = new GraphLayout(ui->centralwidget, LayoutType::GPW4W, dataSourceLabels);
     graphgrid->setObjectName("graphgrid");
     graphgrid->setGeometry(QRect(970, 70, 611, 651));
+    
+    // Create Waterfall Graph Example
+    waterfallExample = new waterfallgraph(ui->centralwidget, true, 10, TimeInterval::FifteenMinutes);
+    waterfallExample->setObjectName("waterfallExample");
+    waterfallExample->setGeometry(QRect(10, 220, 531, 200));
+    waterfallExample->setMouseSelectionEnabled(true);
 
     
 
@@ -70,6 +76,9 @@ MainWindow::MainWindow(QWidget *parent)
     
     // Demonstrate data point methods
     demonstrateDataPointMethods();
+    
+    // Setup waterfall graph example
+    setupWaterfallExample();
 
     // // Configure TimeSelectionVisualizer 
     // configureTimeVisualizer();
@@ -373,5 +382,77 @@ void MainWindow::demonstrateDataPointMethods()
     
     qDebug() << "Data source methods demonstrated successfully with 15-minute historical data";
     qDebug() << "NEW label-based container APIs demonstrated successfully";
+}
+
+void MainWindow::setupWaterfallExample()
+{
+    qDebug() << "=== Setting up Waterfall Graph Example ===";
+    
+    // Create waterfall data with multiple series
+    WaterfallData* waterfallData = new WaterfallData("Waterfall Example Data");
+    
+    // Add some sample data to the default series
+    std::vector<qreal> yValues = {10.0, 20.0, 15.0, 25.0, 30.0, 22.0, 18.0, 35.0, 28.0, 32.0};
+    std::vector<QDateTime> timestamps;
+    QDateTime now = QDateTime::currentDateTime();
+    for (int i = 0; i < yValues.size(); ++i) {
+        timestamps.push_back(now.addSecs(-i * 60)); // 1 minute intervals going back
+    }
+    waterfallData->setData(yValues, timestamps);
+    
+    // Add a second data series
+    std::vector<qreal> series2Values = {5.0, 12.0, 8.0, 18.0, 22.0, 16.0, 14.0, 20.0, 25.0, 18.0};
+    std::vector<QDateTime> series2Timestamps;
+    for (int i = 0; i < series2Values.size(); ++i) {
+        series2Timestamps.push_back(now.addSecs(-i * 60));
+    }
+    waterfallData->addDataSeries("Series2", series2Values, series2Timestamps);
+    
+    // Add a third data series
+    std::vector<qreal> series3Values = {35.0, 28.0, 32.0, 26.0, 20.0, 24.0, 30.0, 22.0, 28.0, 25.0};
+    std::vector<QDateTime> series3Timestamps;
+    for (int i = 0; i < series3Values.size(); ++i) {
+        series3Timestamps.push_back(now.addSecs(-i * 60));
+    }
+    waterfallData->addDataSeries("Series3", series3Values, series3Timestamps);
+    
+    // Set the data source
+    waterfallExample->setDataSource(*waterfallData);
+    
+    // Demonstrate the new drawing methods
+    // Draw some custom points
+    waterfallExample->drawPoint(QPointF(50, 50), QColor(255, 0, 0), 4.0); // Red point
+    waterfallExample->drawPoint(QPointF(100, 80), QColor(0, 255, 0), 3.0); // Green point
+    waterfallExample->drawPoint(QPointF(150, 120), QColor(0, 0, 255), 5.0); // Blue point
+    
+    // Draw axis lines
+    waterfallExample->drawAxisLine(QPointF(20, 20), QPointF(480, 20), QColor(255, 255, 255, 128)); // Horizontal line
+    waterfallExample->drawAxisLine(QPointF(250, 20), QPointF(250, 180), QColor(255, 255, 255, 128)); // Vertical line
+    
+    // Draw character labels
+    waterfallExample->drawCharacterLabel("Point A", QPointF(50, 30), QColor(255, 255, 0), 12);
+    waterfallExample->drawCharacterLabel("Point B", QPointF(100, 60), QColor(255, 255, 0), 12);
+    waterfallExample->drawCharacterLabel("Point C", QPointF(150, 100), QColor(255, 255, 0), 12);
+    waterfallExample->drawCharacterLabel("Axis X", QPointF(480, 10), QColor(255, 255, 255), 10);
+    waterfallExample->drawCharacterLabel("Axis Y", QPointF(260, 20), QColor(255, 255, 255), 10);
+    
+    // Draw triangle markers
+    waterfallExample->drawTriangleMarker(QPointF(200, 100), QColor(255, 0, 255), QColor(255, 255, 255), 10.0); // Magenta triangle
+    waterfallExample->drawTriangleMarker(QPointF(300, 130), QColor(0, 255, 255), QColor(255, 255, 255), 8.0); // Cyan triangle
+    waterfallExample->drawTriangleMarker(QPointF(400, 80), QColor(255, 255, 0), QColor(255, 255, 255), 12.0); // Yellow triangle
+    
+    // Draw scatterplots for each data series
+    waterfallExample->drawScatterplot("Series2", QColor(255, 100, 100), 4.0, QColor(255, 255, 255)); // Red scatterplot
+    waterfallExample->drawScatterplot("Series3", QColor(100, 255, 100), 3.5, QColor(255, 255, 255)); // Green scatterplot
+    waterfallExample->drawScatterplot(QColor(100, 100, 255), 3.0, QColor(255, 255, 255)); // Blue scatterplot for default series
+    
+    // Print information about the data series
+    qDebug() << "Waterfall data series labels:" << waterfallData->getDataSeriesLabels();
+    qDebug() << "Series2 size:" << waterfallData->getDataSeriesSize("Series2");
+    qDebug() << "Series3 size:" << waterfallData->getDataSeriesSize("Series3");
+    qDebug() << "Combined Y range:" << waterfallData->getCombinedYRange().first << "to" << waterfallData->getCombinedYRange().second;
+    
+    qDebug() << "Scatterplots drawn for default series, Series2, and Series3";
+    qDebug() << "Waterfall graph example setup completed successfully";
 }
 

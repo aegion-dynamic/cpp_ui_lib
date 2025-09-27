@@ -1018,3 +1018,218 @@ void waterfallgraph::unsetCustomYRange()
     
     qDebug() << "Custom Y range unset, reverting to data range";
 }
+
+/**
+ * @brief Draw a point as a small dot at the specified position.
+ * 
+ * @param position The position to draw the point at
+ * @param color The color of the point (default: white)
+ * @param size The size of the point (default: 2.0)
+ */
+void waterfallgraph::drawPoint(const QPointF& position, const QColor& color, qreal size)
+{
+    if (!graphicsScene) return;
+    
+    // Create a small circle for the point
+    QGraphicsEllipseItem* point = new QGraphicsEllipseItem();
+    point->setRect(position.x() - size/2, position.y() - size/2, size, size);
+    point->setPen(QPen(color, 1));
+    point->setBrush(QBrush(color));
+    point->setZValue(100); // Draw on top of grid but below selection
+    
+    graphicsScene->addItem(point);
+}
+
+/**
+ * @brief Draw a dashed white translucent axis line between two points.
+ * 
+ * @param startPos The starting position of the line
+ * @param endPos The ending position of the line
+ * @param color The color of the line (default: white translucent)
+ */
+void waterfallgraph::drawAxisLine(const QPointF& startPos, const QPointF& endPos, const QColor& color)
+{
+    if (!graphicsScene) return;
+    
+    // Create a dashed line
+    QGraphicsLineItem* line = new QGraphicsLineItem();
+    line->setLine(startPos.x(), startPos.y(), endPos.x(), endPos.y());
+    line->setPen(QPen(color, 1, Qt::DashLine));
+    line->setZValue(50); // Draw above grid but below data points
+    
+    graphicsScene->addItem(line);
+}
+
+/**
+ * @brief Draw a character label at the specified position.
+ * 
+ * @param text The text to display
+ * @param position The position to draw the text at
+ * @param color The color of the text (default: white)
+ * @param fontSize The font size (default: 12)
+ */
+void waterfallgraph::drawCharacterLabel(const QString& text, const QPointF& position, const QColor& color, int fontSize)
+{
+    if (!graphicsScene) return;
+    
+    // Create a text item
+    QGraphicsTextItem* textItem = new QGraphicsTextItem();
+    textItem->setPlainText(text);
+    textItem->setPos(position);
+    
+    // Set font and color
+    QFont font;
+    font.setPointSize(fontSize);
+    textItem->setFont(font);
+    textItem->setDefaultTextColor(color);
+    textItem->setZValue(200); // Draw on top of everything
+    
+    graphicsScene->addItem(textItem);
+}
+
+/**
+ * @brief Draw a solid triangle with square outline marker at the specified position.
+ * 
+ * @param position The position to draw the marker at
+ * @param fillColor The fill color of the triangle (default: red)
+ * @param outlineColor The outline color (default: black)
+ * @param size The size of the marker (default: 8.0)
+ */
+void waterfallgraph::drawTriangleMarker(const QPointF& position, const QColor& fillColor, const QColor& outlineColor, qreal size)
+{
+    if (!graphicsScene) return;
+    
+    // Create triangle polygon (pointing up)
+    QPolygonF triangle;
+    triangle << QPointF(position.x(), position.y() - size/2)           // Top point
+             << QPointF(position.x() - size/2, position.y() + size/2)   // Bottom left
+             << QPointF(position.x() + size/2, position.y() + size/2);  // Bottom right
+    
+    // Create the triangle polygon item
+    QGraphicsPolygonItem* triangleItem = new QGraphicsPolygonItem(triangle);
+    triangleItem->setPen(QPen(outlineColor, 2));
+    triangleItem->setBrush(QBrush(fillColor));
+    triangleItem->setZValue(150); // Draw above data points but below text
+    
+    graphicsScene->addItem(triangleItem);
+    
+    // Create square outline around the triangle
+    QGraphicsRectItem* squareOutline = new QGraphicsRectItem();
+    squareOutline->setRect(position.x() - size/2, position.y() - size/2, size, size);
+    squareOutline->setPen(QPen(outlineColor, 2));
+    squareOutline->setBrush(QBrush(Qt::transparent));
+    squareOutline->setZValue(149); // Draw just below the triangle
+    
+    graphicsScene->addItem(squareOutline);
+}
+
+/**
+ * @brief Draw a scatterplot for a given data series.
+ * 
+ * @param seriesLabel The label of the data series to plot
+ * @param pointColor The color of the scatterplot points (default: white)
+ * @param pointSize The size of the scatterplot points (default: 3.0)
+ * @param outlineColor The outline color of the scatterplot points (default: black)
+ */
+void waterfallgraph::drawScatterplot(const QString& seriesLabel, const QColor& pointColor, qreal pointSize, const QColor& outlineColor)
+{
+    if (!graphicsScene || !dataSource) return;
+    
+    // Get the data series
+    const std::vector<qreal>& yData = dataSource->getYDataSeries(seriesLabel);
+    const std::vector<QDateTime>& timestamps = dataSource->getTimestampsSeries(seriesLabel);
+    
+    if (yData.empty() || timestamps.empty()) {
+        qDebug() << "No data available for scatterplot series:" << seriesLabel;
+        return;
+    }
+    
+    if (yData.size() != timestamps.size()) {
+        qDebug() << "Data size mismatch for scatterplot series:" << seriesLabel;
+        return;
+    }
+    
+    // Filter data points to only include those within the current time range
+    std::vector<std::pair<qreal, QDateTime>> visibleData;
+    for (size_t i = 0; i < yData.size(); ++i) {
+        if (timestamps[i] >= timeMin && timestamps[i] <= timeMax) {
+            visibleData.push_back({yData[i], timestamps[i]});
+        }
+    }
+    
+    if (visibleData.empty()) {
+        qDebug() << "No data points within current time range for scatterplot series:" << seriesLabel;
+        return;
+    }
+    
+    // Draw scatterplot points
+    for (const auto& dataPoint : visibleData) {
+        QPointF screenPoint = mapDataToScreen(dataPoint.first, dataPoint.second);
+        
+        // Create a circle for the scatterplot point
+        QGraphicsEllipseItem* point = new QGraphicsEllipseItem();
+        point->setRect(screenPoint.x() - pointSize/2, screenPoint.y() - pointSize/2, pointSize, pointSize);
+        point->setPen(QPen(outlineColor, 1));
+        point->setBrush(QBrush(pointColor));
+        point->setZValue(120); // Draw above data lines but below markers
+        
+        graphicsScene->addItem(point);
+    }
+    
+    qDebug() << "Scatterplot drawn for series" << seriesLabel << "with" << visibleData.size() << "points";
+}
+
+/**
+ * @brief Draw a scatterplot for the default data series.
+ * 
+ * @param pointColor The color of the scatterplot points (default: white)
+ * @param pointSize The size of the scatterplot points (default: 3.0)
+ * @param outlineColor The outline color of the scatterplot points (default: black)
+ */
+void waterfallgraph::drawScatterplot(const QColor& pointColor, qreal pointSize, const QColor& outlineColor)
+{
+    if (!graphicsScene || !dataSource) return;
+    
+    // Get the default data series
+    const std::vector<qreal>& yData = dataSource->getYData();
+    const std::vector<QDateTime>& timestamps = dataSource->getTimestamps();
+    
+    if (yData.empty() || timestamps.empty()) {
+        qDebug() << "No data available for default scatterplot";
+        return;
+    }
+    
+    if (yData.size() != timestamps.size()) {
+        qDebug() << "Data size mismatch for default scatterplot";
+        return;
+    }
+    
+    // Filter data points to only include those within the current time range
+    std::vector<std::pair<qreal, QDateTime>> visibleData;
+    for (size_t i = 0; i < yData.size(); ++i) {
+        if (timestamps[i] >= timeMin && timestamps[i] <= timeMax) {
+            visibleData.push_back({yData[i], timestamps[i]});
+        }
+    }
+    
+    if (visibleData.empty()) {
+        qDebug() << "No data points within current time range for default scatterplot";
+        return;
+    }
+    
+    // Draw scatterplot points
+    for (const auto& dataPoint : visibleData) {
+        QPointF screenPoint = mapDataToScreen(dataPoint.first, dataPoint.second);
+        
+        // Create a circle for the scatterplot point
+        QGraphicsEllipseItem* point = new QGraphicsEllipseItem();
+        point->setRect(screenPoint.x() - pointSize/2, screenPoint.y() - pointSize/2, pointSize, pointSize);
+        point->setPen(QPen(outlineColor, 1));
+        point->setBrush(QBrush(pointColor));
+        point->setZValue(120); // Draw above data lines but below markers
+        
+        graphicsScene->addItem(point);
+    }
+    
+    qDebug() << "Default scatterplot drawn with" << visibleData.size() << "points";
+}

@@ -9,6 +9,8 @@
 #include "timelineview.h"
 #include "zoompanel.h"
 #include "graphlayout.h"
+#include "waterfallgraph.h"
+#include "waterfalldata.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -32,6 +34,7 @@ private:
     QTimer *timeUpdateTimer; ///< Timer for updating current time
     
     GraphLayout *graphgrid; ///< Graph layout widget
+    waterfallgraph *waterfallExample; ///< Waterfall graph example widget
     
     // void configureTimeVisualizer();
     // void configureTimelineView();
@@ -39,6 +42,7 @@ private:
     // void updateTimeline();
     void configureLayoutSelection();
     void demonstrateDataPointMethods();
+    void setupWaterfallExample();
 
     long simTick;
 
