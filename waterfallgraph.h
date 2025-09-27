@@ -85,7 +85,7 @@ protected:
     // Override show event
     void showEvent(QShowEvent *event) override;
 
-private:
+protected:
     QGraphicsView *graphicsView;
     QGraphicsScene *graphicsScene;
     
@@ -93,13 +93,13 @@ private:
     QRectF drawingArea;
     bool gridEnabled;
     int gridDivisions;
-    void draw();
+    virtual void draw();
     void setupDrawingArea();
-    void drawGrid();
+    virtual void drawGrid();
     void updateGraphicsDimensions();
     
     // Data plotting methods
-    void drawDataLine();
+    virtual void drawDataLine();
     QPointF mapDataToScreen(qreal yValue, const QDateTime& timestamp) const;
     void updateDataRanges();
     
