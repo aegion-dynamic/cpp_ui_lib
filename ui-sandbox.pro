@@ -29,7 +29,14 @@ SOURCES += \
     waterfallgraph.cpp \
     customwaterfallgraph.cpp \
     drawutils.cpp \
-    zoompanel.cpp
+    zoompanel.cpp \
+    bdwgraph.cpp \
+    brwgraph.cpp \
+    btwgraph.cpp \
+    fdwgraph.cpp \
+    ftwgraph.cpp \
+    ltwgraph.cpp \
+    rtwgraph.cpp 
 
 HEADERS += \
     graphcontainer.h \
@@ -44,7 +51,14 @@ HEADERS += \
     waterfallgraph.h \
     customwaterfallgraph.h \
     drawutils.h \
-    zoompanel.h
+    zoompanel.h\
+    bdwgraph.h \
+    brwgraph.h \
+    btwgraph.h \
+    fdwgraph.h \
+    ftwgraph.h \
+    ltwgraph.h \
+    rtwgraph.h 
 
 FORMS += \
     mainwindow.ui

@@ -1,0 +1,74 @@
+#include "ltwgraph.h"
+#include <QDebug>
+
+/**
+ * @brief Construct a new LTWGraph::LTWGraph object
+ * 
+ * @param parent Parent widget
+ * @param enableGrid Whether to enable grid display
+ * @param gridDivisions Number of grid divisions
+ * @param timeInterval Time interval for the waterfall display
+ */
+LTWGraph::LTWGraph(QWidget *parent, bool enableGrid, int gridDivisions, TimeInterval timeInterval)
+    : waterfallgraph(parent, enableGrid, gridDivisions, timeInterval)
+{
+    qDebug() << "LTWGraph constructor called";
+}
+
+/**
+ * @brief Destroy the LTWGraph::LTWGraph object
+ * 
+ */
+LTWGraph::~LTWGraph()
+{
+    qDebug() << "LTWGraph destructor called";
+}
+
+/**
+ * @brief Override draw method to create scatterplots by default
+ * 
+ */
+void LTWGraph::draw()
+{
+    // Call parent draw method first
+    waterfallgraph::draw();
+    
+    // Add LTW-specific scatterplot drawing
+    drawLTWScatterplot();
+}
+
+/**
+ * @brief Handle mouse click events specific to LTW graph
+ * 
+ * @param scenePos Scene position of the click
+ */
+void LTWGraph::onMouseClick(const QPointF& scenePos)
+{
+    qDebug() << "LTWGraph mouse clicked at scene position:" << scenePos;
+    // Call parent implementation
+    waterfallgraph::onMouseClick(scenePos);
+}
+
+/**
+ * @brief Handle mouse drag events specific to LTW graph
+ * 
+ * @param scenePos Scene position of the drag
+ */
+void LTWGraph::onMouseDrag(const QPointF& scenePos)
+{
+    qDebug() << "LTWGraph mouse dragged to scene position:" << scenePos;
+    // Call parent implementation
+    waterfallgraph::onMouseDrag(scenePos);
+}
+
+/**
+ * @brief Draw LTW-specific scatterplot
+ * 
+ */
+void LTWGraph::drawLTWScatterplot()
+{
+    // By default, create a scatterplot using the parent's scatterplot functionality
+    drawScatterplot(Qt::green, 4.0, Qt::white);
+    
+    qDebug() << "LTW scatterplot drawn";
+}

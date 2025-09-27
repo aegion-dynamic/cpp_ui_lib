@@ -82,7 +82,7 @@
       </widget>
       <widget class="QWidget" name="customGraphsTab">
        <attribute name="title">
-        <string>Custom Waterfall Graphs</string>
+        <string>Graph Components</string>
        </attribute>
       </widget>
      </widget>
