@@ -9,7 +9,7 @@
  * This component creates scatterplots by default and can be extended
  * for specific BRW (Bit Rate Waterfall) functionality.
  */
-class BRWGraph : public waterfallgraph
+class BRWGraph : public WaterfallGraph
 {
     Q_OBJECT
 

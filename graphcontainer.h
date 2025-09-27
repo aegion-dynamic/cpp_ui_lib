@@ -94,6 +94,11 @@ private:
     std::map<QString, WaterfallData*> dataOptions;
     QString currentDataOption;
 
+
+    // Graph component management
+    std::map<QString, WaterfallGraph*> waterfallGraphs;
+    QString currentWaterfallGraph;
+
 signals:
     void NewTimeSelectionCreated(qreal startTime, qreal endTime);
     void DeltaTimeSelectionChanged(qreal deltaTime);
@@ -105,7 +110,7 @@ private:
     QVBoxLayout *m_leftLayout;
     QComboBox *m_comboBox;
     ZoomPanel *m_zoomPanel;
-    waterfallgraph *m_waterfallGraph;
+    WaterfallGraph *m_waterfallGraph;
     TimeSelectionVisualizer *m_timelineSelectionView;
     TimelineView *m_timelineView;
     bool m_showTimelineView;

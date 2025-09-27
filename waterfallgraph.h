@@ -28,13 +28,13 @@
 #include "timelineutils.h"
 
 
-class waterfallgraph : public QWidget
+class WaterfallGraph : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit waterfallgraph(QWidget *parent = nullptr, bool enableGrid = false, int gridDivisions = 10, TimeInterval timeInterval = TimeInterval::FifteenMinutes);
-    ~waterfallgraph();
+    explicit WaterfallGraph(QWidget *parent = nullptr, bool enableGrid = false, int gridDivisions = 10, TimeInterval timeInterval = TimeInterval::FifteenMinutes);
+    ~WaterfallGraph();
     
     // Data source management
     void setDataSource(WaterfallData& dataSource);

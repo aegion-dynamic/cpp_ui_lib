@@ -9,7 +9,7 @@
  * This component creates scatterplots by default and can be extended
  * for specific FDW (Frequency Domain Waterfall) functionality.
  */
-class FDWGraph : public waterfallgraph
+class FDWGraph : public WaterfallGraph
 {
     Q_OBJECT
 

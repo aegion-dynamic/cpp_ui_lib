@@ -9,7 +9,7 @@
  * This component creates scatterplots by default and can be extended
  * for specific BTW (Bit Time Waterfall) functionality.
  */
-class BTWGraph : public waterfallgraph
+class BTWGraph : public WaterfallGraph
 {
     Q_OBJECT
 

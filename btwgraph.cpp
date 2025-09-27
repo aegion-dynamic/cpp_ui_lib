@@ -10,7 +10,7 @@
  * @param timeInterval Time interval for the waterfall display
  */
 BTWGraph::BTWGraph(QWidget *parent, bool enableGrid, int gridDivisions, TimeInterval timeInterval)
-    : waterfallgraph(parent, enableGrid, gridDivisions, timeInterval)
+    : WaterfallGraph(parent, enableGrid, gridDivisions, timeInterval)
 {
     qDebug() << "BTWGraph constructor called";
 }
@@ -55,7 +55,7 @@ void BTWGraph::onMouseClick(const QPointF& scenePos)
 {
     qDebug() << "BTWGraph mouse clicked at scene position:" << scenePos;
     // Call parent implementation
-    waterfallgraph::onMouseClick(scenePos);
+    WaterfallGraph::onMouseClick(scenePos);
 }
 
 /**
@@ -67,7 +67,7 @@ void BTWGraph::onMouseDrag(const QPointF& scenePos)
 {
     qDebug() << "BTWGraph mouse dragged to scene position:" << scenePos;
     // Call parent implementation
-    waterfallgraph::onMouseDrag(scenePos);
+    WaterfallGraph::onMouseDrag(scenePos);
 }
 
 /**

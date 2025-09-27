@@ -9,7 +9,7 @@
  * This component creates scatterplots by default and can be extended
  * for specific LTW (Latency Time Waterfall) functionality.
  */
-class LTWGraph : public waterfallgraph
+class LTWGraph : public WaterfallGraph
 {
     Q_OBJECT
 

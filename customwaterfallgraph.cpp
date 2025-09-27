@@ -5,7 +5,7 @@
 #include <QGraphicsPathItem>
 
 CustomWaterfallGraph::CustomWaterfallGraph(QWidget *parent, bool enableGrid, int gridDivisions, TimeInterval timeInterval)
-    : waterfallgraph(parent, enableGrid, gridDivisions, timeInterval)
+    : WaterfallGraph(parent, enableGrid, gridDivisions, timeInterval)
     , drawingStyle("default")
     , customDataColor(Qt::green)
     , customGridColor(Qt::white)

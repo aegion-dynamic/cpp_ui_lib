@@ -23,7 +23,7 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView)
     m_zoomPanel->setMaximumHeight(50); // Limit zoom panel height
     
     // Create WaterfallGraph
-    m_waterfallGraph = new waterfallgraph(this);
+    m_waterfallGraph = new WaterfallGraph(this);
     
     // Set up the data source
     m_waterfallGraph->setDataSource(waterfallData);
@@ -325,7 +325,7 @@ void GraphContainer::setupEventConnections()
             this, &GraphContainer::onDataOptionChanged);
     
     // Connect WaterfallGraph selection events
-    connect(m_waterfallGraph, &waterfallgraph::SelectionCreated,
+    connect(m_waterfallGraph, &WaterfallGraph::SelectionCreated,
             this, &GraphContainer::onSelectionCreated);
     
     // Connect ZoomPanel value changes

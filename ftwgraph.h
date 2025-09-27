@@ -9,7 +9,7 @@
  * This component creates scatterplots by default and can be extended
  * for specific FTW (Frequency Time Waterfall) functionality.
  */
-class FTWGraph : public waterfallgraph
+class FTWGraph : public WaterfallGraph
 {
     Q_OBJECT
 

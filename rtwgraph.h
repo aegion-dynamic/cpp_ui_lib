@@ -9,7 +9,7 @@
  * This component creates scatterplots by default and can be extended
  * for specific RTW (Rate Time Waterfall) functionality.
  */
-class RTWGraph : public waterfallgraph
+class RTWGraph : public WaterfallGraph
 {
     Q_OBJECT
 

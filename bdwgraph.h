@@ -9,7 +9,7 @@
  * This component creates scatterplots by default and can be extended
  * for specific BDW (Bandwidth Domain Waterfall) functionality.
  */
-class BDWGraph : public waterfallgraph
+class BDWGraph : public WaterfallGraph
 {
     Q_OBJECT
 

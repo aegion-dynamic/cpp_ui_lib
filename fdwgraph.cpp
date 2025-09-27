@@ -10,7 +10,7 @@
  * @param timeInterval Time interval for the waterfall display
  */
 FDWGraph::FDWGraph(QWidget *parent, bool enableGrid, int gridDivisions, TimeInterval timeInterval)
-    : waterfallgraph(parent, enableGrid, gridDivisions, timeInterval)
+    : WaterfallGraph(parent, enableGrid, gridDivisions, timeInterval)
 {
     qDebug() << "FDWGraph constructor called";
 }
@@ -55,7 +55,7 @@ void FDWGraph::onMouseClick(const QPointF& scenePos)
 {
     qDebug() << "FDWGraph mouse clicked at scene position:" << scenePos;
     // Call parent implementation
-    waterfallgraph::onMouseClick(scenePos);
+    WaterfallGraph::onMouseClick(scenePos);
 }
 
 /**
@@ -67,7 +67,7 @@ void FDWGraph::onMouseDrag(const QPointF& scenePos)
 {
     qDebug() << "FDWGraph mouse dragged to scene position:" << scenePos;
     // Call parent implementation
-    waterfallgraph::onMouseDrag(scenePos);
+    WaterfallGraph::onMouseDrag(scenePos);
 }
 
 /**

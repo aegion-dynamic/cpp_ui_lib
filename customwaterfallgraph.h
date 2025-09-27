@@ -12,7 +12,7 @@
  * overriding the drawing methods. It allows for specialized rendering
  * while maintaining all the core functionality of the parent waterfallgraph.
  */
-class CustomWaterfallGraph : public waterfallgraph
+class CustomWaterfallGraph : public WaterfallGraph
 {
     Q_OBJECT
 

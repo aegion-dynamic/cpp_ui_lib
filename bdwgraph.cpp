@@ -10,7 +10,7 @@
  * @param timeInterval Time interval for the waterfall display
  */
 BDWGraph::BDWGraph(QWidget *parent, bool enableGrid, int gridDivisions, TimeInterval timeInterval)
-    : waterfallgraph(parent, enableGrid, gridDivisions, timeInterval)
+    : WaterfallGraph(parent, enableGrid, gridDivisions, timeInterval)
 {
     qDebug() << "BDWGraph constructor called";
 }
@@ -55,7 +55,7 @@ void BDWGraph::onMouseClick(const QPointF& scenePos)
 {
     qDebug() << "BDWGraph mouse clicked at scene position:" << scenePos;
     // Call parent implementation
-    waterfallgraph::onMouseClick(scenePos);
+    WaterfallGraph::onMouseClick(scenePos);
 }
 
 /**
@@ -67,7 +67,7 @@ void BDWGraph::onMouseDrag(const QPointF& scenePos)
 {
     qDebug() << "BDWGraph mouse dragged to scene position:" << scenePos;
     // Call parent implementation
-    waterfallgraph::onMouseDrag(scenePos);
+    WaterfallGraph::onMouseDrag(scenePos);
 }
 
 /**
