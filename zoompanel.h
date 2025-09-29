@@ -39,6 +39,10 @@ public:
     void setLeftLabelValue(qreal value);
     void setCenterLabelValue(qreal value);
     void setRightLabelValue(qreal value);
+    
+    // User modification tracking
+    bool hasUserModifiedBounds() const;
+    void resetUserModifiedFlag();
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;
@@ -62,9 +66,25 @@ private:
     
     // Mouse interaction state
     bool m_isDragging;
+    bool m_isExtending;
     QPoint m_initialMousePos;
     QPoint m_initialIndicatorPos;
     qreal m_currentValue;
+    
+    // Extend mode state
+    enum ExtendMode {
+        None,
+        ExtendLeft,
+        ExtendRight
+    };
+    ExtendMode m_extendMode;
+    
+    // User modification tracking
+    bool m_userModifiedBounds;
+    
+    // Actual bounds (separate from panel range)
+    qreal m_actualLowerBound;
+    qreal m_actualUpperBound;
 
     void setupGraphicsView();
     void createIndicator();
@@ -72,6 +92,12 @@ private:
     void updateIndicator(double value);
     void updateValueFromMousePosition(const QPoint &currentPos);
     void updateAllElements();
+    
+    // Extend mode methods
+    ExtendMode detectExtendMode(const QPoint &mousePos);
+    void updateExtentFromMousePosition(const QPoint &currentPos);
+    void updateIndicatorToBounds();
+    void updateVisualFeedback();
     
     // Helper method to calculate optimal font size
     int calculateOptimalFontSize(int maxWidth);

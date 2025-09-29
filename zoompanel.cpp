@@ -10,7 +10,12 @@ ZoomPanel::ZoomPanel(QWidget *parent)
     , m_centerText(nullptr)
     , m_rightText(nullptr)
     , m_isDragging(false)
+    , m_isExtending(false)
     , m_currentValue(1.0)
+    , m_extendMode(None)
+    , m_userModifiedBounds(false)
+    , m_actualLowerBound(0.0)
+    , m_actualUpperBound(1.0)
 {
     // Set black background
     this->setStyleSheet("background-color: black;");
@@ -184,12 +189,25 @@ void ZoomPanel::setIndicatorValue(double value)
     m_currentValue = value;
     updateIndicator(value);
     
-    // Calculate bounds: upperbound = center + value*|right-center|, lowerbound = center - value*|center-left|
-    ZoomBounds bounds;
-    bounds.upperbound = centerLabelValue + value * qAbs(rightLabelValue - centerLabelValue);
-    bounds.lowerbound = centerLabelValue - value * qAbs(centerLabelValue - leftLabelValue);
-    
-    emit valueChanged(bounds);
+    // Only recalculate bounds if user hasn't modified them
+    if (!m_userModifiedBounds) {
+        // Calculate bounds: upperbound = center + value*|right-center|, lowerbound = center - value*|center-left|
+        ZoomBounds bounds;
+        bounds.upperbound = centerLabelValue + value * qAbs(rightLabelValue - centerLabelValue);
+        bounds.lowerbound = centerLabelValue - value * qAbs(centerLabelValue - leftLabelValue);
+        
+        // Store actual bounds
+        m_actualLowerBound = bounds.lowerbound;
+        m_actualUpperBound = bounds.upperbound;
+        
+        emit valueChanged(bounds);
+    } else {
+        // User has modified bounds, emit current actual bounds
+        ZoomBounds bounds;
+        bounds.upperbound = m_actualUpperBound;
+        bounds.lowerbound = m_actualLowerBound;
+        emit valueChanged(bounds);
+    }
 }
 
 void ZoomPanel::updateIndicator(double value)
@@ -242,24 +260,52 @@ void ZoomPanel::setRightLabelValue(qreal value)
     }
 }
 
+bool ZoomPanel::hasUserModifiedBounds() const
+{
+    return m_userModifiedBounds;
+}
+
+void ZoomPanel::resetUserModifiedFlag()
+{
+    m_userModifiedBounds = false;
+}
+
 void ZoomPanel::mousePressEvent(QMouseEvent *event)
 {
     qDebug() << "Mouse press event received at:" << event->pos();
     
     if (event->button() == Qt::LeftButton) {
-        m_isDragging = true;
         m_initialMousePos = event->pos();
         
-        // Store the initial indicator position for reference
-        if (m_indicator) {
-            QRectF indicatorRect = m_indicator->rect();
-            m_initialIndicatorPos = QPoint(static_cast<int>(indicatorRect.x()), static_cast<int>(indicatorRect.y()));
+        // First check if we clicked on the indicator
+        if (m_indicator && m_indicator->rect().contains(event->pos())) {
+            // Detect if we're in extend mode or drag mode
+            m_extendMode = detectExtendMode(event->pos());
+            
+        if (m_extendMode != None) {
+            // Enter extend mode
+            m_isExtending = true;
+            m_isDragging = false;
+            
+            qDebug() << "Entered extend mode:" << (m_extendMode == ExtendLeft ? "Left" : "Right");
+            setCursor(Qt::SizeHorCursor);
+        } else {
+                // Enter drag mode (clicked on indicator but not on edges)
+                m_isDragging = true;
+                m_isExtending = false;
+                m_userModifiedBounds = true; // Mark as user modified when dragging
+                
+                // Store the initial indicator position for reference
+                QRectF indicatorRect = m_indicator->rect();
+                m_initialIndicatorPos = QPoint(static_cast<int>(indicatorRect.x()), static_cast<int>(indicatorRect.y()));
+                
+                qDebug() << "Started dragging from position:" << m_initialMousePos;
+                setCursor(Qt::ClosedHandCursor);
+            }
+        } else {
+            // Clicked outside indicator - no action
+            qDebug() << "Clicked outside indicator - no action";
         }
-        
-        qDebug() << "Started dragging from position:" << m_initialMousePos;
-        
-        // Set cursor to indicate dragging
-        setCursor(Qt::ClosedHandCursor);
     }
     
     QWidget::mousePressEvent(event);
@@ -270,6 +316,21 @@ void ZoomPanel::mouseMoveEvent(QMouseEvent *event)
     if (m_isDragging) {
         qDebug() << "Mouse move while dragging at:" << event->pos();
         updateValueFromMousePosition(event->pos());
+    } else if (m_isExtending) {
+        qDebug() << "Mouse move while extending at:" << event->pos();
+        updateExtentFromMousePosition(event->pos());
+    } else {
+        // Update cursor based on hover position over indicator
+        if (m_indicator && m_indicator->rect().contains(event->pos())) {
+            ExtendMode hoverMode = detectExtendMode(event->pos());
+            if (hoverMode != None) {
+                setCursor(Qt::SizeHorCursor);
+            } else {
+                setCursor(Qt::OpenHandCursor);
+            }
+        } else {
+            setCursor(Qt::ArrowCursor);
+        }
     }
     
     QWidget::mouseMoveEvent(event);
@@ -278,8 +339,18 @@ void ZoomPanel::mouseMoveEvent(QMouseEvent *event)
 void ZoomPanel::mouseReleaseEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        m_isDragging = false;
-        setCursor(Qt::ArrowCursor);
+        if (m_isDragging) {
+            m_isDragging = false;
+            setCursor(Qt::ArrowCursor);
+            qDebug() << "Drag mode ended";
+        }
+        
+        if (m_isExtending) {
+            m_isExtending = false;
+            m_extendMode = None;
+            setCursor(Qt::ArrowCursor);
+            qDebug() << "Extend mode ended";
+        }
     }
     
     QWidget::mouseReleaseEvent(event);
@@ -318,7 +389,37 @@ void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
     // Update if value changed significantly
     if (qAbs(newValue - m_currentValue) > 0.001) {
         qDebug() << "Updating indicator value to:" << newValue;
-        setIndicatorValue(newValue);
+        
+        // Calculate the current range (difference between upper and lower bounds)
+        qreal currentRange = m_actualUpperBound - m_actualLowerBound;
+        
+        // Calculate new bounds based on the drag position while maintaining the same range
+        qreal newLowerBound = newValue - (currentRange / 2.0);
+        qreal newUpperBound = newValue + (currentRange / 2.0);
+        
+        // Clamp bounds to valid range (0.0 to 1.0)
+        if (newLowerBound < 0.0) {
+            newLowerBound = 0.0;
+            newUpperBound = currentRange;
+        }
+        if (newUpperBound > 1.0) {
+            newUpperBound = 1.0;
+            newLowerBound = 1.0 - currentRange;
+        }
+        
+        // Update actual bounds
+        m_actualLowerBound = newLowerBound;
+        m_actualUpperBound = newUpperBound;
+        m_currentValue = newValue;
+        
+        // Update indicator position to reflect new bounds
+        updateIndicatorToBounds();
+        
+        // Emit current actual bounds
+        ZoomBounds bounds;
+        bounds.upperbound = m_actualUpperBound;
+        bounds.lowerbound = m_actualLowerBound;
+        emit valueChanged(bounds);
     }
 }
 
@@ -385,4 +486,93 @@ void ZoomPanel::updateAllElements()
     
     // Update indicator to current value
     updateIndicator(m_currentValue);
+}
+
+ZoomPanel::ExtendMode ZoomPanel::detectExtendMode(const QPoint &mousePos)
+{
+    if (!m_indicator) return None;
+    
+    QRectF indicatorRect = m_indicator->rect();
+    qreal edgeZone = indicatorRect.width() * 0.05; // 5% of indicator width
+    
+    // Check if mouse is within the indicator rectangle
+    if (!indicatorRect.contains(mousePos)) return None;
+    
+    // Check if mouse is in left edge zone of indicator (0% to 5%)
+    if (mousePos.x() <= indicatorRect.left() + edgeZone) {
+        return ExtendLeft;
+    }
+    
+    // Check if mouse is in right edge zone of indicator (95% to 100%)
+    if (mousePos.x() >= indicatorRect.right() - edgeZone) {
+        return ExtendRight;
+    }
+    
+    return None;
+}
+
+void ZoomPanel::updateExtentFromMousePosition(const QPoint &currentPos)
+{
+    if (m_extendMode == None || !m_indicator) return;
+    
+    QRect drawArea = this->rect();
+    int margin = qMax(2, drawArea.height() / 10);
+    
+    // Calculate available horizontal space for the indicator
+    int availableWidth = drawArea.width() - (2 * margin);
+    
+    // Convert mouse X position to a value between 0.0 and 1.0
+    qreal mouseValue = static_cast<qreal>(currentPos.x() - margin) / static_cast<qreal>(availableWidth);
+    mouseValue = qBound(0.0, mouseValue, 1.0);
+    
+    if (m_extendMode == ExtendLeft) {
+        // Extend left edge - modify the actual lower bound
+        qreal newLowerBound = mouseValue;
+        newLowerBound = qBound(0.0, newLowerBound, m_actualUpperBound - 0.01); // Don't exceed upper bound
+        m_actualLowerBound = newLowerBound;
+        m_userModifiedBounds = true; // Mark as user modified
+    } else if (m_extendMode == ExtendRight) {
+        // Extend right edge - modify the actual upper bound
+        qreal newUpperBound = mouseValue;
+        newUpperBound = qBound(m_actualLowerBound + 0.01, newUpperBound, 1.0); // Don't go below current lower bound
+        m_actualUpperBound = newUpperBound;
+        m_userModifiedBounds = true; // Mark as user modified
+    }
+    
+    // Update the indicator to span from leftLabelValue to rightLabelValue
+    updateIndicatorToBounds();
+    
+    // Update bounds calculation and emit signal
+    ZoomBounds bounds;
+    bounds.upperbound = m_actualUpperBound;
+    bounds.lowerbound = m_actualLowerBound;
+    emit valueChanged(bounds);
+}
+
+void ZoomPanel::updateIndicatorToBounds()
+{
+    if (!m_indicator) return;
+    
+    QRect drawArea = this->rect();
+    int margin = qMax(2, drawArea.height() / 10);
+    int indicatorHeight = drawArea.height() - (2 * margin);
+    int indicatorY = (drawArea.height() - indicatorHeight) / 2;
+    
+    // Calculate available horizontal space
+    int availableWidth = drawArea.width() - (2 * margin);
+    
+    // Calculate indicator position and width based on bounds
+    int leftX = margin + static_cast<int>(m_actualLowerBound * availableWidth);
+    int rightX = margin + static_cast<int>(m_actualUpperBound * availableWidth);
+    
+    // Ensure minimum width
+    int indicatorWidth = qMax(1, rightX - leftX);
+    int indicatorX = leftX;
+    
+    // Update indicator rectangle to span from leftLabelValue to rightLabelValue
+    QRectF rect(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
+    m_indicator->setRect(rect);
+    
+    qDebug() << "Updated indicator bounds - Left:" << m_actualLowerBound << "Right:" << m_actualUpperBound 
+             << "Width:" << indicatorWidth << "X:" << indicatorX;
 }
