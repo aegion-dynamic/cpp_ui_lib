@@ -82,8 +82,8 @@ void ZoomPanel::createIndicator()
     int indicatorHeight = drawArea.height() - (2 * margin);
     int indicatorY = (drawArea.height() - indicatorHeight) / 2; // Center vertically
     
-    // Create fixed-width rectangular indicator (20 pixels wide)
-    int indicatorWidth = 20;
+    // Create indicator that spans the full extent (full width minus margins)
+    int indicatorWidth = drawArea.width() - (2 * margin);
     int initialX = margin; // Start at left edge
     
     m_indicator = new QGraphicsRectItem(initialX, indicatorY, indicatorWidth, indicatorHeight);
@@ -197,16 +197,17 @@ void ZoomPanel::updateIndicator(double value)
     int indicatorHeight = drawArea.height() - (2 * margin);
     int indicatorY = (drawArea.height() - indicatorHeight) / 2; // Center vertically
     
-    // Fixed width for the indicator
-    int indicatorWidth = 20;
+    // Calculate available horizontal space
+    int availableWidth = drawArea.width() - (2 * margin);
     
-    // Calculate available horizontal space for movement
-    int availableWidth = drawArea.width() - (2 * margin) - indicatorWidth;
+    // Calculate indicator width based on value (0.0 = minimum width, 1.0 = full width)
+    int minWidth = 20; // Minimum visible width
+    int indicatorWidth = minWidth + static_cast<int>((availableWidth - minWidth) * value);
     
-    // Calculate X position based on value (0.0 = left edge, 1.0 = right edge)
-    int indicatorX = margin + static_cast<int>(value * availableWidth);
+    // Center the indicator horizontally
+    int indicatorX = margin + (availableWidth - indicatorWidth) / 2;
     
-    // Update indicator rectangle position
+    // Update indicator rectangle
     QRectF rect(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
     m_indicator->setRect(rect);
 }
