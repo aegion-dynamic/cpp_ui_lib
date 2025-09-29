@@ -415,21 +415,21 @@ void GraphLayout::addDataPoints(const QString& containerLabel, const std::vector
 
 // Data options management - operate on specific container by label
 
-void GraphLayout::addDataOption(const QString& containerLabel, const QString& title, WaterfallData& dataSource)
+void GraphLayout::addDataOption(const QString& containerLabel, const GraphType& graphType, WaterfallData& dataSource)
 {
     int containerIndex = getContainerIndex(containerLabel);
     if (containerIndex >= 0 && containerIndex < static_cast<int>(m_graphContainers.size())) {
-        m_graphContainers[containerIndex]->addDataOption(stringToGraphType(title), dataSource);
+        m_graphContainers[containerIndex]->addDataOption(graphType, dataSource);
     } else {
         qDebug() << "Container not found:" << containerLabel;
     }
 }
 
-void GraphLayout::removeDataOption(const QString& containerLabel, const QString& title)
+void GraphLayout::removeDataOption(const QString& containerLabel, const GraphType& graphType)
 {
     int containerIndex = getContainerIndex(containerLabel);
     if (containerIndex >= 0 && containerIndex < static_cast<int>(m_graphContainers.size())) {
-        m_graphContainers[containerIndex]->removeDataOption(stringToGraphType(title));
+        m_graphContainers[containerIndex]->removeDataOption(graphType);
     } else {
         qDebug() << "Container not found:" << containerLabel;
     }
@@ -445,56 +445,51 @@ void GraphLayout::clearDataOptions(const QString& containerLabel)
     }
 }
 
-void GraphLayout::setCurrentDataOption(const QString& containerLabel, const QString& title)
+void GraphLayout::setCurrentDataOption(const QString& containerLabel, const GraphType& graphType)
 {
     int containerIndex = getContainerIndex(containerLabel);
     if (containerIndex >= 0 && containerIndex < static_cast<int>(m_graphContainers.size())) {
-        m_graphContainers[containerIndex]->setCurrentDataOption(stringToGraphType(title));
+        m_graphContainers[containerIndex]->setCurrentDataOption(graphType);
     } else {
         qDebug() << "Container not found:" << containerLabel;
     }
 }
 
-QString GraphLayout::getCurrentDataOption(const QString& containerLabel) const
+GraphType GraphLayout::getCurrentDataOption(const QString& containerLabel) const
 {
     int containerIndex = getContainerIndex(containerLabel);
     if (containerIndex >= 0 && containerIndex < static_cast<int>(m_graphContainers.size())) {
-        return graphTypeToString(m_graphContainers[containerIndex]->getCurrentDataOption());
+        return m_graphContainers[containerIndex]->getCurrentDataOption();
     }
     qDebug() << "Container not found:" << containerLabel;
-    return QString();
+    return GraphType::BDW;
 }
 
-std::vector<QString> GraphLayout::getAvailableDataOptions(const QString& containerLabel) const
+std::vector<GraphType> GraphLayout::getAvailableDataOptions(const QString& containerLabel) const
 {
     int containerIndex = getContainerIndex(containerLabel);
     if (containerIndex >= 0 && containerIndex < static_cast<int>(m_graphContainers.size())) {
-        std::vector<QString> optionStrings;
-        auto options = m_graphContainers[containerIndex]->getAvailableDataOptions();
-        for (const auto& opt : options) {
-            optionStrings.push_back(graphTypeToString(opt));
-        }
-        return optionStrings;
+        return m_graphContainers[containerIndex]->getAvailableDataOptions();
     }
     qDebug() << "Container not found:" << containerLabel;
-    return std::vector<QString>();
+    return std::vector<GraphType>();
 }
 
-WaterfallData* GraphLayout::getDataOption(const QString& containerLabel, const QString& title)
+WaterfallData* GraphLayout::getDataOption(const QString& containerLabel, const GraphType& graphType)
 {
     int containerIndex = getContainerIndex(containerLabel);
     if (containerIndex >= 0 && containerIndex < static_cast<int>(m_graphContainers.size())) {
-        return m_graphContainers[containerIndex]->getDataOption(stringToGraphType(title));
+        return m_graphContainers[containerIndex]->getDataOption(graphType);
     }
     qDebug() << "Container not found:" << containerLabel;
     return nullptr;
 }
 
-bool GraphLayout::hasDataOption(const QString& containerLabel, const QString& title) const
+bool GraphLayout::hasDataOption(const QString& containerLabel, const GraphType& graphType) const
 {
     int containerIndex = getContainerIndex(containerLabel);
     if (containerIndex >= 0 && containerIndex < static_cast<int>(m_graphContainers.size())) {
-        return m_graphContainers[containerIndex]->hasDataOption(stringToGraphType(title));
+        return m_graphContainers[containerIndex]->hasDataOption(graphType);
     }
     qDebug() << "Container not found:" << containerLabel;
     return false;
@@ -502,20 +497,20 @@ bool GraphLayout::hasDataOption(const QString& containerLabel, const QString& ti
 
 // Data options management - operate on all visible containers
 
-void GraphLayout::addDataOption(const QString& title, WaterfallData& dataSource)
+void GraphLayout::addDataOption(const GraphType& graphType, WaterfallData& dataSource)
 {
     for (auto* container : m_graphContainers) {
         if (container && container->isVisible()) {
-            container->addDataOption(stringToGraphType(title), dataSource);
+            container->addDataOption(graphType, dataSource);
         }
     }
 }
 
-void GraphLayout::removeDataOption(const QString& title)
+void GraphLayout::removeDataOption(const GraphType& graphType)
 {
     for (auto* container : m_graphContainers) {
         if (container && container->isVisible()) {
-            container->removeDataOption(stringToGraphType(title));
+            container->removeDataOption(graphType);
         }
     }
 }
@@ -529,11 +524,11 @@ void GraphLayout::clearDataOptions()
     }
 }
 
-void GraphLayout::setCurrentDataOption(const QString& title)
+void GraphLayout::setCurrentDataOption(const GraphType& graphType)
 {
     for (auto* container : m_graphContainers) {
         if (container && container->isVisible()) {
-            container->setCurrentDataOption(stringToGraphType(title));
+            container->setCurrentDataOption(graphType);
         }
     }
 }

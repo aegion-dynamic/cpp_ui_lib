@@ -345,7 +345,7 @@ void MainWindow::demonstrateDataPointMethods()
     qDebug() << "Has INVALID container:" << graphgrid->hasContainer("INVALID");
     
     // Test label-based data option methods
-    qDebug() << "Current data option for LTW:" << graphgrid->getCurrentDataOption("LTW");
+    qDebug() << "Current data option for LTW:" << graphTypeToString(graphgrid->getCurrentDataOption("LTW"));
     qDebug() << "Available data options for LTW:" << graphgrid->getAvailableDataOptions("LTW").size();
     
     // Demonstrate data source management

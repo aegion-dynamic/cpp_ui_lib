@@ -52,20 +52,20 @@ public:
     void addDataPoints(const QString &containerLabel, const std::vector<qreal> &yValues, const std::vector<QDateTime> &timestamps);
 
     // Data options management - operate on specific container by label
-    void addDataOption(const QString &containerLabel, const QString &title, WaterfallData &dataSource);
-    void removeDataOption(const QString &containerLabel, const QString &title);
+    void addDataOption(const QString &containerLabel, const GraphType &graphType, WaterfallData &dataSource);
+    void removeDataOption(const QString &containerLabel, const GraphType &graphType);
     void clearDataOptions(const QString &containerLabel);
-    void setCurrentDataOption(const QString &containerLabel, const QString &title);
-    QString getCurrentDataOption(const QString &containerLabel) const;
-    std::vector<QString> getAvailableDataOptions(const QString &containerLabel) const;
-    WaterfallData *getDataOption(const QString &containerLabel, const QString &title);
-    bool hasDataOption(const QString &containerLabel, const QString &title) const;
+    void setCurrentDataOption(const QString &containerLabel, const GraphType &graphType);
+    GraphType getCurrentDataOption(const QString &containerLabel) const;
+    std::vector<GraphType> getAvailableDataOptions(const QString &containerLabel) const;
+    WaterfallData *getDataOption(const QString &containerLabel, const GraphType &graphType);
+    bool hasDataOption(const QString &containerLabel, const GraphType &graphType) const;
 
     // Data options management - operate on all visible containers
-    void addDataOption(const QString &title, WaterfallData &dataSource);
-    void removeDataOption(const QString &title);
+    void addDataOption(const GraphType &graphType, WaterfallData &dataSource);
+    void removeDataOption(const GraphType &graphType);
     void clearDataOptions();
-    void setCurrentDataOption(const QString &title);
+    void setCurrentDataOption(const GraphType &graphType);
     
     // Data point methods for specific data sources
     void addDataPointToDataSource(const QString& dataSourceLabel, qreal yValue, const QDateTime& timestamp);
