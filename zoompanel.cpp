@@ -200,12 +200,14 @@ void ZoomPanel::setIndicatorValue(double value)
         m_actualLowerBound = bounds.lowerbound;
         m_actualUpperBound = bounds.upperbound;
         
+        qDebug() << "ZoomPanel: Emitting valueChanged signal (auto-calculated) - Lower:" << bounds.lowerbound << "Upper:" << bounds.upperbound;
         emit valueChanged(bounds);
     } else {
         // User has modified bounds, emit current actual bounds
         ZoomBounds bounds;
         bounds.upperbound = m_actualUpperBound;
         bounds.lowerbound = m_actualLowerBound;
+        qDebug() << "ZoomPanel: Emitting valueChanged signal (user-modified) - Lower:" << bounds.lowerbound << "Upper:" << bounds.upperbound;
         emit valueChanged(bounds);
     }
 }
@@ -258,6 +260,21 @@ void ZoomPanel::setRightLabelValue(qreal value)
     if (m_rightText) {
         m_rightText->setPlainText(QString::number(value, 'f', 2));
     }
+}
+
+qreal ZoomPanel::getLeftLabelValue() const
+{
+    return leftLabelValue;
+}
+
+qreal ZoomPanel::getCenterLabelValue() const
+{
+    return centerLabelValue;
+}
+
+qreal ZoomPanel::getRightLabelValue() const
+{
+    return rightLabelValue;
 }
 
 bool ZoomPanel::hasUserModifiedBounds() const
@@ -419,6 +436,7 @@ void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
         ZoomBounds bounds;
         bounds.upperbound = m_actualUpperBound;
         bounds.lowerbound = m_actualLowerBound;
+        qDebug() << "ZoomPanel: Emitting valueChanged signal (drag) - Lower:" << bounds.lowerbound << "Upper:" << bounds.upperbound;
         emit valueChanged(bounds);
     }
 }
@@ -542,11 +560,12 @@ void ZoomPanel::updateExtentFromMousePosition(const QPoint &currentPos)
     // Update the indicator to span from leftLabelValue to rightLabelValue
     updateIndicatorToBounds();
     
-    // Update bounds calculation and emit signal
-    ZoomBounds bounds;
-    bounds.upperbound = m_actualUpperBound;
-    bounds.lowerbound = m_actualLowerBound;
-    emit valueChanged(bounds);
+     // Update bounds calculation and emit signal
+     ZoomBounds bounds;
+     bounds.upperbound = m_actualUpperBound;
+     bounds.lowerbound = m_actualLowerBound;
+     qDebug() << "ZoomPanel: Emitting valueChanged signal (extend) - Lower:" << bounds.lowerbound << "Upper:" << bounds.upperbound;
+     emit valueChanged(bounds);
 }
 
 void ZoomPanel::updateIndicatorToBounds()

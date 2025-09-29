@@ -40,6 +40,11 @@ public:
     void setCenterLabelValue(qreal value);
     void setRightLabelValue(qreal value);
     
+    // Getter methods for label values
+    qreal getLeftLabelValue() const;
+    qreal getCenterLabelValue() const;
+    qreal getRightLabelValue() const;
+    
     // User modification tracking
     bool hasUserModifiedBounds() const;
     void resetUserModifiedFlag();
