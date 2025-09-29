@@ -63,8 +63,8 @@ private:
     // Mouse interaction state
     bool m_isDragging;
     QPoint m_initialMousePos;
+    QPoint m_initialIndicatorPos;
     qreal m_currentValue;
-    bool m_startedFromRightHalf;
 
     void setupGraphicsView();
     void createIndicator();

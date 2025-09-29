@@ -11,7 +11,6 @@ ZoomPanel::ZoomPanel(QWidget *parent)
     , m_rightText(nullptr)
     , m_isDragging(false)
     , m_currentValue(1.0)
-    , m_startedFromRightHalf(false)
 {
     // Set black background
     this->setStyleSheet("background-color: black;");
@@ -77,10 +76,12 @@ void ZoomPanel::createIndicator()
     int margin = qMax(2, drawArea.height() / 10); // Dynamic margin based on height
     int indicatorHeight = drawArea.height() - (2 * margin);
     int indicatorY = (drawArea.height() - indicatorHeight) / 2; // Center vertically
-    int centerX = drawArea.width() / 2; // Center horizontally
     
-    // Create rectangular indicator - starts at 10 pixels thin (value 0) centered
-    m_indicator = new QGraphicsRectItem(centerX - 5, indicatorY, 10, indicatorHeight);
+    // Create fixed-width rectangular indicator (20 pixels wide)
+    int indicatorWidth = 20;
+    int initialX = margin; // Start at left edge
+    
+    m_indicator = new QGraphicsRectItem(initialX, indicatorY, indicatorWidth, indicatorHeight);
     
     QPen indicatorPen(QColor(50, 50, 50)); // Dark grey
     indicatorPen.setWidth(1);
@@ -200,21 +201,20 @@ void ZoomPanel::updateIndicator(double value)
     
     QRect drawArea = this->rect();
     int margin = qMax(2, drawArea.height() / 10); // Dynamic margin based on height
-    int availableWidth = drawArea.width() - (2 * margin);
     int indicatorHeight = drawArea.height() - (2 * margin);
     int indicatorY = (drawArea.height() - indicatorHeight) / 2; // Center vertically
-    int centerX = drawArea.width() / 2; // Center horizontally
     
-    // Calculate width: minimum 10 pixels, maximum available width
-    double minWidth = 10.0;
-    double maxWidth = static_cast<double>(availableWidth);
-    double width = minWidth + (maxWidth - minWidth) * value;
+    // Fixed width for the indicator
+    int indicatorWidth = 20;
     
-    // Calculate X position to center the indicator
-    double indicatorX = centerX - (width / 2);
+    // Calculate available horizontal space for movement
+    int availableWidth = drawArea.width() - (2 * margin) - indicatorWidth;
     
-    // Update indicator rectangle with centered position
-    QRectF rect(indicatorX, indicatorY, width, indicatorHeight);
+    // Calculate X position based on value (0.0 = left edge, 1.0 = right edge)
+    int indicatorX = margin + static_cast<int>(value * availableWidth);
+    
+    // Update indicator rectangle position
+    QRectF rect(indicatorX, indicatorY, indicatorWidth, indicatorHeight);
     m_indicator->setRect(rect);
 }
 
@@ -250,12 +250,13 @@ void ZoomPanel::mousePressEvent(QMouseEvent *event)
         m_isDragging = true;
         m_initialMousePos = event->pos();
         
-        // Determine if started from right half
-        QRect drawArea = this->rect();
-        int centerX = drawArea.width() / 2;
-        m_startedFromRightHalf = (event->pos().x() > centerX);
+        // Store the initial indicator position for reference
+        if (m_indicator) {
+            QRectF indicatorRect = m_indicator->rect();
+            m_initialIndicatorPos = QPoint(static_cast<int>(indicatorRect.x()), static_cast<int>(indicatorRect.y()));
+        }
         
-        qDebug() << "Started dragging from" << (m_startedFromRightHalf ? "right" : "left") << "half";
+        qDebug() << "Started dragging from position:" << m_initialMousePos;
         
         // Set cursor to indicate dragging
         setCursor(Qt::ClosedHandCursor);
@@ -286,46 +287,36 @@ void ZoomPanel::mouseReleaseEvent(QMouseEvent *event)
 
 void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
 {
+    if (!m_indicator) return;
+    
     QRect drawArea = this->rect();
+    int margin = qMax(2, drawArea.height() / 10);
+    int indicatorWidth = 20;
     
-    // Calculate horizontal movement
+    // Calculate available horizontal space for movement
+    int availableWidth = drawArea.width() - (2 * margin) - indicatorWidth;
+    
+    // Calculate the new X position based on mouse movement
     int deltaX = currentPos.x() - m_initialMousePos.x();
+    int newIndicatorX = m_initialIndicatorPos.x() + deltaX;
     
-    qDebug() << "DeltaX:" << deltaX << "Current value:" << m_currentValue;
+    // Apply edge collision detection
+    int minX = margin;
+    int maxX = margin + availableWidth;
     
-    // Determine value change based on starting position and movement
-    qreal valueChange = 0.0;
+    // Clamp the indicator position to stay within bounds
+    newIndicatorX = qBound(minX, newIndicatorX, maxX);
     
-    if (m_startedFromRightHalf) {
-        // Started from right half
-        if (deltaX > 0) {
-            // Moving right - increase value
-            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.2; // Reduced scale factor
-        } else {
-            // Moving left - decrease value
-            valueChange = static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.2; // Reduced scale factor
-        }
-    } else {
-        // Started from left half - reverse the logic
-        if (deltaX > 0) {
-            // Moving right - decrease value (opposite behavior)
-            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.2;
-        } else {
-            // Moving left - increase value (opposite behavior)
-            valueChange = -static_cast<qreal>(deltaX) / static_cast<qreal>(drawArea.width()) * 0.2;
-        }
-    }
+    qDebug() << "Mouse delta:" << deltaX << "New indicator X:" << newIndicatorX << "Bounds: [" << minX << ", " << maxX << "]";
     
-    // Calculate new value
-    qreal newValue = m_currentValue + valueChange;
-    
-    // Clamp value between 0.0 and 1.0
+    // Convert position back to value (0.0 to 1.0)
+    qreal newValue = static_cast<qreal>(newIndicatorX - minX) / static_cast<qreal>(availableWidth);
     newValue = qBound(0.0, newValue, 1.0);
     
-    qDebug() << "Value change:" << valueChange << "New value:" << newValue;
+    qDebug() << "Calculated new value:" << newValue;
     
-    // Update if value changed
-    if (qAbs(newValue - m_currentValue) > 0.001) { // Small threshold to avoid constant updates
+    // Update if value changed significantly
+    if (qAbs(newValue - m_currentValue) > 0.001) {
         qDebug() << "Updating indicator value to:" << newValue;
         setIndicatorValue(newValue);
     }
