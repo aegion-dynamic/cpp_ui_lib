@@ -277,19 +277,19 @@ void MainWindow::configureZoomPanel()
 {
     // Connect test buttons to zoom panel indicator
     connect(ui->testButton0, &QPushButton::clicked, [this]() {
-        ui->zoomPanel->setIndicatorValue(0.0);
+        ui->zoomPanel->setCenterLabelValue(0.0);
     });
     
     connect(ui->testButton50, &QPushButton::clicked, [this]() {
-        ui->zoomPanel->setIndicatorValue(0.5);
+        ui->zoomPanel->setCenterLabelValue(0.5);
     });
     
     connect(ui->testButton100, &QPushButton::clicked, [this]() {
-        ui->zoomPanel->setIndicatorValue(1.0);
+        ui->zoomPanel->setCenterLabelValue(1.0);
     });
         
     // Initialize zoom panel with a default value
-    ui->zoomPanel->setIndicatorValue(0.3);
+    ui->zoomPanel->setCenterLabelValue(0.3);
     
     // Initialize label values
     ui->zoomPanel->setLeftLabelValue(0.0);  // Left reference value

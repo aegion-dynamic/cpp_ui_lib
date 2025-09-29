@@ -184,33 +184,6 @@ int ZoomPanel::calculateOptimalFontSize(int maxWidth)
     return fontSize;
 }
 
-void ZoomPanel::setIndicatorValue(double value)
-{
-    m_currentValue = value;
-    updateIndicator(value);
-    
-    // Only recalculate bounds if user hasn't modified them
-    if (!m_userModifiedBounds) {
-        // Calculate bounds: upperbound = center + value*|right-center|, lowerbound = center - value*|center-left|
-        ZoomBounds bounds;
-        bounds.upperbound = centerLabelValue + value * qAbs(rightLabelValue - centerLabelValue);
-        bounds.lowerbound = centerLabelValue - value * qAbs(centerLabelValue - leftLabelValue);
-        
-        // Store actual bounds
-        m_actualLowerBound = bounds.lowerbound;
-        m_actualUpperBound = bounds.upperbound;
-        
-        qDebug() << "ZoomPanel: Emitting valueChanged signal (auto-calculated) - Lower:" << bounds.lowerbound << "Upper:" << bounds.upperbound;
-        emit valueChanged(bounds);
-    } else {
-        // User has modified bounds, emit current actual bounds
-        ZoomBounds bounds;
-        bounds.upperbound = m_actualUpperBound;
-        bounds.lowerbound = m_actualLowerBound;
-        qDebug() << "ZoomPanel: Emitting valueChanged signal (user-modified) - Lower:" << bounds.lowerbound << "Upper:" << bounds.upperbound;
-        emit valueChanged(bounds);
-    }
-}
 
 void ZoomPanel::updateIndicator(double value)
 {

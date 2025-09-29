@@ -32,8 +32,6 @@ public:
     explicit ZoomPanel(QWidget *parent = nullptr);
     ~ZoomPanel();
 
-    void setIndicatorValue(double value);
-    void testIndicator(); // Test method to demonstrate functionality
     
     // Label value setters
     void setLeftLabelValue(qreal value);
