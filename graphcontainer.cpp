@@ -97,6 +97,7 @@ void GraphContainer::onTimerTick()
     // Update current time to all objects in the container
     QTime currentTime = QTime::currentTime();
     
+    // Add safety checks to prevent crashes if widgets are being destroyed
     if (m_timelineSelectionView) {
         m_timelineSelectionView->setCurrentTime(currentTime);
     }
@@ -104,7 +105,7 @@ void GraphContainer::onTimerTick()
     if (m_timelineView) {
         m_timelineView->setCurrentTime(currentTime);
     }
-    
+        
     qDebug() << "GraphContainer: Timer tick - updated current time to" << currentTime.toString();
 }
 
@@ -114,6 +115,15 @@ GraphContainer::~GraphContainer()
     if (m_timer && m_ownsTimer) {
         m_timer->stop();
         // Timer will be automatically deleted by Qt's parent-child system
+    }
+    
+    // Clean up waterfall graph to prevent race conditions with timer callbacks
+    if (m_waterfallGraph) {
+        m_waterfallGraph->setVisible(false);
+        m_leftLayout->removeWidget(m_waterfallGraph);
+        disconnect(m_waterfallGraph, nullptr, this, nullptr);
+        m_waterfallGraph->deleteLater();
+        m_waterfallGraph = nullptr;
     }
 }
 
@@ -452,9 +462,13 @@ void GraphContainer::initializeWaterfallGraph(GraphType graphType)
 {
     // Clean up existing waterfall graph if it exists
     if (m_waterfallGraph) {
+        // Stop any pending operations on the widget before deletion
+        m_waterfallGraph->setVisible(false);
         m_leftLayout->removeWidget(m_waterfallGraph);
         disconnect(m_waterfallGraph, nullptr, this, nullptr);  // Disconnect all connections
-        delete m_waterfallGraph;
+        
+        // Use deleteLater() for safer deletion in Qt event loop
+        m_waterfallGraph->deleteLater();
         m_waterfallGraph = nullptr;
     }
 
