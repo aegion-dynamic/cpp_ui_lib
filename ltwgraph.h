@@ -29,7 +29,7 @@ protected:
     
     // Override mouse move to track cursor for crosshair
     void mouseMoveEvent(QMouseEvent *event) override;
-    void enterEvent(QEnterEvent *event) override;
+    void enterEvent(QEvent *event) override;
     void leaveEvent(QEvent *event) override;
 
 private:

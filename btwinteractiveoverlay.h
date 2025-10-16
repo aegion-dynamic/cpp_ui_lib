@@ -12,9 +12,11 @@
 #include <QList>
 #include <QDebug>
 
-// Forward declaration to avoid circular dependency
+// Forward declaration to avoid circular dependency with BTWGraph only
 class BTWGraph;
-class InteractiveGraphicsItem;
+
+// Include full type so moc has a complete type for signals using InteractiveGraphicsItem*
+#include "interactivegraphicsitem.h"
 
 /**
  * @brief Interactive overlay manager for BTW graph
