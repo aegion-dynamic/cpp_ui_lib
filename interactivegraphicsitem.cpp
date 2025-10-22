@@ -4,6 +4,7 @@
 #include <QCursor>
 #include <QApplication>
 #include <cmath>
+#include <QtMath>
 
 InteractiveGraphicsItem::InteractiveGraphicsItem(QGraphicsItem *parent)
     : QObject(), QGraphicsItem(parent)

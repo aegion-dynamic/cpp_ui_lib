@@ -12,7 +12,7 @@
 #include "ltwgraph.h"
 #include <QDebug>
 #include <QMouseEvent>
-#include <QEnterEvent>
+// QEnterEvent not available in Qt5 for QWidget::enterEvent; using QEvent*
 #include <QtMath>
 
 /**
@@ -272,7 +272,7 @@ void LTWGraph::mouseMoveEvent(QMouseEvent *event)
  *
  * @param event Mouse enter event
  */
-void LTWGraph::enterEvent(QEnterEvent *event)
+void LTWGraph::enterEvent(QEvent *event)
 {
     // Call parent implementation first
     WaterfallGraph::enterEvent(event);
