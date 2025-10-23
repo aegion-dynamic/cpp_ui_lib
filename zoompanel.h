@@ -48,6 +48,9 @@ public:
     bool hasUserModifiedBounds() const;
     void resetUserModifiedFlag();
 
+    // Rebase labels to the current bounds and reset indicator to [0,1]
+    void rebaseToCurrentBounds();
+
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
