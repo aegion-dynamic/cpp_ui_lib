@@ -344,6 +344,8 @@ void ZoomPanel::mouseReleaseEvent(QMouseEvent *event)
             m_isDragging = false;
             setCursor(Qt::ArrowCursor);
             qDebug() << "Drag mode ended";
+            // After drag completes, optionally rebase labels to current bounds
+            rebaseToCurrentBounds();
         }
 
         if (m_isExtending)
@@ -352,6 +354,8 @@ void ZoomPanel::mouseReleaseEvent(QMouseEvent *event)
             m_extendMode = None;
             setCursor(Qt::ArrowCursor);
             qDebug() << "Extend mode ended";
+            // After extend completes, rebase labels to current bounds
+            rebaseToCurrentBounds();
         }
     }
 }
@@ -603,4 +607,20 @@ ZoomBounds ZoomPanel::calculateInterpolatedBounds() const
     // Linear interpolation for upper bound: interpolate between max indicator (1.0) and right label
     bounds.upperbound = m_leftLabelValue + (m_indicatorUpperBoundValue) * (m_rightLabelValue - m_leftLabelValue);
     return bounds;
+}
+
+void ZoomPanel::rebaseToCurrentBounds()
+{
+    // Compute interpolated bounds for current indicator extents
+    ZoomBounds current = calculateInterpolatedBounds();
+
+    // Update only the labels to reflect new data range while keeping the indicator size/position
+    setLeftLabelValue(current.lowerbound);
+    setRightLabelValue(current.upperbound);
+    setCenterLabelValue(current.lowerbound + (current.upperbound - current.lowerbound) * 0.5);
+
+    // Do not change m_indicatorLowerBoundValue/m_indicatorUpperBoundValue/m_currentValue
+    // Keep the visual selection the same; only the numeric range labels update
+    qDebug() << "ZoomPanel: Labels updated to new bounds without changing indicator - Lower:" << m_leftLabelValue
+             << "Upper:" << m_rightLabelValue;
 }

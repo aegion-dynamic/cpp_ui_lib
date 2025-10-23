@@ -121,7 +121,6 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         // Connect the interval change handler of containers 1 to the event of 0 and the 3 to the event of 2
         connect(m_graphContainers[0], &GraphContainer::IntervalChanged, m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
         connect(m_graphContainers[2], &GraphContainer::IntervalChanged, m_graphContainers[3], &GraphContainer::onTimeIntervalChanged);
-
         break;
     case LayoutType::GPW2WV:
         // Add 1 graph container to row 1
