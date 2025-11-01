@@ -207,6 +207,9 @@ void RTWGraph::drawCustomRMarkers(const QString &seriesLabel)
                 rMarker->setPos(screenPos.x() - textRect.width()/2, screenPos.y() - textRect.height()/2);
                 rMarker->setZValue(1000);
                 
+                // Store timestamp for click detection
+                setMarkerTimestamp(rMarker, timestamp);
+                
                 graphicsScene->addItem(rMarker);
                 fallbackMarkersDrawn++;
             }
@@ -246,6 +249,9 @@ void RTWGraph::drawCustomRMarkers(const QString &seriesLabel)
             QRectF textRect = rMarker->boundingRect();
             rMarker->setPos(screenPos.x() - textRect.width()/2, screenPos.y() - textRect.height()/2);
             rMarker->setZValue(1000); // Very high z-value to ensure visibility
+            
+            // Store timestamp for click detection
+            setMarkerTimestamp(rMarker, timestamp);
             
             graphicsScene->addItem(rMarker);
             markersDrawn++;

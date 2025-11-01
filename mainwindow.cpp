@@ -3,6 +3,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QLabel>
+#include <QMessageBox>
 #include <cmath>
 #include <algorithm>
 
@@ -206,6 +207,10 @@ void MainWindow::updateSimulation()
     graphgrid->setChevronLabel1("Start");
     graphgrid->setChevronLabel2("Now");
     graphgrid->setChevronLabel3("End");
+
+    // Connect marker selection signal from graph layout
+    connect(graphgrid, &GraphLayout::MarkerSelected,
+            this, &MainWindow::onMarkerSelected);
 }
 
 // void MainWindow::configureTimeVisualizer()
@@ -315,6 +320,24 @@ void MainWindow::onLayoutTypeChanged(int index)
 {
     LayoutType layoutType = static_cast<LayoutType>(ui->layoutSelectionComboBox->itemData(index).toInt());
     graphgrid->setLayoutType(layoutType);
+}
+
+/**
+ * @brief Handle marker selection from graph layout
+ *
+ * Shows an alert dialog with the timestamp of the selected marker.
+ */
+void MainWindow::onMarkerSelected(const QDateTime &timestamp)
+{
+    qDebug() << "MainWindow: Marker selected at timestamp:" << timestamp.toString();
+    
+    // Format the timestamp for display
+    QString timestampStr = timestamp.toString("yyyy-MM-dd hh:mm:ss.zzz");
+    
+    // Show alert dialog with the timestamp
+    QMessageBox::information(this, 
+                             "Marker Selected", 
+                             QString("Marker clicked at timestamp:\n%1").arg(timestampStr));
 }
 
 /**

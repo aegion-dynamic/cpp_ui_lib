@@ -113,6 +113,7 @@ public slots:
     void onTimerTick();
     void onTimeSelectionCreated(const TimeSelectionSpan &selection);
     void onTimeSelectionsCleared();
+    void onMarkerSelected(const QDateTime &timestamp);
 
 private:
     LayoutType m_layoutType;
@@ -139,6 +140,7 @@ private:
 signals:
     void TimeSelectionCreated(const TimeSelectionSpan &selection);
     void TimeSelectionsCleared();
+    void MarkerSelected(const QDateTime &timestamp);
 };
 
 #endif // GRAPHLAYOUT_H

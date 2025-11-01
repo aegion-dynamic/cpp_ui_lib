@@ -243,16 +243,36 @@ void GraphLayout::initializeContainers()
     // Attach data sources to containers
     attachContainerDataSources();
     
-    // Connect all containers' TimeSelectionCreated and TimeSelectionsCleared signals to our slots
+    // Disconnect existing connections first to avoid duplicates
+    for (auto *container : m_graphContainers)
+    {
+        if (container)
+        {
+            disconnect(container, &GraphContainer::TimeSelectionCreated,
+                      this, nullptr);
+            disconnect(container, &GraphContainer::TimeSelectionsCleared,
+                      this, nullptr);
+            disconnect(container, &GraphContainer::MarkerSelected,
+                      this, nullptr);
+        }
+    }
+    
+    // Connect all containers' TimeSelectionCreated, TimeSelectionsCleared, and MarkerSelected signals to our slots
+    // Use Qt::UniqueConnection to prevent duplicate connections
     for (auto *container : m_graphContainers)
     {
         connect(container, &GraphContainer::TimeSelectionCreated,
-                this, &GraphLayout::onTimeSelectionCreated);
+                this, &GraphLayout::onTimeSelectionCreated,
+                Qt::UniqueConnection);
         connect(container, &GraphContainer::TimeSelectionsCleared,
-                this, &GraphLayout::onTimeSelectionsCleared);
+                this, &GraphLayout::onTimeSelectionsCleared,
+                Qt::UniqueConnection);
+        connect(container, &GraphContainer::MarkerSelected,
+                this, &GraphLayout::onMarkerSelected,
+                Qt::UniqueConnection);
     }
     
-    qDebug() << "GraphLayout: Connected all containers to time selection propagation";
+    qDebug() << "GraphLayout: Connected all containers to time selection and marker propagation";
 }
 
 void GraphLayout::attachContainerDataSources()
@@ -838,10 +858,11 @@ void GraphLayout::disconnectAllContainerConnections()
     {
         if (container)
         {
-            // Disconnect IntervalChanged, TimeSelectionCreated, and TimeSelectionsCleared signals to preserve internal functionality
+            // Disconnect IntervalChanged, TimeSelectionCreated, TimeSelectionsCleared, and MarkerSelected signals
             container->disconnect(SIGNAL(IntervalChanged(TimeInterval)));
             container->disconnect(SIGNAL(TimeSelectionCreated(TimeSelectionSpan)));
             container->disconnect(SIGNAL(TimeSelectionsCleared()));
+            container->disconnect(SIGNAL(MarkerSelected(QDateTime)));
             qDebug() << "GraphLayout: Disconnected external signals from container";
         }
     }
@@ -954,6 +975,12 @@ void GraphLayout::propagateTimeSelectionToAllContainers(const TimeSelectionSpan 
 
     // Emit the signal for external consumers
     emit TimeSelectionCreated(selection);
+}
+
+void GraphLayout::onMarkerSelected(const QDateTime &timestamp)
+{
+    qDebug() << "GraphLayout: Marker selected at timestamp:" << timestamp.toString();
+    emit MarkerSelected(timestamp);
 }
 
 void GraphLayout::onTimeSelectionsCleared()

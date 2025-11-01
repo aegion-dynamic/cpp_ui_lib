@@ -259,6 +259,9 @@ void BTWGraph::drawCustomCircleMarkers(const QString &seriesLabel)
                 circleOutline->setBrush(QBrush(Qt::transparent));
                 circleOutline->setZValue(1000);
                 
+                // Store timestamp for click detection
+                setMarkerTimestamp(circleOutline, timestamp);
+                
                 graphicsScene->addItem(circleOutline);
                 
                 // Draw angled line (5x radius on both sides)
@@ -319,6 +322,9 @@ void BTWGraph::drawCustomCircleMarkers(const QString &seriesLabel)
             circleOutline->setPen(QPen(Qt::blue, 2));
             circleOutline->setBrush(QBrush(Qt::transparent));
             circleOutline->setZValue(1000);
+            
+            // Store timestamp for click detection
+            setMarkerTimestamp(circleOutline, timestamp);
             
             graphicsScene->addItem(circleOutline);
             

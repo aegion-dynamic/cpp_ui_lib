@@ -1,6 +1,10 @@
 #include "waterfallgraph.h"
 #include <QApplication>
 #include <QPointF>
+#include <QTransform>
+
+// Define MarkerTimestampKey constant
+const int WaterfallGraph::MarkerTimestampKey = QGraphicsItem::UserType + 1000;
 
 /**
  * @brief Construct a new WaterfallGraph::WaterfallGraph object
@@ -464,6 +468,24 @@ int WaterfallGraph::getGridDivisions() const
 void WaterfallGraph::onMouseClick(const QPointF &scenePos)
 {
     qDebug() << "Mouse clicked at scene position:" << scenePos;
+    
+    // Check if click hits any item in the graphics scene
+    if (graphicsScene) {
+        // Get all items at this position (topmost first)
+        QList<QGraphicsItem *> itemsAtPos = graphicsScene->items(scenePos);
+        if (!itemsAtPos.isEmpty()) {
+            // Check items from top to bottom until we find one with a timestamp
+            for (QGraphicsItem *item : itemsAtPos) {
+                QDateTime timestamp = getMarkerTimestamp(item);
+                if (timestamp.isValid()) {
+                    qDebug() << "Marker clicked at timestamp:" << timestamp.toString();
+                    emit markerSelected(timestamp);
+                    return; // Don't process further if marker was clicked
+                }
+            }
+        }
+    }
+    
     // This is a virtual function that can be overridden in derived classes
 }
 
@@ -471,6 +493,36 @@ void WaterfallGraph::onMouseDrag(const QPointF &scenePos)
 {
     qDebug() << "Mouse dragged to scene position:" << scenePos;
     // This is a virtual function that can be overridden in derived classes
+}
+
+/**
+ * @brief Store timestamp data on a graphics item for marker click detection
+ *
+ * @param item The graphics item to store timestamp on
+ * @param timestamp The timestamp associated with the marker
+ */
+void WaterfallGraph::setMarkerTimestamp(QGraphicsItem *item, const QDateTime &timestamp)
+{
+    if (item) {
+        item->setData(MarkerTimestampKey, QVariant::fromValue(timestamp));
+    }
+}
+
+/**
+ * @brief Retrieve timestamp data from a graphics item
+ *
+ * @param item The graphics item to retrieve timestamp from
+ * @return QDateTime The timestamp if found, invalid QDateTime otherwise
+ */
+QDateTime WaterfallGraph::getMarkerTimestamp(QGraphicsItem *item) const
+{
+    if (item) {
+        QVariant data = item->data(MarkerTimestampKey);
+        if (data.isValid() && data.canConvert<QDateTime>()) {
+            return data.toDateTime();
+        }
+    }
+    return QDateTime(); // Return invalid QDateTime
 }
 
 /**
@@ -1489,6 +1541,43 @@ void WaterfallGraph::drawScatterplot(const QString &seriesLabel, const QColor &p
     }
 
     qDebug() << "Default scatterplot drawn with" << visibleData.size() << "points";
+}
+
+/**
+ * @brief Add a custom graphics item to the graph at a specified data position
+ *
+ * @param item The graphics item to add (ownership transferred to scene)
+ * @param yValue The Y data value for positioning
+ * @param timestamp The timestamp for positioning
+ */
+void WaterfallGraph::addCustomSymbol(QGraphicsItem *item, qreal yValue, const QDateTime &timestamp)
+{
+    if (!item || !graphicsScene) {
+        qDebug() << "addCustomSymbol: Invalid item or graphicsScene";
+        return;
+    }
+
+    // Convert data coordinates to screen coordinates
+    QPointF screenPos = mapDataToScreen(yValue, timestamp);
+    
+    // Position the item at the calculated screen position
+    // If item already has a position, adjust relative to its bounding rect
+    QRectF itemRect = item->boundingRect();
+    item->setPos(screenPos.x() - itemRect.width() / 2, 
+                 screenPos.y() - itemRect.height() / 2);
+    
+    // Set high z-value to ensure visibility
+    item->setZValue(1000);
+    
+    // Store timestamp if provided
+    if (timestamp.isValid()) {
+        setMarkerTimestamp(item, timestamp);
+    }
+    
+    // Add item to scene
+    graphicsScene->addItem(item);
+    
+    qDebug() << "Custom symbol added at Y:" << yValue << "Time:" << timestamp.toString() << "Screen:" << screenPos;
 }
 
 /**

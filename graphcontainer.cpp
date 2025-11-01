@@ -475,37 +475,62 @@ void GraphContainer::onDataOptionChanged(QString title)
 
 void GraphContainer::setupEventConnections()
 {
+    // Disconnect all existing connections first to avoid duplicates
+    disconnect(m_comboBox, &QComboBox::currentTextChanged,
+               this, &GraphContainer::onDataOptionChanged);
+    
+    // Disconnect all graph signals
+    for (auto &pair : m_waterfallGraphs)
+    {
+        disconnect(pair.second, &WaterfallGraph::SelectionCreated,
+                   this, &GraphContainer::onSelectionCreated);
+        disconnect(pair.second, &WaterfallGraph::markerSelected,
+                   this, &GraphContainer::onMarkerSelected);
+    }
+    
     // Connect ComboBox data source selection
     connect(m_comboBox, &QComboBox::currentTextChanged,
             this, &GraphContainer::onDataOptionChanged);
 
-    // Connect WaterfallGraph selection events for all graphs
+    // Connect WaterfallGraph selection and marker events for all graphs
+    // Use Qt::UniqueConnection to prevent duplicate connections
     for (auto &pair : m_waterfallGraphs)
     {
         connect(pair.second, &WaterfallGraph::SelectionCreated,
-                this, &GraphContainer::onSelectionCreated);
+                this, &GraphContainer::onSelectionCreated,
+                Qt::UniqueConnection);
+        connect(pair.second, &WaterfallGraph::markerSelected,
+                this, &GraphContainer::onMarkerSelected,
+                Qt::UniqueConnection);
     }
 
-    // Connect ZoomPanel value changes
+    // Disconnect and reconnect ZoomPanel value changes
+    disconnect(m_zoomPanel, nullptr, this, nullptr);
     connect(m_zoomPanel, &ZoomPanel::valueChanged,
-            this, &GraphContainer::onZoomValueChanged);
+            this, &GraphContainer::onZoomValueChanged,
+            Qt::UniqueConnection);
 
-    // Connect TimelineView interval changes (if timeline view exists)
+    // Disconnect and reconnect TimelineView interval changes (if timeline view exists)
     if (m_timelineView)
     {
+        disconnect(m_timelineView, nullptr, this, nullptr);
         connect(m_timelineView, &TimelineView::TimeIntervalChanged,
-                this, &GraphContainer::onTimeIntervalChanged);
+                this, &GraphContainer::onTimeIntervalChanged,
+                Qt::UniqueConnection);
     }
 
-    // Connect TimeSelectionVisualizer clear button events
+    // Disconnect and reconnect TimeSelectionVisualizer events
     if (m_timelineSelectionView)
     {
+        disconnect(m_timelineSelectionView, nullptr, this, nullptr);
         connect(m_timelineSelectionView, &TimeSelectionVisualizer::timeSelectionsCleared,
-                this, &GraphContainer::onClearTimeSelectionsButtonClicked);
+                this, &GraphContainer::onClearTimeSelectionsButtonClicked,
+                Qt::UniqueConnection);
         
         // Connect TimeSelectionVisualizer time selection made events
         connect(m_timelineSelectionView, &TimeSelectionVisualizer::timeSelectionMade,
-                this, &GraphContainer::onTimeSelectionMade);
+                this, &GraphContainer::onTimeSelectionMade,
+                Qt::UniqueConnection);
     }
 
     qDebug() << "GraphContainer: All event connections established";
@@ -520,10 +545,23 @@ void GraphContainer::setupEventConnectionsForWaterfallGraph()
     }
 
     // Connect WaterfallGraph selection events
+    // Note: markerSelected connections are handled in setupEventConnections() for all graphs
+    // to avoid duplicate connections
     connect(m_currentWaterfallGraph, &WaterfallGraph::SelectionCreated,
             this, &GraphContainer::onSelectionCreated);
 
     qDebug() << "GraphContainer: Event connections established for waterfall graph";
+}
+
+/**
+ * @brief Handle marker selected event from WaterfallGraph
+ *
+ * @param timestamp The timestamp of the selected marker
+ */
+void GraphContainer::onMarkerSelected(const QDateTime &timestamp)
+{
+    qDebug() << "GraphContainer: Marker selected at timestamp:" << timestamp.toString();
+    emit MarkerSelected(timestamp);
 }
 
 WaterfallGraph *GraphContainer::createWaterfallGraph(GraphType graphType)

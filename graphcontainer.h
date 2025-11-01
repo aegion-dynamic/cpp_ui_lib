@@ -133,6 +133,7 @@ public slots:
     void onSelectionCreated(const TimeSelectionSpan &selection);
     void onZoomValueChanged(ZoomBounds bounds);
     void onTimeSelectionMade(const TimeSelectionSpan &selection);
+    void onMarkerSelected(const QDateTime &timestamp);
 
 private:
     void updateTotalContainerSize();
@@ -154,6 +155,7 @@ signals:
     void TimeSelectionsCleared();
     void IntervalChanged(TimeInterval interval);
     void TimeScopeChanged(const TimeSelectionSpan &selection);
+    void MarkerSelected(const QDateTime &timestamp);
 
 private:
     QHBoxLayout *m_mainLayout;

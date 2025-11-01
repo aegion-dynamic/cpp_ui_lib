@@ -25,12 +25,18 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QDateTime>
+#include <QVariant>
 #include <map>
 #include <vector>
 
 class WaterfallGraph : public QWidget
 {
     Q_OBJECT
+
+protected:
+    // Marker timestamp storage key for QGraphicsItem::setData()
+    static const int MarkerTimestampKey;
 
 public:
     explicit WaterfallGraph(QWidget *parent = nullptr, bool enableGrid = false, int gridDivisions = 10, TimeInterval timeInterval = TimeInterval::FifteenMinutes);
@@ -171,6 +177,10 @@ protected:
     void clearSelection();
     QTime mapScreenToTime(qreal yPos) const;
 
+    // Marker timestamp helper methods
+    void setMarkerTimestamp(QGraphicsItem *item, const QDateTime &timestamp);
+    QDateTime getMarkerTimestamp(QGraphicsItem *item) const;
+
 public:
     // Mouse selection control
     void setMouseSelectionEnabled(bool enabled);
@@ -217,6 +227,9 @@ public:
     void drawTriangleMarker(const QPointF &position, const QColor &fillColor = Qt::red, const QColor &outlineColor = Qt::black, qreal size = 8.0);
     void drawScatterplot(const QString &seriesLabel, const QColor &pointColor = Qt::white, qreal pointSize = 3.0, const QColor &outlineColor = Qt::black);
 
+    // Custom symbol method
+    void addCustomSymbol(QGraphicsItem *item, qreal yValue, const QDateTime &timestamp);
+
     // Multi-series support methods
     void setSeriesColor(const QString &seriesLabel, const QColor &color);
     QColor getSeriesColor(const QString &seriesLabel) const;
@@ -226,6 +239,7 @@ public:
 
 signals:
     void SelectionCreated(const TimeSelectionSpan &selection);
+    void markerSelected(const QDateTime &timestamp);
 };
 
 #endif // WATERFALLGRAPH_H

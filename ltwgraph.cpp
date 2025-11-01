@@ -213,6 +213,10 @@ void LTWGraph::drawCustomMarkers(const QString &seriesLabel, const QColor &marke
             square->setPen(QPen(Qt::white, 1.0));
             square->setBrush(QBrush(Qt::transparent));
             square->setZValue(500); // Lower z-value than triangle
+            
+            // Store timestamp for click detection
+            setMarkerTimestamp(square, timestamp);
+            
             graphicsScene->addItem(square);
             
             // Draw cyan triangle

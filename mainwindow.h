@@ -128,6 +128,13 @@ private slots:
      */
     void onLayoutTypeChanged(int index);
 
+    /**
+     * @brief Handles marker selection from graph layout
+     *
+     * Called when a marker is clicked in any graph. Shows an alert with the timestamp.
+     */
+    void onMarkerSelected(const QDateTime &timestamp);
+
     // /**
     //  * @brief Updates the current time in the time visualizer
     //  *
