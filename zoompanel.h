@@ -124,6 +124,9 @@ private:
 
     // Helper method to calculate interpolated bounds
     ZoomBounds calculateInterpolatedBounds() const;
+    
+    // Helper method to update display labels to reflect current selected range
+    void updateDisplayLabels();
 
     // Interpolation Ranges
     const qreal m_interpolationLowerBound = 0.0;

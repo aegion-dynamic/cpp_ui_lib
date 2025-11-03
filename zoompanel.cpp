@@ -350,6 +350,9 @@ void ZoomPanel::mousePressEvent(QMouseEvent *event)
                 m_indicatorUpperBoundValue = newUpperBound;
                 updateIndicatorToBounds();
                 
+                // Update display labels to show current selected range (dynamic values)
+                updateDisplayLabels();
+                
                 // Emit bounds change
                 ZoomBounds bounds = calculateInterpolatedBounds();
                 emit valueChanged(bounds);
@@ -483,6 +486,9 @@ void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
 
         // Update indicator position to reflect new bounds
         updateIndicatorToBounds();
+        
+        // Update display labels to show current selected range (dynamic values)
+        updateDisplayLabels();
 
         // Emit current actual bounds
         ZoomBounds bounds = calculateInterpolatedBounds();
@@ -639,6 +645,9 @@ void ZoomPanel::updateExtentFromMousePosition(const QPoint &currentPos)
 
     // Update the indicator to span from leftLabelValue to rightLabelValue
     updateIndicatorToBounds();
+    
+    // Update display labels to show current selected range (dynamic values)
+    updateDisplayLabels();
 
     // Update bounds calculation and emit signal
     ZoomBounds bounds = calculateInterpolatedBounds();
@@ -688,6 +697,36 @@ ZoomBounds ZoomPanel::calculateInterpolatedBounds() const
     bounds.upperbound = m_originalLeftLabelValue + (m_indicatorUpperBoundValue * originalRange);
     
     return bounds;
+}
+
+void ZoomPanel::updateDisplayLabels()
+{
+    // Calculate current selected range from original values (dynamic values for display)
+    ZoomBounds current = calculateInterpolatedBounds();
+    
+    // Update display labels to show the selected range
+    // These are the "layered" dynamic values shown to the user
+    m_leftLabelValue = current.lowerbound;
+    m_rightLabelValue = current.upperbound;
+    m_centerLabelValue = current.lowerbound + (current.upperbound - current.lowerbound) * 0.5;
+    
+    // Update the text items to reflect the new display values
+    if (m_leftText)
+    {
+        m_leftText->setPlainText(QString::number(m_leftLabelValue, 'f', 2));
+    }
+    if (m_rightText)
+    {
+        m_rightText->setPlainText(QString::number(m_rightLabelValue, 'f', 2));
+    }
+    if (m_centerText)
+    {
+        m_centerText->setPlainText(QString::number(m_centerLabelValue, 'f', 2));
+    }
+    
+    qDebug() << "ZoomPanel: Display labels updated (dynamic) - Lower:" << m_leftLabelValue
+             << "Upper:" << m_rightLabelValue << "| Original (constant) - Lower:" << m_originalLeftLabelValue
+             << "Upper:" << m_originalRightLabelValue;
 }
 
 void ZoomPanel::rebaseToCurrentBounds()
