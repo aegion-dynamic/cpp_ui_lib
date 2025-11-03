@@ -315,8 +315,51 @@ void ZoomPanel::mousePressEvent(QMouseEvent *event)
         }
         else
         {
-            // Clicked outside indicator - no action
-            qDebug() << "Clicked outside indicator - no action";
+            // Clicked outside indicator - jump to that position (scrollbar-like behavior)
+            // Only if user has already customized (scrollbar mode)
+            if (m_userModifiedBounds)
+            {
+                QRect drawArea = this->rect();
+                int margin = qMax(2, drawArea.height() / 10);
+                int availableWidth = drawArea.width() - (2 * margin);
+                
+                // Convert mouse X position to a value between 0.0 and 1.0
+                qreal mouseValue = static_cast<qreal>(event->pos().x() - margin) / static_cast<qreal>(availableWidth);
+                mouseValue = qBound(0.0, mouseValue, 1.0);
+                
+                // Calculate current indicator size
+                qreal currentRange = m_indicatorUpperBoundValue - m_indicatorLowerBoundValue;
+                
+                // Center the indicator at the mouse position
+                qreal newLowerBound = mouseValue - (currentRange / 2.0);
+                qreal newUpperBound = mouseValue + (currentRange / 2.0);
+                
+                // Clamp to valid range
+                if (newLowerBound < 0.0)
+                {
+                    newLowerBound = 0.0;
+                    newUpperBound = currentRange;
+                }
+                if (newUpperBound > 1.0)
+                {
+                    newUpperBound = 1.0;
+                    newLowerBound = 1.0 - currentRange;
+                }
+                
+                m_indicatorLowerBoundValue = newLowerBound;
+                m_indicatorUpperBoundValue = newUpperBound;
+                updateIndicatorToBounds();
+                
+                // Emit bounds change
+                ZoomBounds bounds = calculateInterpolatedBounds();
+                emit valueChanged(bounds);
+                
+                qDebug() << "Jumped indicator to position:" << mouseValue << "(scrollbar behavior)";
+            }
+            else
+            {
+                qDebug() << "Clicked outside indicator - no action (not customized yet)";
+            }
         }
     }
 }
@@ -363,9 +406,8 @@ void ZoomPanel::mouseReleaseEvent(QMouseEvent *event)
         {
             m_isDragging = false;
             setCursor(Qt::ArrowCursor);
-            qDebug() << "Drag mode ended";
-            // After drag completes, optionally rebase labels to current bounds
-            rebaseToCurrentBounds();
+            qDebug() << "Drag mode ended - indicator size and position preserved (scrollbar behavior)";
+            // Don't rebase - keep indicator size and position for scrollbar-like behavior
         }
 
         if (m_isExtending)
@@ -373,9 +415,8 @@ void ZoomPanel::mouseReleaseEvent(QMouseEvent *event)
             m_isExtending = false;
             m_extendMode = None;
             setCursor(Qt::ArrowCursor);
-            qDebug() << "Extend mode ended";
-            // After extend completes, rebase labels to current bounds
-            rebaseToCurrentBounds();
+            qDebug() << "Extend mode ended - indicator size preserved (scrollbar behavior)";
+            // Don't rebase - keep indicator size for scrollbar-like behavior
         }
     }
 }
@@ -477,9 +518,18 @@ void ZoomPanel::showEvent(QShowEvent *event)
     // Ensure the zoom panel is properly initialized when becoming visible
     if (m_scene && m_indicator)
     {
-        // Update indicator to current value to ensure proper visual state
-        updateIndicator(m_currentValue);
-        qDebug() << "ZoomPanel: Show event - updated indicator to value:" << m_currentValue;
+        // If user has customized, preserve bounds (scrollbar behavior)
+        // Otherwise, update to current value
+        if (m_userModifiedBounds)
+        {
+            updateIndicatorToBounds();
+            qDebug() << "ZoomPanel: Show event - preserved indicator bounds (scrollbar mode)";
+        }
+        else
+        {
+            updateIndicator(m_currentValue);
+            qDebug() << "ZoomPanel: Show event - updated indicator to value:" << m_currentValue;
+        }
     }
 }
 
@@ -487,6 +537,10 @@ void ZoomPanel::updateAllElements()
 {
     if (!m_scene)
         return;
+
+    // Store current indicator bounds before recreating
+    qreal savedLowerBound = m_indicatorLowerBoundValue;
+    qreal savedUpperBound = m_indicatorUpperBoundValue;
 
     // Remove existing items
     if (m_indicator)
@@ -518,8 +572,10 @@ void ZoomPanel::updateAllElements()
     createIndicator();
     createTextItems();
 
-    // Update indicator to current value
-    updateIndicator(m_currentValue);
+    // Restore indicator bounds (preserve custom size/position if customized)
+    m_indicatorLowerBoundValue = savedLowerBound;
+    m_indicatorUpperBoundValue = savedUpperBound;
+    updateIndicatorToBounds();
 }
 
 ZoomPanel::ExtendMode ZoomPanel::detectExtendMode(const QPoint &mousePos)
