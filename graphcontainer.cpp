@@ -916,8 +916,8 @@ void GraphContainer::initializeZoomPanelLimits()
     // Calculate center value (linear interpolation)
     qreal centerValue = dataMin + (dataMax - dataMin) * 0.5;
 
-    // Update original values (used for calculations) only if user hasn't customized
-    // If customized, original values remain constant to preserve zoom calculations
+    // Only update zoom panel if user hasn't customized
+    // If customized, preserve all values (original and display) - don't update anything
     if (!m_zoomPanel->hasUserModifiedBounds())
     {
         // User hasn't customized - update original values to new data range
@@ -926,17 +926,16 @@ void GraphContainer::initializeZoomPanelLimits()
         m_zoomPanel->setLeftLabelValue(dataMin);
         m_zoomPanel->setCenterLabelValue(centerValue);
         m_zoomPanel->setRightLabelValue(dataMax);
+        
+        qDebug() << "GraphContainer: Zoom panel limits updated - Min:" << dataMin
+                 << "Center:" << centerValue << "Max:" << dataMax << "- User has not customized";
     }
     else
     {
-        // User has customized - only update display values, keep original values constant
-        m_zoomPanel->setLeftLabelValue(dataMin);
-        m_zoomPanel->setCenterLabelValue(centerValue);
-        m_zoomPanel->setRightLabelValue(dataMax);
+        // User has customized - don't update anything (preserve all zoom state)
+        // Original values remain constant, display values remain unchanged
+        qDebug() << "GraphContainer: Zoom panel limits NOT updated - user has customized zoom - preserving state";
     }
-
-    qDebug() << "GraphContainer: Zoom panel limits updated - Min:" << dataMin
-             << "Center:" << centerValue << "Max:" << dataMax << "- Zoom state preserved";
 }
 
 void GraphContainer::onZoomValueChanged(ZoomBounds bounds)

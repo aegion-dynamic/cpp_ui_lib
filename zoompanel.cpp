@@ -661,11 +661,16 @@ void ZoomPanel::rebaseToCurrentBounds()
 
     // Reset indicator to full range [0.0, 1.0] so it spans the entire panel
     // The display labels now represent the selected range, so full indicator = full selected range
-    resetIndicatorToFullRange();
+    // BUT preserve the user modified flag so future data updates don't reset the zoom
+    m_indicatorLowerBoundValue = 0.0;
+    m_indicatorUpperBoundValue = 1.0;
+    m_currentValue = 1.0;
+    updateIndicatorToBounds();
+    // DO NOT reset m_userModifiedBounds - keep it true to preserve customization
     
     qDebug() << "ZoomPanel: Display labels updated to selected bounds (original values unchanged) - Display Lower:" << m_leftLabelValue
              << "Display Upper:" << m_rightLabelValue << "Original Lower:" << m_originalLeftLabelValue
-             << "Original Upper:" << m_originalRightLabelValue;
+             << "Original Upper:" << m_originalRightLabelValue << "- User modification preserved";
 }
 
 void ZoomPanel::resetIndicatorToFullRange()
