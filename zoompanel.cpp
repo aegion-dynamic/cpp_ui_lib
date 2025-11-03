@@ -206,6 +206,16 @@ void ZoomPanel::updateIndicator(double value)
 void ZoomPanel::setLeftLabelValue(const qreal value)
 {
     m_leftLabelValue = value;
+    // Store original value if not already set
+    if (!m_originalValuesSet)
+    {
+        m_originalLeftLabelValue = value;
+        m_originalCenterLabelValue = m_centerLabelValue;
+        m_originalRightLabelValue = m_rightLabelValue;
+        m_originalValuesSet = true;
+        qDebug() << "ZoomPanel: Original values initialized - Left:" << m_originalLeftLabelValue
+                 << "Center:" << m_originalCenterLabelValue << "Right:" << m_originalRightLabelValue;
+    }
     if (m_leftText)
     {
         m_leftText->setPlainText(QString::number(value, 'f', 2));
@@ -228,6 +238,16 @@ void ZoomPanel::setRightLabelValue(const qreal value)
     {
         m_rightText->setPlainText(QString::number(value, 'f', 2));
     }
+}
+
+void ZoomPanel::setOriginalRangeValues(const qreal leftValue, const qreal centerValue, const qreal rightValue)
+{
+    m_originalLeftLabelValue = leftValue;
+    m_originalCenterLabelValue = centerValue;
+    m_originalRightLabelValue = rightValue;
+    m_originalValuesSet = true;
+    qDebug() << "ZoomPanel: Original range values explicitly set - Left:" << m_originalLeftLabelValue
+             << "Center:" << m_originalCenterLabelValue << "Right:" << m_originalRightLabelValue;
 }
 
 const qreal ZoomPanel::getLeftLabelValue() const
@@ -602,10 +622,15 @@ void ZoomPanel::updateIndicatorToBounds()
 ZoomBounds ZoomPanel::calculateInterpolatedBounds() const
 {
     ZoomBounds bounds;
-    // Linear interpolation for lower indicator value: interpolate between min indicator (0.0) and left label
-    bounds.lowerbound = m_leftLabelValue + (m_indicatorLowerBoundValue) * (m_rightLabelValue - m_leftLabelValue);
-    // Linear interpolation for upper bound: interpolate between max indicator (1.0) and right label
-    bounds.upperbound = m_leftLabelValue + (m_indicatorUpperBoundValue) * (m_rightLabelValue - m_leftLabelValue);
+    // Always use original values for calculations (constant reference)
+    // Indicator position is relative to original range
+    qreal originalRange = m_originalRightLabelValue - m_originalLeftLabelValue;
+    
+    // Calculate bounds based on original range using indicator position
+    // This ensures calculations are always based on the constant original values
+    bounds.lowerbound = m_originalLeftLabelValue + (m_indicatorLowerBoundValue * originalRange);
+    bounds.upperbound = m_originalLeftLabelValue + (m_indicatorUpperBoundValue * originalRange);
+    
     return bounds;
 }
 
@@ -614,18 +639,33 @@ void ZoomPanel::rebaseToCurrentBounds()
     // Compute interpolated bounds for current indicator extents
     ZoomBounds current = calculateInterpolatedBounds();
 
-    // Update the labels to reflect the selected range
-    // This makes the indicator represent the selected range at [0.0, 1.0]
-    setLeftLabelValue(current.lowerbound);
-    setRightLabelValue(current.upperbound);
-    setCenterLabelValue(current.lowerbound + (current.upperbound - current.lowerbound) * 0.5);
+    // Update only the display labels to reflect the selected range
+    // Original values remain constant (used for calculations)
+    m_leftLabelValue = current.lowerbound;
+    m_rightLabelValue = current.upperbound;
+    m_centerLabelValue = current.lowerbound + (current.upperbound - current.lowerbound) * 0.5;
+    
+    // Update display text items
+    if (m_leftText)
+    {
+        m_leftText->setPlainText(QString::number(m_leftLabelValue, 'f', 2));
+    }
+    if (m_rightText)
+    {
+        m_rightText->setPlainText(QString::number(m_rightLabelValue, 'f', 2));
+    }
+    if (m_centerText)
+    {
+        m_centerText->setPlainText(QString::number(m_centerLabelValue, 'f', 2));
+    }
 
     // Reset indicator to full range [0.0, 1.0] so it spans the entire panel
-    // The labels now represent the selected range, so full indicator = full selected range
+    // The display labels now represent the selected range, so full indicator = full selected range
     resetIndicatorToFullRange();
     
-    qDebug() << "ZoomPanel: Labels updated to selected bounds and indicator reset to full range - Lower:" << m_leftLabelValue
-             << "Upper:" << m_rightLabelValue;
+    qDebug() << "ZoomPanel: Display labels updated to selected bounds (original values unchanged) - Display Lower:" << m_leftLabelValue
+             << "Display Upper:" << m_rightLabelValue << "Original Lower:" << m_originalLeftLabelValue
+             << "Original Upper:" << m_originalRightLabelValue;
 }
 
 void ZoomPanel::resetIndicatorToFullRange()

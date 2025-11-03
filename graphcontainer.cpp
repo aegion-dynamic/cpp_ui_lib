@@ -916,11 +916,24 @@ void GraphContainer::initializeZoomPanelLimits()
     // Calculate center value (linear interpolation)
     qreal centerValue = dataMin + (dataMax - dataMin) * 0.5;
 
-    // Set the zoom panel label values to reflect the new data range
-    // Do NOT reset the indicator - preserve the user's customized zoom state
-    m_zoomPanel->setLeftLabelValue(dataMin);
-    m_zoomPanel->setCenterLabelValue(centerValue);
-    m_zoomPanel->setRightLabelValue(dataMax);
+    // Update original values (used for calculations) only if user hasn't customized
+    // If customized, original values remain constant to preserve zoom calculations
+    if (!m_zoomPanel->hasUserModifiedBounds())
+    {
+        // User hasn't customized - update original values to new data range
+        m_zoomPanel->setOriginalRangeValues(dataMin, centerValue, dataMax);
+        // Also update display values
+        m_zoomPanel->setLeftLabelValue(dataMin);
+        m_zoomPanel->setCenterLabelValue(centerValue);
+        m_zoomPanel->setRightLabelValue(dataMax);
+    }
+    else
+    {
+        // User has customized - only update display values, keep original values constant
+        m_zoomPanel->setLeftLabelValue(dataMin);
+        m_zoomPanel->setCenterLabelValue(centerValue);
+        m_zoomPanel->setRightLabelValue(dataMax);
+    }
 
     qDebug() << "GraphContainer: Zoom panel limits updated - Min:" << dataMin
              << "Center:" << centerValue << "Max:" << dataMax << "- Zoom state preserved";
@@ -1048,8 +1061,11 @@ void GraphContainer::setGraphRangeLimits(const GraphType graphType, qreal yMin, 
         m_currentWaterfallGraph->setCustomYRange(yMin, yMax);
 
         // Update the zoom panel limits
+        qreal centerValue = yMin + (yMax - yMin) * 0.5;
+        // Set original values (used for calculations) and display values
+        m_zoomPanel->setOriginalRangeValues(yMin, centerValue, yMax);
         m_zoomPanel->setLeftLabelValue(yMin);
-        m_zoomPanel->setCenterLabelValue(yMin + (yMax - yMin) * 0.5);
+        m_zoomPanel->setCenterLabelValue(centerValue);
         m_zoomPanel->setRightLabelValue(yMax);
         
         // Reset indicator to full range to restore initial state
