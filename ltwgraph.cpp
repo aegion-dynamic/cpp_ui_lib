@@ -12,7 +12,6 @@
 #include "ltwgraph.h"
 #include <QDebug>
 #include <QMouseEvent>
-#include <QEnterEvent>
 #include <QtMath>
 
 /**
