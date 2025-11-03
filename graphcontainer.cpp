@@ -920,9 +920,12 @@ void GraphContainer::initializeZoomPanelLimits()
     m_zoomPanel->setLeftLabelValue(dataMin);
     m_zoomPanel->setCenterLabelValue(centerValue);
     m_zoomPanel->setRightLabelValue(dataMax);
+    
+    // Reset indicator to full range [0.0, 1.0] to restore initial state
+    m_zoomPanel->resetIndicatorToFullRange();
 
     qDebug() << "GraphContainer: Zoom panel limits initialized - Min:" << dataMin
-             << "Center:" << centerValue << "Max:" << dataMax << "- Zoom reset to 50%";
+             << "Center:" << centerValue << "Max:" << dataMax << "- Zoom reset to full range";
 }
 
 void GraphContainer::onZoomValueChanged(ZoomBounds bounds)
@@ -1050,6 +1053,9 @@ void GraphContainer::setGraphRangeLimits(const GraphType graphType, qreal yMin, 
         m_zoomPanel->setLeftLabelValue(yMin);
         m_zoomPanel->setCenterLabelValue(yMin + (yMax - yMin) * 0.5);
         m_zoomPanel->setRightLabelValue(yMax);
+        
+        // Reset indicator to full range to restore initial state
+        m_zoomPanel->resetIndicatorToFullRange();
 
         qDebug() << "GraphContainer: Applied stored range limits for" << graphTypeToString(graphType)
                  << "- Min:" << yMin << "Max:" << yMax << "- Auto-update disabled";

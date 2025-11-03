@@ -50,6 +50,9 @@ public:
 
     // Rebase labels to the current bounds and reset indicator to [0,1]
     void rebaseToCurrentBounds();
+    
+    // Reset indicator to full range [0.0, 1.0] without changing labels
+    void resetIndicatorToFullRange();
 
 protected:
     void mousePressEvent(QMouseEvent *event) override;

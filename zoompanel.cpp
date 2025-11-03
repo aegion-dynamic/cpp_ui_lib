@@ -614,13 +614,32 @@ void ZoomPanel::rebaseToCurrentBounds()
     // Compute interpolated bounds for current indicator extents
     ZoomBounds current = calculateInterpolatedBounds();
 
-    // Update only the labels to reflect new data range while keeping the indicator size/position
+    // Update the labels to reflect the selected range
+    // This makes the indicator represent the selected range at [0.0, 1.0]
     setLeftLabelValue(current.lowerbound);
     setRightLabelValue(current.upperbound);
     setCenterLabelValue(current.lowerbound + (current.upperbound - current.lowerbound) * 0.5);
 
-    // Do not change m_indicatorLowerBoundValue/m_indicatorUpperBoundValue/m_currentValue
-    // Keep the visual selection the same; only the numeric range labels update
-    qDebug() << "ZoomPanel: Labels updated to new bounds without changing indicator - Lower:" << m_leftLabelValue
+    // Reset indicator to full range [0.0, 1.0] so it spans the entire panel
+    // The labels now represent the selected range, so full indicator = full selected range
+    resetIndicatorToFullRange();
+    
+    qDebug() << "ZoomPanel: Labels updated to selected bounds and indicator reset to full range - Lower:" << m_leftLabelValue
              << "Upper:" << m_rightLabelValue;
+}
+
+void ZoomPanel::resetIndicatorToFullRange()
+{
+    // Reset indicator bounds to full range [0.0, 1.0]
+    m_indicatorLowerBoundValue = 0.0;
+    m_indicatorUpperBoundValue = 1.0;
+    m_currentValue = 1.0;
+    
+    // Update the indicator visual representation
+    updateIndicatorToBounds();
+    
+    // Reset user modified flag
+    m_userModifiedBounds = false;
+    
+    qDebug() << "ZoomPanel: Indicator reset to full range [0.0, 1.0]";
 }
