@@ -916,16 +916,14 @@ void GraphContainer::initializeZoomPanelLimits()
     // Calculate center value (linear interpolation)
     qreal centerValue = dataMin + (dataMax - dataMin) * 0.5;
 
-    // Set the zoom panel label values
+    // Set the zoom panel label values to reflect the new data range
+    // Do NOT reset the indicator - preserve the user's customized zoom state
     m_zoomPanel->setLeftLabelValue(dataMin);
     m_zoomPanel->setCenterLabelValue(centerValue);
     m_zoomPanel->setRightLabelValue(dataMax);
-    
-    // Reset indicator to full range [0.0, 1.0] to restore initial state
-    m_zoomPanel->resetIndicatorToFullRange();
 
-    qDebug() << "GraphContainer: Zoom panel limits initialized - Min:" << dataMin
-             << "Center:" << centerValue << "Max:" << dataMax << "- Zoom reset to full range";
+    qDebug() << "GraphContainer: Zoom panel limits updated - Min:" << dataMin
+             << "Center:" << centerValue << "Max:" << dataMax << "- Zoom state preserved";
 }
 
 void GraphContainer::onZoomValueChanged(ZoomBounds bounds)
