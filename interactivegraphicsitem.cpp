@@ -7,6 +7,7 @@
 #include <QtMath>
 
 
+
 InteractiveGraphicsItem::InteractiveGraphicsItem(QGraphicsItem *parent)
     : QObject(), QGraphicsItem(parent)
     , m_size(50.0, 50.0)

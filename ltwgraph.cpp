@@ -12,6 +12,7 @@
 #include "ltwgraph.h"
 #include <QDebug>
 #include <QMouseEvent>
+// QEnterEvent not available in Qt5 for QWidget::enterEvent; using QEvent*
 #include <QtMath>
 
 /**

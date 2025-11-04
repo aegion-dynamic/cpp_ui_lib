@@ -81,6 +81,7 @@ protected:
     // Override mouse events
     void mousePressEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    // Override mouse move to track cursor for crosshair
     void enterEvent(QEvent *event) override;
     void leaveEvent(QEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
