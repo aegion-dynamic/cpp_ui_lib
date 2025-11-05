@@ -116,6 +116,9 @@ public:
     bool hasGraphRangeLimits(const GraphType graphType) const;
     std::pair<qreal, qreal> getGraphRangeLimits(const GraphType graphType) const;
 
+    // Layout ordering method
+    void setTimelineOnLeftSide(bool onLeft);
+
     // Computed property getters for visualization state
     QDateTime getCurrentDisplayTimeMin() const;
     QDateTime getCurrentDisplayTimeMax() const;

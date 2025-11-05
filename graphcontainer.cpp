@@ -1199,6 +1199,54 @@ std::pair<qreal, qreal> GraphContainer::getGraphRangeLimits(const GraphType grap
     return (it != graphRangeLimits.end()) ? it->second : std::make_pair(0.0, 0.0);
 }
 
+void GraphContainer::setTimelineOnLeftSide(bool onLeft)
+{
+    if (!m_mainLayout)
+    {
+        qWarning() << "GraphContainer: Cannot reorder timeline - main layout is null";
+        return;
+    }
+
+    // Remove all items from main layout
+    QLayoutItem *item;
+    while ((item = m_mainLayout->takeAt(0)) != nullptr)
+    {
+        // Don't delete the items, just remove them from layout
+        // The widgets and layouts are still owned by their parent
+        delete item; // This deletes the layout item wrapper, not the actual widget/layout
+    }
+
+    // Now add items in the desired order
+    if (onLeft)
+    {
+        // Add timeline widgets first (left side), then left layout
+        if (m_timelineSelectionView)
+        {
+            m_mainLayout->addWidget(m_timelineSelectionView);
+        }
+        if (m_timelineView)
+        {
+            m_mainLayout->addWidget(m_timelineView);
+        }
+        m_mainLayout->addLayout(m_leftLayout, 1); // Give stretch factor of 1 to left layout
+    }
+    else
+    {
+        // Add left layout first, then timeline widgets (right side - default)
+        m_mainLayout->addLayout(m_leftLayout, 1); // Give stretch factor of 1 to left layout
+        if (m_timelineSelectionView)
+        {
+            m_mainLayout->addWidget(m_timelineSelectionView);
+        }
+        if (m_timelineView)
+        {
+            m_mainLayout->addWidget(m_timelineView);
+        }
+    }
+
+    qDebug() << "GraphContainer: Timeline widgets moved to" << (onLeft ? "left" : "right") << "side";
+}
+
 // Computed property getters implementation
 
 QDateTime GraphContainer::getCurrentDisplayTimeMin() const
