@@ -33,7 +33,24 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<
     m_mainLayout->setSpacing(1);
     m_mainLayout->setContentsMargins(0, 0, 0, 0);
 
-    // Create left vertical layout with no margins
+    // Create TimelineView first (conditionally based on showTimelineView) with timer
+    // This will be on the LEFT side
+    if (m_showTimelineView)
+    {
+        qDebug() << "GraphContainer constructor: Creating TimelineView with showTimelineView = true";
+        m_timelineView = new TimelineView(this, m_timer);
+        // Set size policy to expand vertically
+        m_timelineView->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+        m_mainLayout->addWidget(m_timelineView);
+        qDebug() << "GraphContainer constructor: TimelineView created and added to layout (LEFT side)";
+    }
+    else
+    {
+        qDebug() << "GraphContainer constructor: Not creating TimelineView, showTimelineView = false";
+        m_timelineView = nullptr;
+    }
+
+    // Create left vertical layout with no margins (for graph controls and graph)
     m_leftLayout = new QVBoxLayout();
     m_leftLayout->setContentsMargins(0, 0, 0, 0);
 
@@ -49,6 +66,19 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<
     m_zoomPanel->setMaximumHeight(comboboxHeight);
     m_zoomPanel->setMinimumHeight(comboboxHeight);
 
+    // Calculate combined height of combobox and zoompanel for clear button height
+    int zoompanelHeight = m_zoomPanel->maximumHeight();
+    int clearButtonHeight = comboboxHeight + zoompanelHeight;
+    
+    // Create TimelineSelectionView with timer
+    // This will be on the LEFT side (after TimelineView if it exists)
+    m_timelineSelectionView = new TimeSelectionVisualizer(this, m_timer, clearButtonHeight);
+    // Set size policy to expand vertically
+    m_timelineSelectionView->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_mainLayout->addWidget(m_timelineSelectionView);
+    m_timelineSelectionView->setCurrentTime(QTime::currentTime());
+    m_timelineSelectionView->setTimeLineLength(TimeInterval::FifteenMinutes);
+
     // Add ComboBox and ZoomPanel to left layout first
     m_leftLayout->addWidget(m_comboBox);
     m_leftLayout->addWidget(m_zoomPanel);
@@ -59,36 +89,8 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<
     // Show the initial graph type
     setCurrentDataOption(currentDataOption);
 
-    // Add left layout to main layout with stretch factor
+    // Add left layout to main layout with stretch factor (this goes on the RIGHT side now)
     m_mainLayout->addLayout(m_leftLayout, 1); // Give stretch factor of 1 to left layout
-
-    // Create TimelineSelectionView with timer
-    // Calculate combined height of combobox and zoompanel for clear button height
-    int zoompanelHeight = m_zoomPanel->maximumHeight();
-    int clearButtonHeight = comboboxHeight + zoompanelHeight;
-    
-    m_timelineSelectionView = new TimeSelectionVisualizer(this, m_timer, clearButtonHeight);
-    // Set size policy to expand vertically
-    m_timelineSelectionView->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-    m_mainLayout->addWidget(m_timelineSelectionView);
-    m_timelineSelectionView->setCurrentTime(QTime::currentTime());
-    m_timelineSelectionView->setTimeLineLength(TimeInterval::FifteenMinutes);
-
-    // Create TimelineView (conditionally based on showTimelineView) with timer
-    if (m_showTimelineView)
-    {
-        qDebug() << "GraphContainer constructor: Creating TimelineView with showTimelineView = true";
-        m_timelineView = new TimelineView(this, m_timer);
-        // Set size policy to expand vertically
-        m_timelineView->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-        m_mainLayout->addWidget(m_timelineView);
-        qDebug() << "GraphContainer constructor: TimelineView created and added to layout";
-    }
-    else
-    {
-        qDebug() << "GraphContainer constructor: Not creating TimelineView, showTimelineView = false";
-        m_timelineView = nullptr;
-    }
 
     // Set layout
     setLayout(m_mainLayout);
@@ -158,13 +160,14 @@ void GraphContainer::setShowTimelineView(bool showTimelineView)
         qDebug() << "GraphContainer: TimelineView visibility after setting:" << m_timelineView->isVisible();
         qDebug() << "GraphContainer: TimelineView size:" << m_timelineView->size();
     }
-    else
+    else if (showTimelineView)
     {
         qDebug() << "GraphContainer: Creating new TimelineView with visibility:" << showTimelineView;
         m_timelineView = new TimelineView(this, m_timer);
         // Set size policy to expand vertically
         m_timelineView->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-        m_mainLayout->addWidget(m_timelineView);
+        // Insert at the beginning (left side) of the layout
+        m_mainLayout->insertWidget(0, m_timelineView);
         m_timelineView->setVisible(showTimelineView);
         qDebug() << "GraphContainer: New TimelineView visibility after setting:" << m_timelineView->isVisible();
         qDebug() << "GraphContainer: New TimelineView size:" << m_timelineView->size();

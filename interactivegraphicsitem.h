@@ -187,7 +187,7 @@ private:
     qreal m_initialRotation;
 
     // Helper methods
-    void updateInteractionRegions();
+    void updateInteractionRegions()git ;
     void updateCursor(InteractionRegion region);
     QRectF getRotateRegionRect() const;
     QList<QRectF> getRotateRegions() const;
