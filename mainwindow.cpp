@@ -446,9 +446,35 @@ void MainWindow::setupTimelineView()
                 }
             });
     
+    // Create a default maneuver with multiple steps for demonstration
+    QDateTime now = QDateTime::currentDateTime();
+    QDateTime fiveMinutesAgo = now.addSecs(-5 * 60);
+    QDateTime threeMinutesAgo = now.addSecs(-3 * 60);
+    QDateTime oneMinuteAgo = now.addSecs(-1 * 60);
+    QDateTime maneuverEndTime = now.addSecs(2 * 60); // End time 2 minutes from now
+    
+    Maneuver defaultManeuver(maneuverEndTime);
+    
+    // Add multiple steps to demonstrate the maneuver illustration
+    // Step 1: Started 5 minutes ago
+    defaultManeuver.addStep(fiveMinutesAgo, "Start", "Init", "Begin");
+    
+    // Step 2: Started 3 minutes ago
+    defaultManeuver.addStep(threeMinutesAgo, "Mid1", "Proc", "Mid2");
+    
+    // Step 3: Started 1 minute ago
+    defaultManeuver.addStep(oneMinuteAgo, "Near", "Now", "End");
+    
+    // Set the default maneuver on the timeline view
+    testTimelineView->setManeuver(defaultManeuver);
+    testTimelineView->setManeuverIllustrationVisible(true);
+    
     qDebug() << "TimelineView created in dedicated Timeline View tab";
     qDebug() << "TimelineView geometry:" << testTimelineView->geometry();
     qDebug() << "TimelineView visible:" << testTimelineView->isVisible();
+    qDebug() << "Default maneuver created with" << defaultManeuver.getStepCount() << "steps";
+    qDebug() << "Maneuver start:" << defaultManeuver.getStartTime().toString("HH:mm:ss") 
+             << "End:" << maneuverEndTime.toString("HH:mm:ss");
 }
 
 void MainWindow::setupCustomGraphsTab()

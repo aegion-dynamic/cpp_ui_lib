@@ -9,6 +9,7 @@
 #include "graphlayout.h"
 #include "ltwgraph.h"
 #include "rtwgraph.h"
+#include "maneuver.h"
 #include "simulator.h"
 #include "timelineview.h"
 #include "timeselectionvisualizer.h"

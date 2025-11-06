@@ -109,6 +109,10 @@ public:
     QString getChevronLabel2() const;
     QString getChevronLabel3() const;
 
+    // Maneuver illustration control methods
+    void setManeuverIllustrationVisible(bool visible);
+    bool isManeuverIllustrationVisible() const;
+
     // Range limits management methods
     void setGraphRangeLimits(const GraphType graphType, qreal yMin, qreal yMax);
     void removeGraphRangeLimits(const GraphType graphType);

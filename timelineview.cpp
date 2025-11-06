@@ -216,7 +216,7 @@ void SliderState::syncPositionFromTimeWindow(int widgetHeight)
 // ============================================================================
 
 TimelineVisualizerWidget::TimelineVisualizerWidget(QWidget *parent)
-    : QWidget(parent), m_currentTime(QTime::currentTime()), m_numberOfDivisions(15), m_lastCurrentTime(QTime::currentTime()), m_pixelSpeed(0.0), m_accumulatedOffset(0.0), m_chevronDrawer(nullptr), m_sliderIndicator(nullptr)
+    : QWidget(parent), m_currentTime(QTime::currentTime()), m_numberOfDivisions(15), m_lastCurrentTime(QTime::currentTime()), m_pixelSpeed(0.0), m_accumulatedOffset(0.0), m_maneuverIllustration(nullptr), m_sliderIndicator(nullptr)
 {
     setFixedWidth(TIMELINE_VIEW_GRAPHICS_VIEW_WIDTH);
     setMinimumHeight(50); // Set a minimum height
@@ -447,8 +447,8 @@ void TimelineVisualizerWidget::createDrawingObjects()
     // Create segment drawers for animation range (including off-screen segments)
     clearDrawingObjects(); // Clear existing ones first
 
-    // Create chevron drawer - position it at the top of the timeline
-    m_chevronDrawer = new TimelineChevronDrawer(drawArea, 30);
+    // Create maneuver illustration
+    m_maneuverIllustration = new ManeuverIllustration(drawArea);
 
     // Create segments with fixed count but variable time gaps
     // We need enough segments to cover the entire visible area plus some buffer
@@ -480,9 +480,9 @@ void TimelineVisualizerWidget::clearDrawingObjects()
     }
     m_segmentDrawers.clear();
 
-    // Clear chevron drawer
-    delete m_chevronDrawer;
-    m_chevronDrawer = nullptr;
+    // Clear maneuver illustration
+    delete m_maneuverIllustration;
+    m_maneuverIllustration = nullptr;
 }
 
 void TimelineVisualizerWidget::setShowRelativeLabels(bool showRelative)
@@ -502,18 +502,85 @@ void TimelineVisualizerWidget::setShowRelativeLabels(bool showRelative)
 void TimelineVisualizerWidget::setChevronLabel1(const QString &label)
 {
     m_chevronLabel1 = label;
+    // Update maneuver illustration if it exists and has a maneuver
+    if (m_maneuverIllustration)
+    {
+        Maneuver maneuver = m_maneuverIllustration->getManeuver();
+        if (!maneuver.isEmpty())
+        {
+            // Update labels in the maneuver - for backward compatibility,
+            // update the first step or create a default maneuver
+            if (maneuver.hasSteps())
+            {
+                // Update first step labels - get the step, create a new one with updated label
+                ManeuverStep firstStep = maneuver.getStep(0);
+                QDateTime stepTime = firstStep.getStartTime();
+                maneuver.removeStep(0);
+                maneuver.addStep(stepTime, label, firstStep.getLabel2(), firstStep.getLabel3());
+            }
+            else
+            {
+                // Create a default step with the new label
+                QDateTime now = QDateTime::currentDateTime();
+                maneuver.addStep(now, label, m_chevronLabel2, m_chevronLabel3);
+            }
+            m_maneuverIllustration->setManeuver(maneuver);
+        }
+    }
     updateVisualization();
 }
 
 void TimelineVisualizerWidget::setChevronLabel2(const QString &label)
 {
     m_chevronLabel2 = label;
+    // Update maneuver illustration if it exists and has a maneuver
+    if (m_maneuverIllustration)
+    {
+        Maneuver maneuver = m_maneuverIllustration->getManeuver();
+        if (!maneuver.isEmpty())
+        {
+            if (maneuver.hasSteps())
+            {
+                ManeuverStep firstStep = maneuver.getStep(0);
+                QDateTime stepTime = firstStep.getStartTime();
+                maneuver.removeStep(0);
+                maneuver.addStep(stepTime, firstStep.getLabel1(), label, firstStep.getLabel3());
+            }
+            else
+            {
+                QDateTime now = QDateTime::currentDateTime();
+                maneuver.addStep(now, m_chevronLabel1, label, m_chevronLabel3);
+            }
+            m_maneuverIllustration->setManeuver(maneuver);
+        }
+    }
     updateVisualization();
 }
 
 void TimelineVisualizerWidget::setChevronLabel3(const QString &label)
 {
     m_chevronLabel3 = label;
+    // Update maneuver illustration if it exists and has a maneuver
+    if (m_maneuverIllustration)
+    {
+        Maneuver maneuver = m_maneuverIllustration->getManeuver();
+        if (!maneuver.isEmpty())
+        {
+            if (maneuver.hasSteps())
+            {
+                ManeuverStep firstStep = maneuver.getStep(0);
+                QDateTime stepTime = firstStep.getStartTime();
+                maneuver.removeStep(0);
+                maneuver.addStep(stepTime, firstStep.getLabel1(), firstStep.getLabel2(), label);
+            }
+            else
+            {
+                QDateTime now = QDateTime::currentDateTime();
+                maneuver.addStep(now, m_chevronLabel1, m_chevronLabel2, label);
+            }
+            m_maneuverIllustration->setManeuver(maneuver);
+        }
+    }
     updateVisualization();
 }
 
@@ -530,6 +597,35 @@ QString TimelineVisualizerWidget::getChevronLabel2() const
 QString TimelineVisualizerWidget::getChevronLabel3() const
 {
     return m_chevronLabel3;
+}
+
+void TimelineVisualizerWidget::setManeuver(const Maneuver& maneuver)
+{
+    if (m_maneuverIllustration)
+    {
+        m_maneuverIllustration->setManeuver(maneuver);
+        updateVisualization();
+    }
+}
+
+Maneuver TimelineVisualizerWidget::getManeuver() const
+{
+    if (m_maneuverIllustration)
+    {
+        return m_maneuverIllustration->getManeuver();
+    }
+    return Maneuver();
+}
+
+void TimelineVisualizerWidget::setManeuverIllustrationVisible(bool visible)
+{
+    m_maneuverIllustrationVisible = visible;
+    updateVisualization();
+}
+
+bool TimelineVisualizerWidget::isManeuverIllustrationVisible() const
+{
+    return m_maneuverIllustrationVisible;
 }
 
 // TimelineView chevron label control methods
@@ -713,13 +809,12 @@ void TimelineVisualizerWidget::paintEvent(QPaintEvent * /* event */)
         //          << "Smooth offset:" << smoothOffset;
     }
 
-    // Draw chevron using drawing object - position it at the top of the timeline
-    if (m_chevronDrawer)
+    // Draw maneuver illustration
+    if (m_maneuverIllustration)
     {
-        m_chevronDrawer->setDrawArea(rect());
-        m_chevronDrawer->setYOffset(30); // Position at the top with enough space for the chevron box
-        m_chevronDrawer->update();
-        drawChevronWithPainter(painter, m_chevronDrawer);
+        m_maneuverIllustration->setDrawArea(rect());
+        m_maneuverIllustration->update();
+        drawManeuverIllustration(painter);
     }
 
     // Draw a border to make it more visible
@@ -805,83 +900,27 @@ void TimelineVisualizerWidget::drawSegmentWithPainter(QPainter &painter, Timelin
     painter.drawLine(drawArea.width(), tickY, drawArea.width() - tickWidth, tickY);
 }
 
-void TimelineVisualizerWidget::drawChevronWithPainter(QPainter &painter, TimelineChevronDrawer *chevronDrawer)
+void TimelineVisualizerWidget::drawManeuverIllustration(QPainter &painter)
 {
-    if (!chevronDrawer)
+    if (!m_maneuverIllustration || !m_maneuverIllustrationVisible)
     {
-        // qDebug() << "Chevron drawer is null!";
         return;
     }
-
-    QRect drawArea = chevronDrawer->getDrawArea();
-    int yOffset = chevronDrawer->getYOffset();
-    double chevronWidthPercent = chevronDrawer->getChevronWidthPercent();
-    int chevronHeight = chevronDrawer->getChevronHeight();
-    int chevronBoxHeight = chevronDrawer->getChevronBoxHeight();
-
-    int widgetWidth = drawArea.width();
-
-    // Set pen for blue chevron outline
-    painter.setPen(QPen(QColor(0, 100, 255), 3)); // Blue color, 3px width for better visibility
-
-    // Define chevron size (width and height)
-    int chevronWidth = static_cast<int>(widgetWidth * chevronWidthPercent);
-
-    // Calculate chevron position (centered horizontally)
-    int chevronX = (widgetWidth - chevronWidth) / 2;
-    int chevronY = yOffset;
-
-    // Calculate the tip position (bottom center of V)
-    int tipX = chevronX + chevronWidth / 2;
-    int tipY = chevronY + chevronHeight;
-
-    // Define chevron points (pointing down: V) and the lines to the edges
-    QPoint chevronPoints[8] = {
-        QPoint(0, chevronY - chevronBoxHeight),           // Start point
-        QPoint(0, chevronY),                              // Left edge
-        QPoint(chevronX, chevronY),                       // Top left point
-        QPoint(tipX, tipY),                               // Bottom point (tip)
-        QPoint(chevronX + chevronWidth, chevronY),        // Top right point
-        QPoint(widgetWidth, chevronY),                    // Right edge
-        QPoint(widgetWidth, chevronY - chevronBoxHeight), // Right edge
-        QPoint(0, chevronY - chevronBoxHeight)            // Start point
-    };
-
-    // Draw the chevron outline
-    painter.drawPolygon(chevronPoints, 8);
-
-    // Draw the 3 labels - 1 and 3 below the V, 2 at the top
-    painter.setPen(QPen(QColor(0, 100, 255), 2)); // Blue text, thicker
-
-    // Calculate text metrics for centering
-    QFontMetrics fontMetrics(painter.font());
-
-    // Label 1: below the chevron, left of the V (centered at chevronX)
-    if (!m_chevronLabel1.isEmpty())
+    
+    // For backward compatibility: if no maneuver is set, create a default one
+    // using the current chevron labels at the current time position
+    Maneuver currentManeuver = m_maneuverIllustration->getManeuver();
+    if (currentManeuver.isEmpty())
     {
-        int label1Width = fontMetrics.horizontalAdvance(m_chevronLabel1);
-        int label1X = chevronX - label1Width / 2; // Center at chevronX
-        int label1Y = tipY + 15;
-        painter.drawText(QPoint(label1X, label1Y), m_chevronLabel1);
+        // Create a default maneuver with a single step at "now" (top of timeline)
+        // This maintains backward compatibility with the old chevron drawing
+        QDateTime now = QDateTime::currentDateTime();
+        Maneuver defaultManeuver(now);
+        defaultManeuver.addStep(now, m_chevronLabel1, m_chevronLabel2, m_chevronLabel3);
+        m_maneuverIllustration->setManeuver(defaultManeuver);
     }
-
-    // Label 2: at the top center (centered at tipX)
-    if (!m_chevronLabel2.isEmpty())
-    {
-        int label2Width = fontMetrics.horizontalAdvance(m_chevronLabel2);
-        int label2X = tipX - label2Width / 2; // Center at tipX
-        int label2Y = chevronY;
-        painter.drawText(QPoint(label2X, label2Y), m_chevronLabel2);
-    }
-
-    // Label 3: below the chevron, right of the V (centered at chevronX + chevronWidth)
-    if (!m_chevronLabel3.isEmpty())
-    {
-        int label3Width = fontMetrics.horizontalAdvance(m_chevronLabel3);
-        int label3X = (chevronX + chevronWidth) - label3Width / 2; // Center at right edge
-        int label3Y = tipY + 15;
-        painter.drawText(QPoint(label3X, label3Y), m_chevronLabel3);
-    }
+    
+    m_maneuverIllustration->draw(painter);
 }
 
 // Slider methods implementation (following zoom slider pattern - vertical orientation)
@@ -1220,4 +1259,38 @@ void TimelineView::onVisibleTimeWindowChanged(const TimeSelectionSpan& selection
     {
         emit TimeScopeChanged(selection);
     }
+}
+
+void TimelineView::setManeuver(const Maneuver& maneuver)
+{
+    if (m_visualizerWidget)
+    {
+        m_visualizerWidget->setManeuver(maneuver);
+    }
+}
+
+Maneuver TimelineView::getManeuver() const
+{
+    if (m_visualizerWidget)
+    {
+        return m_visualizerWidget->getManeuver();
+    }
+    return Maneuver();
+}
+
+void TimelineView::setManeuverIllustrationVisible(bool visible)
+{
+    if (m_visualizerWidget)
+    {
+        m_visualizerWidget->setManeuverIllustrationVisible(visible);
+    }
+}
+
+bool TimelineView::isManeuverIllustrationVisible() const
+{
+    if (m_visualizerWidget)
+    {
+        return m_visualizerWidget->isManeuverIllustrationVisible();
+    }
+    return false;
 }

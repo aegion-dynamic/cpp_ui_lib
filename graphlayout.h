@@ -5,6 +5,7 @@
 #include "graphtype.h"
 #include "waterfalldata.h"
 #include <QDateTime>
+#include <QDebug>
 #include <QHBoxLayout>
 #include <QResizeEvent>
 #include <QString>
@@ -90,6 +91,10 @@ public:
     QString getChevronLabel1() const;
     QString getChevronLabel2() const;
     QString getChevronLabel3() const;
+
+    // Maneuver illustration control methods - operate on all visible containers
+    void setManeuverIllustrationVisible(bool visible);
+    bool isManeuverIllustrationVisible() const;
 
     // Chevron label control methods - operate on specific container by label
     void setChevronLabel1(const QString &containerLabel, const QString &label);

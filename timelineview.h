@@ -22,6 +22,8 @@
 #include <vector>
 #include "timelineutils.h"
 #include "timelinedrawingobjects.h"
+#include "maneuverillustration.h"
+#include "maneuver.h"
 
 // Compile-time parameters
 #define TIMELINE_VIEW_BUTTON_SIZE 64
@@ -139,6 +141,12 @@ public:
     QString getChevronLabel2() const;
     QString getChevronLabel3() const;
 
+    // Maneuver illustration control
+    void setManeuver(const Maneuver& maneuver);
+    Maneuver getManeuver() const;
+    void setManeuverIllustrationVisible(bool visible);
+    bool isManeuverIllustrationVisible() const;
+
     // Slider visible window access
     TimeSelectionSpan getVisibleTimeWindow() const { return m_sliderVisibleWindow; }
 
@@ -162,9 +170,12 @@ private:
     double m_pixelSpeed; // pixels per second
     double m_accumulatedOffset; // accumulated pixel offset
 
-    // Drawing objects (only segments and chevron)
-    TimelineChevronDrawer* m_chevronDrawer;
+    // Drawing objects (only segments and maneuver illustration)
+    ManeuverIllustration* m_maneuverIllustration;
     std::vector<TimelineSegmentDrawer*> m_segmentDrawers;
+
+    // Maneuver illustration visibility control
+    bool m_maneuverIllustrationVisible = true;
 
     // Label mode control
     bool m_showRelativeLabels = false;
@@ -193,7 +204,7 @@ private:
 
     // Helper methods for drawing with QPainter
     void drawSegmentWithPainter(QPainter& painter, TimelineSegmentDrawer* segmentDrawer);
-    void drawChevronWithPainter(QPainter& painter, TimelineChevronDrawer* chevronDrawer);
+    void drawManeuverIllustration(QPainter& painter);
     
     // Slider methods (following zoom slider pattern)
     void createSliderIndicator();
@@ -233,6 +244,12 @@ public:
     QString getChevronLabel1() const;
     QString getChevronLabel2() const;
     QString getChevronLabel3() const;
+
+    // Maneuver illustration control
+    void setManeuver(const Maneuver& maneuver);
+    Maneuver getManeuver() const;
+    void setManeuverIllustrationVisible(bool visible);
+    bool isManeuverIllustrationVisible() const;
 
 signals:
     void TimeIntervalChanged(TimeInterval currentInterval);

@@ -27,6 +27,8 @@ SOURCES += \
     graphtype.cpp \
     main.cpp \
     mainwindow.cpp \
+    maneuver.cpp \
+    maneuverillustration.cpp \
     tacticalsolutionview.cpp \
     timelinedrawingobjects.cpp \
     timelineview.cpp \
@@ -53,6 +55,8 @@ HEADERS += \
     graphlayout.h \
     graphtype.h \
     mainwindow.h \
+    maneuver.h \
+    maneuverillustration.h \
     tacticalsolutionview.h \
     timelinedrawingobjects.h \
     timelineview.h \

@@ -1125,6 +1125,31 @@ QString GraphContainer::getChevronLabel3() const
     }
 }
 
+void GraphContainer::setManeuverIllustrationVisible(bool visible)
+{
+    if (m_timelineView)
+    {
+        m_timelineView->setManeuverIllustrationVisible(visible);
+    }
+    else
+    {
+        qWarning() << "GraphContainer: Cannot set maneuver illustration visibility - timeline view is null";
+    }
+}
+
+bool GraphContainer::isManeuverIllustrationVisible() const
+{
+    if (m_timelineView)
+    {
+        return m_timelineView->isManeuverIllustrationVisible();
+    }
+    else
+    {
+        qWarning() << "GraphContainer: Cannot get maneuver illustration visibility - timeline view is null";
+        return false;
+    }
+}
+
 // Range limits management methods implementation
 void GraphContainer::setGraphRangeLimits(const GraphType graphType, qreal yMin, qreal yMax)
 {

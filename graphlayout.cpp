@@ -1088,6 +1088,32 @@ QString GraphLayout::getChevronLabel3() const
     return QString();
 }
 
+void GraphLayout::setManeuverIllustrationVisible(bool visible)
+{
+    // Set visibility on all visible containers
+    for (auto *container : m_graphContainers)
+    {
+        if (container)
+        {
+            container->setManeuverIllustrationVisible(visible);
+        }
+    }
+}
+
+bool GraphLayout::isManeuverIllustrationVisible() const
+{
+    // Return visibility from the first visible container
+    for (auto *container : m_graphContainers)
+    {
+        if (container)
+        {
+            return container->isManeuverIllustrationVisible();
+        }
+    }
+    qWarning() << "GraphLayout: No visible containers found to get maneuver illustration visibility";
+    return false;
+}
+
 // Chevron label control methods implementation - operate on specific container by label
 void GraphLayout::setChevronLabel1(const QString &containerLabel, const QString &label)
 {
