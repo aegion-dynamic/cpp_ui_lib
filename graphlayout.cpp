@@ -87,11 +87,10 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         }
     }
 
-    // First, make all containers visible and reset timeline position to default (right side)
+    // First, make all containers visible
     for (auto *container : m_graphContainers)
     {
         container->setVisible(true);
-        container->setTimelineOnLeftSide(false); // Reset to default position (right side)
     }
 
     switch (m_layoutType)
@@ -100,8 +99,6 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         // Add graph containers to row 1
         m_graphContainersRow1Layout->addWidget(m_graphContainers[0]);
         m_graphContainers[0]->setShowTimelineView(true);
-        // Move timeline widgets to left side for 1W layout
-        m_graphContainers[0]->setTimelineOnLeftSide(true);
         // Hide the other containers
         m_graphContainers[1]->setVisible(false);
         m_graphContainers[2]->setVisible(false);
