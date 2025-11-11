@@ -156,6 +156,7 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[1], &GraphContainer::onTimeScopeChanged);
         break;
     case LayoutType::GPW4WH:
+    // this 4 horizantal graphs with no GPW
         // Add 4 graph containers to row 1
         m_graphContainersRow1Layout->addWidget(m_graphContainers[0]);
         m_graphContainersRow1Layout->addWidget(m_graphContainers[1]);
@@ -176,6 +177,24 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[1], &GraphContainer::onTimeScopeChanged);
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[2], &GraphContainer::onTimeScopeChanged);
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[3], &GraphContainer::onTimeScopeChanged);
+        break;
+    // Layout 2W: two graph container side by side, but take up whole screen. this is similar 2WH
+    case LayoutType::NOGPW2WH:
+        // Add 2 graph containers to row 1, side by side
+        m_graphContainersRow1Layout->addWidget(m_graphContainers[0]);
+        m_graphContainersRow1Layout->addWidget(m_graphContainers[1]);
+        
+        // Show timeline only for the first container
+        m_graphContainers[0]->setShowTimelineView(true);
+        m_graphContainers[1]->setShowTimelineView(false);
+        
+        // Hide the other containers
+        // m_graphContainers[1]->setVisible(false);
+        m_graphContainers[2]->setVisible(false);
+        m_graphContainers[3]->setVisible(false);
+
+        // Connect the interval change handler of container 1 to the event of 0
+        connect(m_graphContainers[0], &GraphContainer::IntervalChanged, m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
         break;
     case LayoutType::HIDDEN:
         // Hide all containers
@@ -302,6 +321,7 @@ void GraphLayout::updateLayoutSizing()
         break;
     case LayoutType::GPW2WH:
     case LayoutType::GPW4WH:
+    case LayoutType::NOGPW2WH:
         numRows = 1;
         break;
     case LayoutType::GPW2WV:
@@ -345,6 +365,9 @@ void GraphLayout::updateLayoutSizing()
     case LayoutType::GPW2WH:
         numColumns = 2;
         break;
+    case LayoutType::NOGPW2WH:
+        numColumns = 2;
+        break;
     case LayoutType::GPW4WH:
         numColumns = 4;
         break;
@@ -378,6 +401,17 @@ void GraphLayout::updateLayoutSizing()
             }
             break;
         case LayoutType::GPW2WH:
+            for (int i = 0; i < 2; ++i) {
+                if (m_graphContainers[i] && m_graphContainers[i]->isVisible()) {
+                    if (i == 0) {
+                        m_graphContainers[i]->setContainerWidth(containerWidth + 80);
+                    } else {
+                        m_graphContainers[i]->setContainerWidth(containerWidth);
+                    }
+                }
+            }
+            break;
+        case LayoutType::NOGPW2WH:
             for (int i = 0; i < 2; ++i) {
                 if (m_graphContainers[i] && m_graphContainers[i]->isVisible()) {
                     if (i == 0) {
@@ -435,6 +469,9 @@ void GraphLayout::updateLayoutSizing()
             totalWidth = containerWidth + 80;
             break;
         case LayoutType::GPW2WH:
+            totalWidth = (containerWidth + 80) + containerWidth;
+            break;
+        case LayoutType::NOGPW2WH:
             totalWidth = (containerWidth + 80) + containerWidth;
             break;
         case LayoutType::GPW4WH:
