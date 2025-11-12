@@ -424,6 +424,15 @@ void GraphContainer::setCurrentDataOption(const GraphType graphType)
         m_comboBox->setCurrentIndex(index);
     }
 
+    // Reset zoom panel state when graph changes - clear any previous customization
+    // This ensures the new graph's range is displayed, not the previous graph's zoom state
+    if (m_zoomPanel)
+    {
+        m_zoomPanel->resetUserModifiedFlag();
+        m_zoomPanel->resetIndicatorToFullRange();
+        qDebug() << "GraphContainer: Reset zoom panel state for new graph:" << title;
+    }
+
     // Initialize zoom panel limits for the new data source
     initializeZoomPanelLimits();
 
