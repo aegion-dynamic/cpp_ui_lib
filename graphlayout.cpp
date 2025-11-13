@@ -189,7 +189,6 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         m_graphContainers[1]->setShowTimelineView(false);
         
         // Hide the other containers
-        // m_graphContainers[1]->setVisible(false);
         m_graphContainers[2]->setVisible(false);
         m_graphContainers[3]->setVisible(false);
 
