@@ -13,18 +13,16 @@
 #include <QMap>
 #include <QDebug>
 
-// Forward declaration to avoid circular dependency with BTWGraph only
-class BTWGraph;
-
 // Include full type so moc has a complete type for signals using InteractiveGraphicsItem*
 #include "interactivegraphicsitem.h"
+#include "interactiveoverlayhost.h"
 
 /**
- * @brief Interactive overlay manager for BTW graph
- * 
- * This class manages interactive markers on the BTW graph's overlay scene.
- * It provides functionality to add, remove, and manage different types of
- * interactive markers with drag and rotation capabilities.
+ * @brief Interactive overlay manager for graphs providing an overlay scene.
+ *
+ * This class manages interactive markers on a host's overlay scene. It provides
+ * functionality to add, remove, and manage different types of interactive
+ * markers with drag and rotation capabilities.
  */
 class BTWInteractiveOverlay : public QObject
 {
@@ -43,10 +41,10 @@ public:
 
     /**
      * @brief Constructor
-     * @param btwGraph Pointer to the BTW graph
+     * @param overlayHost Pointer to the overlay host providing a scene
      * @param parent Parent object
      */
-    explicit BTWInteractiveOverlay(BTWGraph *btwGraph, QObject *parent = nullptr);
+    explicit BTWInteractiveOverlay(InteractiveOverlayHost *overlayHost, QObject *parent = nullptr);
 
     /**
      * @brief Destructor
@@ -209,8 +207,8 @@ private slots:
     void onMarkerRegionClicked(int region, const QPointF &position);
 
 private:
-    // BTW graph reference
-    BTWGraph *m_btwGraph;
+    // Overlay host reference
+    InteractiveOverlayHost *m_overlayHost;
     QGraphicsScene *m_overlayScene;
 
     // Marker storage

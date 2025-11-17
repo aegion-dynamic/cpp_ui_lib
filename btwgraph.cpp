@@ -18,6 +18,8 @@ BTWGraph::BTWGraph(QWidget *parent, bool enableGrid, int gridDivisions, TimeInte
 {
     qDebug() << "BTWGraph constructor called";
     
+    // Disable the crosshair
+    setCrosshairEnabled(false);
     // Setup interactive overlay
     setupInteractiveOverlay();
 }

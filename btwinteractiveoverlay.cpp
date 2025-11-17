@@ -1,5 +1,4 @@
 #include "btwinteractiveoverlay.h"
-#include "btwgraph.h"
 #include "interactivegraphicsitem.h"
 #include "drawutils.h"
 #include <QGraphicsScene>
@@ -10,21 +9,21 @@
 #include <QFontMetrics>
 #include <QDebug>
 
-BTWInteractiveOverlay::BTWInteractiveOverlay(BTWGraph *btwGraph, QObject *parent)
+BTWInteractiveOverlay::BTWInteractiveOverlay(InteractiveOverlayHost *overlayHost, QObject *parent)
     : QObject(parent)
-    , m_btwGraph(btwGraph)
+    , m_overlayHost(overlayHost)
     , m_overlayScene(nullptr)
 {
-    // Get the overlay scene from the BTW graph
-    if (m_btwGraph) {
-        m_overlayScene = m_btwGraph->getOverlayScene();
+    // Get the overlay scene from the host
+    if (m_overlayHost) {
+        m_overlayScene = m_overlayHost->getOverlayScene();
         if (m_overlayScene) {
             qDebug() << "BTWInteractiveOverlay: Connected to overlay scene";
         } else {
             qDebug() << "BTWInteractiveOverlay: Warning - overlay scene is null";
         }
     } else {
-        qDebug() << "BTWInteractiveOverlay: Warning - BTW graph is null";
+        qDebug() << "BTWInteractiveOverlay: Warning - overlay host is null";
     }
 
     // Setup default styles

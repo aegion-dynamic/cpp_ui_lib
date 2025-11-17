@@ -2,6 +2,7 @@
 #define WATERFALLGRAPH_H
 
 #include "drawutils.h"
+#include "interactiveoverlayhost.h"
 #include "timelineutils.h"
 #include "waterfalldata.h"
 #include <QColor>
@@ -30,7 +31,7 @@
 #include <vector>
 #include <functional>
 
-class WaterfallGraph : public QWidget
+class WaterfallGraph : public QWidget, public InteractiveOverlayHost
 {
     Q_OBJECT
 
@@ -201,7 +202,7 @@ public:
     void setCursorTimeChangedCallback(const std::function<void(const QDateTime &)> &callback);
     
     // Public access to overlay scene for interactive elements
-    QGraphicsScene* getOverlayScene() const { return overlayScene; }
+    QGraphicsScene* getOverlayScene() const override { return overlayScene; }
 
     // Range limiting methods
     void setRangeLimitingEnabled(bool enabled);
