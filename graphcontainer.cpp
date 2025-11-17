@@ -682,6 +682,9 @@ void GraphContainer::setupWaterfallGraphProperties(WaterfallGraph *graph, GraphT
     graph->setCursorTimeChangedCallback([this](const QDateTime &time) {
         handleCursorTimeChanged(time);
     });
+    graph->setCursorValueChangedCallback([this](qreal value) {
+        handleCursorValueChanged(value);
+    });
     applyCursorTimeToGraph(graph);
 
     // Connect DeleteInteractiveMarkers signal to BTWGraph
@@ -767,6 +770,16 @@ void GraphContainer::handleCursorTimeChanged(const QDateTime &time)
     {
         m_cursorTimeChangedCallback(this, time);
     }
+}
+
+void GraphContainer::handleCursorValueChanged(qreal value)
+{
+    if (!m_zoomPanel)
+    {
+        return;
+    }
+
+    m_zoomPanel->setCurrentValue(value);
 }
 
 void GraphContainer::applyCursorTimeToGraph(WaterfallGraph *graph)

@@ -16,6 +16,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <QDebug>
+#include <cmath>
+#include <limits>
 
 struct ZoomBounds
 {
@@ -57,6 +59,10 @@ public:
     // Reset indicator to full range [0.0, 1.0] without changing labels
     void resetIndicatorToFullRange();
 
+    // Overlay label helpers
+    void setCurrentValue(qreal value);
+    qreal calculateOverlayXPosition(qreal value) const;
+
 protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
@@ -71,6 +77,8 @@ private:
     QGraphicsTextItem *m_leftText;
     QGraphicsTextItem *m_centerText;
     QGraphicsTextItem *m_rightText;
+    QGraphicsRectItem *m_valueOverlayBackground;
+    QGraphicsTextItem *m_valueOverlayText;
 
     // Label values (display values shown to user)
     qreal m_leftLabelValue = 0.0;   // Left reference value (display)
@@ -88,6 +96,7 @@ private:
     bool m_isExtending;
     QPoint m_initialMousePos;
     QPoint m_initialIndicatorPos;
+    qreal m_indicatorNormalizedValue;
     qreal m_currentValue;
 
     // Extend mode state
@@ -109,6 +118,7 @@ private:
     void setupGraphicsView();
     void createIndicator();
     void createTextItems();
+    void createOverlayLabel();
     void updateIndicator(double value);
     void updateValueFromMousePosition(const QPoint &currentPos);
     void updateAllElements();
@@ -132,6 +142,8 @@ private:
     const qreal m_interpolationLowerBound = 0.0;
     const qreal m_interpolationUpperBound = 1.0;
 
+    bool isCurrentValueValid() const;
+    void updateOverlayLabel();
 };
 
 #endif // ZOOMPANEL_H

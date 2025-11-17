@@ -29,6 +29,7 @@
 #include <map>
 #include <vector>
 #include <functional>
+#include <limits>
 
 class WaterfallGraph : public QWidget
 {
@@ -163,12 +164,16 @@ protected:
 
     // Cursor callback helpers
     void notifyCursorTimeChanged(const QDateTime &time);
+    void notifyCursorValueChanged(qreal value);
     std::function<void(const QDateTime &)> cursorTimeChangedCallback;
+    std::function<void(qreal)> cursorValueChangedCallback;
     QDateTime lastNotifiedCursorTime;
+    qreal lastNotifiedCursorValue = std::numeric_limits<qreal>::quiet_NaN();
 
     // Time axis cursor functionality
     QGraphicsLineItem *timeAxisCursor;
     qreal mapTimeToY(const QDateTime &time) const;
+    qreal mapScreenToValue(qreal xPos) const;
 
     // Mouse selection functionality
     bool mouseSelectionEnabled;
@@ -199,6 +204,7 @@ public:
     void setTimeAxisCursor(const QDateTime &time);
     void clearTimeAxisCursor();
     void setCursorTimeChangedCallback(const std::function<void(const QDateTime &)> &callback);
+    void setCursorValueChangedCallback(const std::function<void(qreal)> &callback);
     
     // Public access to overlay scene for interactive elements
     QGraphicsScene* getOverlayScene() const { return overlayScene; }

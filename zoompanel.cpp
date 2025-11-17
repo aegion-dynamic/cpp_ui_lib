@@ -2,7 +2,23 @@
 #include <QFontMetrics>
 
 ZoomPanel::ZoomPanel(QWidget *parent)
-    : QWidget(parent), m_graphicsView(nullptr), m_scene(nullptr), m_indicator(nullptr), m_leftText(nullptr), m_centerText(nullptr), m_rightText(nullptr), m_isDragging(false), m_isExtending(false), m_currentValue(1.0), m_extendMode(None), m_userModifiedBounds(false), m_indicatorLowerBoundValue(0.0), m_indicatorUpperBoundValue(1.0)
+    : QWidget(parent),
+      m_graphicsView(nullptr),
+      m_scene(nullptr),
+      m_indicator(nullptr),
+      m_leftText(nullptr),
+      m_centerText(nullptr),
+      m_rightText(nullptr),
+      m_valueOverlayBackground(nullptr),
+      m_valueOverlayText(nullptr),
+      m_isDragging(false),
+      m_isExtending(false),
+      m_indicatorNormalizedValue(1.0),
+      m_currentValue(std::numeric_limits<qreal>::quiet_NaN()),
+      m_extendMode(None),
+      m_userModifiedBounds(false),
+      m_indicatorLowerBoundValue(0.0),
+      m_indicatorUpperBoundValue(1.0)
 {
     // Set black background
     this->setStyleSheet("background-color: black;");
@@ -57,9 +73,10 @@ void ZoomPanel::setupGraphicsView()
     // Create the visual elements
     createIndicator();
     createTextItems();
+    createOverlayLabel();
 
     // Update indicator to current value to ensure proper initial state
-    updateIndicator(m_currentValue);
+    updateIndicator(m_indicatorNormalizedValue);
 }
 
 void ZoomPanel::createIndicator()
@@ -126,6 +143,39 @@ void ZoomPanel::createTextItems()
     m_rightText->setPos(drawArea.width() - rightMargin - maxLabelWidth, textY); // Right aligned with width constraint
     m_rightText->setTextWidth(maxLabelWidth);                                   // Constrain width to 20% of slider width
     m_scene->addItem(m_rightText);
+}
+
+void ZoomPanel::createOverlayLabel()
+{
+    if (!m_scene)
+    {
+        return;
+    }
+
+    if (!m_valueOverlayBackground)
+    {
+        m_valueOverlayBackground = new QGraphicsRectItem();
+        m_valueOverlayBackground->setBrush(QBrush(Qt::black));
+        m_valueOverlayBackground->setPen(Qt::NoPen);
+        m_valueOverlayBackground->setZValue(100);
+        m_valueOverlayBackground->setAcceptedMouseButtons(Qt::NoButton);
+        m_valueOverlayBackground->setVisible(false);
+        m_scene->addItem(m_valueOverlayBackground);
+    }
+
+    if (!m_valueOverlayText)
+    {
+        QFont overlayFont("Arial", 10, QFont::Bold);
+        m_valueOverlayText = new QGraphicsTextItem();
+        m_valueOverlayText->setFont(overlayFont);
+        m_valueOverlayText->setDefaultTextColor(Qt::white);
+        m_valueOverlayText->setZValue(101);
+        m_valueOverlayText->setAcceptedMouseButtons(Qt::NoButton);
+        m_valueOverlayText->setVisible(false);
+        m_scene->addItem(m_valueOverlayText);
+    }
+
+    updateOverlayLabel();
 }
 
 /**
@@ -456,7 +506,7 @@ void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
     qDebug() << "Calculated new value:" << newValue;
 
     // Update if value changed significantly
-    if (qAbs(newValue - m_currentValue) > 0.001)
+    if (qAbs(newValue - m_indicatorNormalizedValue) > 0.001)
     {
         qDebug() << "Updating indicator value to:" << newValue;
 
@@ -482,7 +532,7 @@ void ZoomPanel::updateValueFromMousePosition(const QPoint &currentPos)
         // Update actual bounds
         m_indicatorLowerBoundValue = newLowerBound;
         m_indicatorUpperBoundValue = newUpperBound;
-        m_currentValue = newValue;
+        m_indicatorNormalizedValue = newValue;
 
         // Update indicator position to reflect new bounds
         updateIndicatorToBounds();
@@ -533,8 +583,8 @@ void ZoomPanel::showEvent(QShowEvent *event)
         }
         else
         {
-            updateIndicator(m_currentValue);
-            qDebug() << "ZoomPanel: Show event - updated indicator to value:" << m_currentValue;
+            updateIndicator(m_indicatorNormalizedValue);
+            qDebug() << "ZoomPanel: Show event - updated indicator to value:" << m_indicatorNormalizedValue;
         }
     }
 }
@@ -573,15 +623,29 @@ void ZoomPanel::updateAllElements()
         delete m_rightText;
         m_rightText = nullptr;
     }
+    if (m_valueOverlayBackground)
+    {
+        m_scene->removeItem(m_valueOverlayBackground);
+        delete m_valueOverlayBackground;
+        m_valueOverlayBackground = nullptr;
+    }
+    if (m_valueOverlayText)
+    {
+        m_scene->removeItem(m_valueOverlayText);
+        delete m_valueOverlayText;
+        m_valueOverlayText = nullptr;
+    }
 
     // Recreate elements with new size
     createIndicator();
     createTextItems();
+    createOverlayLabel();
 
     // Restore indicator bounds (preserve custom size/position if customized)
     m_indicatorLowerBoundValue = savedLowerBound;
     m_indicatorUpperBoundValue = savedUpperBound;
     updateIndicatorToBounds();
+    updateOverlayLabel();
 }
 
 ZoomPanel::ExtendMode ZoomPanel::detectExtendMode(const QPoint &mousePos)
@@ -729,6 +793,124 @@ void ZoomPanel::updateDisplayLabels()
              << "Upper:" << m_originalRightLabelValue;
 }
 
+void ZoomPanel::setCurrentValue(qreal value)
+{
+    if (std::isfinite(value))
+    {
+        m_currentValue = value;
+    }
+    else
+    {
+        m_currentValue = std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    updateOverlayLabel();
+}
+
+qreal ZoomPanel::calculateOverlayXPosition(qreal value) const
+{
+    if (!std::isfinite(value))
+    {
+        return std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    qreal minimum = m_originalValuesSet ? m_originalLeftLabelValue : m_leftLabelValue;
+    qreal maximum = m_originalValuesSet ? m_originalRightLabelValue : m_rightLabelValue;
+
+    if (!std::isfinite(minimum) || !std::isfinite(maximum))
+    {
+        return std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    if (minimum > maximum)
+    {
+        qreal temp = minimum;
+        minimum = maximum;
+        maximum = temp;
+    }
+
+    if (qFuzzyCompare(minimum, maximum))
+    {
+        return std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    qreal clampedValue = qBound(minimum, value, maximum);
+    qreal range = maximum - minimum;
+    if (range <= std::numeric_limits<qreal>::epsilon())
+    {
+        return std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    qreal normalized = (clampedValue - minimum) / range;
+
+    QRect drawArea = this->rect();
+    if (drawArea.width() <= 0)
+    {
+        return std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    int margin = qMax(2, drawArea.height() / 10);
+    int availableWidth = drawArea.width() - (2 * margin);
+    if (availableWidth <= 0)
+    {
+        return std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    return margin + normalized * availableWidth;
+}
+
+bool ZoomPanel::isCurrentValueValid() const
+{
+    return std::isfinite(m_currentValue);
+}
+
+void ZoomPanel::updateOverlayLabel()
+{
+    if (!m_valueOverlayBackground || !m_valueOverlayText)
+    {
+        return;
+    }
+
+    bool shouldShow = isCurrentValueValid();
+    if (!shouldShow)
+    {
+        m_valueOverlayBackground->setVisible(false);
+        m_valueOverlayText->setVisible(false);
+        return;
+    }
+
+    QString valueText = QString::number(m_currentValue, 'f', 2);
+    m_valueOverlayText->setPlainText(valueText);
+
+    QFontMetricsF metrics(m_valueOverlayText->font());
+    qreal paddingX = 6.0;
+    qreal paddingY = 4.0;
+    qreal overlayWidth = metrics.horizontalAdvance(valueText) + paddingX * 2.0;
+    qreal overlayHeight = metrics.height() + paddingY * 2.0;
+
+    qreal xCenter = calculateOverlayXPosition(m_currentValue);
+    if (!std::isfinite(xCenter))
+    {
+        m_valueOverlayBackground->setVisible(false);
+        m_valueOverlayText->setVisible(false);
+        return;
+    }
+
+    QRect drawArea = this->rect();
+    qreal maxX = qMax(0.0, static_cast<qreal>(drawArea.width()) - overlayWidth);
+    qreal maxY = qMax(0.0, static_cast<qreal>(drawArea.height()) - overlayHeight);
+
+    qreal x = qBound(0.0, xCenter - overlayWidth / 2.0, maxX);
+    qreal y = qBound(0.0, drawArea.top() + (drawArea.height() - overlayHeight) / 2.0, maxY);
+
+    m_valueOverlayBackground->setRect(x, y, overlayWidth, overlayHeight);
+    qreal textY = y + (overlayHeight - metrics.height()) / 2.0;
+    m_valueOverlayText->setPos(x + paddingX, textY);
+
+    m_valueOverlayBackground->setVisible(true);
+    m_valueOverlayText->setVisible(true);
+}
+
 void ZoomPanel::rebaseToCurrentBounds()
 {
     // Compute interpolated bounds for current indicator extents
@@ -759,7 +941,7 @@ void ZoomPanel::rebaseToCurrentBounds()
     // BUT preserve the user modified flag so future data updates don't reset the zoom
     m_indicatorLowerBoundValue = 0.0;
     m_indicatorUpperBoundValue = 1.0;
-    m_currentValue = 1.0;
+    m_indicatorNormalizedValue = 1.0;
     updateIndicatorToBounds();
     // DO NOT reset m_userModifiedBounds - keep it true to preserve customization
     
@@ -773,7 +955,7 @@ void ZoomPanel::resetIndicatorToFullRange()
     // Reset indicator bounds to full range [0.0, 1.0]
     m_indicatorLowerBoundValue = 0.0;
     m_indicatorUpperBoundValue = 1.0;
-    m_currentValue = 1.0;
+    m_indicatorNormalizedValue = 1.0;
     
     // Update the indicator visual representation
     updateIndicatorToBounds();

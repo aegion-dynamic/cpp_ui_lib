@@ -152,6 +152,7 @@ private:
     void setupWaterfallGraphProperties(WaterfallGraph *graph, GraphType graphType);
     void initializeWaterfallGraph(GraphType graphType);
     void handleCursorTimeChanged(const QDateTime &time);
+    void handleCursorValueChanged(qreal value);
     void applyCursorTimeToGraph(WaterfallGraph *graph);
     void setupTimer();
     void onTimerTick();

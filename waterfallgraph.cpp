@@ -1,6 +1,8 @@
 #include "waterfallgraph.h"
 #include <QApplication>
 #include <QPointF>
+#include <cmath>
+#include <limits>
 
 /**
  * @brief Construct a new WaterfallGraph::WaterfallGraph object
@@ -39,7 +41,8 @@ WaterfallGraph::WaterfallGraph(QWidget *parent, bool enableGrid, int gridDivisio
     mouseSelectionEnabled(false), 
     selectionRect(nullptr), 
     autoUpdateYRange(true),
-    lastNotifiedCursorTime(QDateTime())
+    lastNotifiedCursorTime(QDateTime()),
+    lastNotifiedCursorValue(std::numeric_limits<qreal>::quiet_NaN())
 {
     // Remove all margins and padding for snug fit
     setContentsMargins(0, 0, 0, 0);
@@ -741,10 +744,31 @@ void WaterfallGraph::mouseMoveEvent(QMouseEvent *event)
         }
     }
 
-    // Update crosshair if enabled
-    if (crosshairEnabled && overlayScene && overlayView)
+    QPointF overlayScenePos;
+    bool hasOverlayScenePos = false;
+    if (overlayView)
     {
-        QPointF scenePos = overlayView->mapToScene(event->pos());
+        overlayScenePos = overlayView->mapToScene(event->pos());
+        hasOverlayScenePos = true;
+    }
+
+    if (hasOverlayScenePos)
+    {
+        if (drawingArea.contains(overlayScenePos))
+        {
+            qreal cursorValue = mapScreenToValue(overlayScenePos.x());
+            notifyCursorValueChanged(cursorValue);
+        }
+        else
+        {
+            notifyCursorValueChanged(std::numeric_limits<qreal>::quiet_NaN());
+        }
+    }
+
+    // Update crosshair if enabled
+    if (crosshairEnabled && overlayScene && overlayView && hasOverlayScenePos)
+    {
+        QPointF scenePos = overlayScenePos;
         // Show crosshair if not already visible
         if (crosshairHorizontal && !crosshairHorizontal->isVisible())
         {
@@ -804,6 +828,7 @@ void WaterfallGraph::leaveEvent(QEvent *event)
         hideCrosshair();
     }
     notifyCursorTimeChanged(QDateTime());
+    notifyCursorValueChanged(std::numeric_limits<qreal>::quiet_NaN());
     qDebug() << "Mouse left WaterfallGraph widget";
 }
 
@@ -1008,6 +1033,30 @@ QPointF WaterfallGraph::mapDataToScreen(qreal yValue, const QDateTime &timestamp
     qreal y = drawingArea.top() + (timeOffset / (qreal)getTimeIntervalMs()) * drawingArea.height();
 
     return QPointF(x, y);
+}
+
+qreal WaterfallGraph::mapScreenToValue(qreal xPos) const
+{
+    if (!dataRangesValid || drawingArea.isEmpty())
+    {
+        return std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    qreal clampedX = qBound(drawingArea.left(), xPos, drawingArea.right());
+    qreal width = drawingArea.width();
+    if (width <= 0)
+    {
+        return std::numeric_limits<qreal>::quiet_NaN();
+    }
+
+    qreal normalized = (clampedX - drawingArea.left()) / width;
+    qreal range = yMax - yMin;
+    if (qFuzzyIsNull(range))
+    {
+        return yMin;
+    }
+
+    return yMin + normalized * range;
 }
 
 /**
@@ -2301,6 +2350,11 @@ void WaterfallGraph::setCursorTimeChangedCallback(const std::function<void(const
     cursorTimeChangedCallback = callback;
 }
 
+void WaterfallGraph::setCursorValueChangedCallback(const std::function<void(qreal)> &callback)
+{
+    cursorValueChangedCallback = callback;
+}
+
 /**
  * @brief Notify listeners about cursor time changes
  *
@@ -2328,4 +2382,29 @@ void WaterfallGraph::notifyCursorTimeChanged(const QDateTime &time)
 
     lastNotifiedCursorTime = time;
     cursorTimeChangedCallback(time);
+}
+
+void WaterfallGraph::notifyCursorValueChanged(qreal value)
+{
+    if (!cursorValueChangedCallback)
+    {
+        lastNotifiedCursorValue = value;
+        return;
+    }
+
+    bool valueValid = std::isfinite(value);
+    bool lastValid = std::isfinite(lastNotifiedCursorValue);
+
+    if (valueValid && lastValid && qAbs(lastNotifiedCursorValue - value) < 0.0001)
+    {
+        return;
+    }
+
+    if (!valueValid && !lastValid)
+    {
+        return;
+    }
+
+    lastNotifiedCursorValue = value;
+    cursorValueChangedCallback(value);
 }
