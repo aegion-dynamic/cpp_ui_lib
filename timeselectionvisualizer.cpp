@@ -140,8 +140,9 @@ void TimeVisualizerWidget::addTimeSelection(TimeSelectionSpan span)
         m_timeSelections.removeAt(idx);
     }
 
+    // Stop adding new selections once we reach the maximum (instead of FIFO)
     if (m_timeSelections.size() >= MAX_TIME_SELECTIONS) {
-        m_timeSelections.removeFirst();
+        return;
     }
 
     m_timeSelections.append(merged);
