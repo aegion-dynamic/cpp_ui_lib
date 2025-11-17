@@ -4,7 +4,15 @@
 #include <stdexcept>
 
 GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<QString, QColor> seriesColorsMap, QTimer *timer, int containerWidth, int containerHeight)
-    : QWidget{parent}, m_showTimelineView(showTimelineView), m_timer(timer), m_ownsTimer(false), m_timelineWidth(80), m_graphViewSize(226, 300), m_seriesColorsMap(seriesColorsMap), currentDataOption(GraphType::BDW), m_updatingTimeInterval(false)
+    : QWidget{parent}, 
+    m_showTimelineView(showTimelineView), 
+    m_timer(timer), 
+    m_ownsTimer(false), 
+    m_timelineWidth(80), 
+    m_graphViewSize(226, 300), 
+    m_seriesColorsMap(seriesColorsMap), 
+    currentDataOption(GraphType::BDW), 
+    m_updatingTimeInterval(false)
 {
     // Set size policy to expand both horizontally and vertically
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
