@@ -69,8 +69,6 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<
     // Show the initial graph type
     setCurrentDataOption(currentDataOption);
 
-    // Add left layout to main layout with stretch factor
-    m_mainLayout->addLayout(m_waterfallLayout, 1); // Give stretch factor of 1 to left layout
 
     // Create TimelineSelectionView with timer
     // Calculate combined height of combobox and zoompanel for clear button height
@@ -99,6 +97,9 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<
         qDebug() << "GraphContainer constructor: Not creating TimelineView, showTimelineView = false";
         m_timelineView = nullptr;
     }
+
+    // Add waterfall layout to main layout last (rightmost) with stretch factor
+    m_mainLayout->addLayout(m_waterfallLayout, 1); // Give stretch factor of 1 to waterfall layout
 
     // Set layout
     setLayout(m_mainLayout);
@@ -174,7 +175,8 @@ void GraphContainer::setShowTimelineView(bool showTimelineView)
         m_timelineView = new TimelineView(this, m_timer);
         // Set size policy to expand vertically
         m_timelineView->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
-        m_mainLayout->addWidget(m_timelineView);
+        // Insert at position 0 (leftmost) to match the reversed layout order
+        m_mainLayout->insertWidget(0, m_timelineView);
         m_timelineView->setVisible(showTimelineView);
         qDebug() << "GraphContainer: New TimelineView visibility after setting:" << m_timelineView->isVisible();
         qDebug() << "GraphContainer: New TimelineView size:" << m_timelineView->size();
