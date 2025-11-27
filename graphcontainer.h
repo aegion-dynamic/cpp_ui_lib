@@ -34,6 +34,8 @@ public:
     ~GraphContainer();
     void setShowTimelineView(bool showTimelineView);
     bool getShowTimelineView();
+    TimelineView *getTimelineView() const;
+    void setShowTimeSelectionVisualizer(bool show);
 
     // Sizing methods
     int getTimelineWidth() const;
@@ -64,6 +66,9 @@ public:
 
     // Graph redraw method
     void redrawWaterfallGraph();
+    
+    // Get the current waterfall graph
+    WaterfallGraph* getCurrentWaterfallGraph() const;
 
     // Data options management
     void addDataOption(const GraphType graphType, WaterfallData &dataSource);

@@ -32,6 +32,7 @@ WaterfallGraph::WaterfallGraph(QWidget *parent, bool enableGrid, int gridDivisio
     timeInterval(timeInterval), 
     dataSource(nullptr), 
     isDragging(false), 
+    isDrawing(false),
     crosshairHorizontal(nullptr), 
     crosshairVertical(nullptr), 
     crosshairEnabled(true), 
@@ -39,7 +40,8 @@ WaterfallGraph::WaterfallGraph(QWidget *parent, bool enableGrid, int gridDivisio
     mouseSelectionEnabled(false), 
     selectionRect(nullptr), 
     autoUpdateYRange(true),
-    lastNotifiedCursorTime(QDateTime())
+    lastNotifiedCursorTime(QDateTime()),
+    lastNotifiedYPosition(-1.0)
 {
     // Remove all margins and padding for snug fit
     setContentsMargins(0, 0, 0, 0);
@@ -529,9 +531,18 @@ void WaterfallGraph::draw()
 {
     if (!graphicsScene)
         return;
+    
+    // Prevent concurrent drawing to avoid marker duplication
+    if (isDrawing) {
+        qDebug() << "WaterfallGraph: draw() already in progress, skipping";
+        return;
+    }
+    
+    isDrawing = true;
 
-    // Clear existing items
+    // Clear existing items - ensure complete clearing before drawing
     graphicsScene->clear();
+    graphicsScene->update(); // Force immediate update to ensure clearing is visible
 
     // Update the drawing area
     setupDrawingArea();
@@ -552,6 +563,8 @@ void WaterfallGraph::draw()
         }
         drawAllDataSeries();
     }
+    
+    isDrawing = false;
 }
 
 /**
@@ -663,17 +676,22 @@ void WaterfallGraph::mousePressEvent(QMouseEvent *event)
         // Check if the click is within the drawing area
         if (drawingArea.contains(scenePos))
         {
-            // First, try to forward the mouse event to the overlay view
+            // First, try to forward the mouse event to the overlay view if we clicked on an interactive item
+            // This allows interactive markers (like BTW markers) to handle their own events
+            // RTW R markers are in graphicsScene and will be handled in RTWGraph::onMouseClick
             if (overlayView && overlayScene) {
                 QPointF overlayScenePos = overlayView->mapToScene(event->pos());
                 QGraphicsItem *itemAtPos = overlayScene->itemAt(overlayScenePos, QTransform());
-                if (itemAtPos) {
+                // Filter out crosshair items - they should not intercept mouse events
+                // Only forward if we clicked on an actual interactive item (not crosshair, not empty)
+                if (itemAtPos && itemAtPos != crosshairHorizontal && itemAtPos != crosshairVertical) {
                     qDebug() << "WaterfallGraph: Found interactive item at overlay position:" << overlayScenePos << "item:" << itemAtPos;
-                    // Forward the mouse event to the overlay view
+                    // Forward the mouse event to the overlay view so the interactive item can handle it
                     QMouseEvent *overlayEvent = new QMouseEvent(event->type(), event->pos(), event->globalPos(), event->button(), event->buttons(), event->modifiers());
                     QApplication::postEvent(overlayView, overlayEvent);
                     return; // Don't process further, let the overlay handle it
                 }
+                // If no interactive item found, continue to onMouseClick to allow adding new markers
             }
 
             isDragging = true;
@@ -713,7 +731,8 @@ void WaterfallGraph::mouseMoveEvent(QMouseEvent *event)
     if (isDragging && overlayView && overlayScene) {
         QPointF overlayScenePos = overlayView->mapToScene(event->pos());
         QGraphicsItem *itemAtPos = overlayScene->itemAt(overlayScenePos, QTransform());
-        if (itemAtPos) {
+        // Filter out crosshair items - they should not intercept mouse events
+        if (itemAtPos && itemAtPos != crosshairHorizontal && itemAtPos != crosshairVertical) {
             qDebug() << "WaterfallGraph: Forwarding mouse move to overlay item:" << itemAtPos;
             // Forward the mouse event to the overlay view
             QMouseEvent *overlayEvent = new QMouseEvent(event->type(), event->pos(), event->globalPos(), event->button(), event->buttons(), event->modifiers());
@@ -755,11 +774,11 @@ void WaterfallGraph::mouseMoveEvent(QMouseEvent *event)
         if (drawingArea.contains(scenePos))
         {
             QDateTime cursorTime = mapScreenToTime(scenePos.y());
-            notifyCursorTimeChanged(cursorTime);
+            notifyCursorTimeChanged(cursorTime, scenePos.y());
         }
         else
         {
-            notifyCursorTimeChanged(QDateTime());
+            notifyCursorTimeChanged(QDateTime(), -1.0);
         }
     }
 
@@ -772,7 +791,7 @@ void WaterfallGraph::mouseMoveEvent(QMouseEvent *event)
  *
  * @param event
  */
-void WaterfallGraph::enterEvent(QEnterEvent *event)
+void WaterfallGraph::enterEvent(QEvent *event)
 {
     QWidget::enterEvent(event);
     // Enable mouse tracking when mouse enters the widget
@@ -803,7 +822,7 @@ void WaterfallGraph::leaveEvent(QEvent *event)
     {
         hideCrosshair();
     }
-    notifyCursorTimeChanged(QDateTime());
+    notifyCursorTimeChanged(QDateTime(), -1.0);
     qDebug() << "Mouse left WaterfallGraph widget";
 }
 
@@ -2091,6 +2110,9 @@ void WaterfallGraph::setupCrosshair()
     crosshairHorizontal->setPen(QPen(Qt::cyan, 1.0, Qt::SolidLine)); // Thin cyan line
     crosshairHorizontal->setZValue(1000); // High z-value to appear on top
     crosshairHorizontal->setVisible(false);
+    // Make crosshair not accept mouse events so it doesn't block marker selection or cause duplication
+    crosshairHorizontal->setAcceptedMouseButtons(Qt::NoButton);
+    crosshairHorizontal->setAcceptHoverEvents(false);
     overlayScene->addItem(crosshairHorizontal);
     
     // Create vertical crosshair line
@@ -2098,6 +2120,9 @@ void WaterfallGraph::setupCrosshair()
     crosshairVertical->setPen(QPen(Qt::cyan, 1.0, Qt::SolidLine)); // Thin cyan line
     crosshairVertical->setZValue(1000); // High z-value to appear on top
     crosshairVertical->setVisible(false);
+    // Make crosshair not accept mouse events so it doesn't block marker selection or cause duplication
+    crosshairVertical->setAcceptedMouseButtons(Qt::NoButton);
+    crosshairVertical->setAcceptHoverEvents(false);
     overlayScene->addItem(crosshairVertical);
 }
 
@@ -2126,6 +2151,8 @@ void WaterfallGraph::updateCrosshair(const QPointF &mousePos)
     // Update vertical line (top to bottom)
     crosshairVertical->setLine(mousePos.x(), sceneRect.top(), mousePos.x(), sceneRect.bottom());
     
+    // Notify listeners about crosshair position change
+    notifyCrosshairPositionChanged(mousePos.x());
 }
 
 /**
@@ -2148,6 +2175,9 @@ void WaterfallGraph::hideCrosshair()
         crosshairHorizontal->setVisible(false);
         crosshairVertical->setVisible(false);
     }
+    
+    // Notify that crosshair is hidden (clear label)
+    notifyCrosshairPositionChanged(-1.0); // Use -1 to indicate crosshair is hidden
 }
 
 /**
@@ -2276,6 +2306,11 @@ void WaterfallGraph::setTimeAxisCursor(const QDateTime &time)
     timeAxisCursor->setLine(sceneRect.left(), yPos, sceneRect.right(), yPos);
     timeAxisCursor->setVisible(true);
 
+    // Force immediate repaint to clear any stale rendering and prevent trails
+    if (overlayView) {
+        overlayView->update();
+    }
+
     qDebug() << "Time axis cursor set at time:" << time.toString() << "Y position:" << yPos;
 }
 
@@ -2287,6 +2322,10 @@ void WaterfallGraph::clearTimeAxisCursor()
     if (timeAxisCursor)
     {
         timeAxisCursor->setVisible(false);
+        // Force immediate repaint to clear the cursor
+        if (overlayView) {
+            overlayView->update();
+        }
         qDebug() << "Time axis cursor cleared";
     }
 }
@@ -2296,36 +2335,71 @@ void WaterfallGraph::clearTimeAxisCursor()
  *
  * @param callback Function to invoke when cursor time changes
  */
-void WaterfallGraph::setCursorTimeChangedCallback(const std::function<void(const QDateTime &)> &callback)
+void WaterfallGraph::setCursorTimeChangedCallback(const std::function<void(const QDateTime &, qreal)> &callback)
 {
     cursorTimeChangedCallback = callback;
+}
+
+/**
+ * @brief Set a callback to receive crosshair position updates
+ *
+ * @param callback Function to invoke when crosshair X position changes
+ */
+void WaterfallGraph::setCrosshairPositionChangedCallback(const std::function<void(qreal xPosition)> &callback)
+{
+    crosshairPositionChangedCallback = callback;
 }
 
 /**
  * @brief Notify listeners about cursor time changes
  *
  * @param time Cursor time or invalid to clear
+ * @param yPosition Y position in scene coordinates, or -1.0 if not available
  */
-void WaterfallGraph::notifyCursorTimeChanged(const QDateTime &time)
+void WaterfallGraph::notifyCursorTimeChanged(const QDateTime &time, qreal yPosition)
 {
     if (!cursorTimeChangedCallback)
     {
         lastNotifiedCursorTime = time;
+        lastNotifiedYPosition = yPosition;
         return;
     }
 
+    // Check if both time and Y position are the same (skip update if unchanged)
     if (time.isValid())
     {
         if (lastNotifiedCursorTime.isValid() && time == lastNotifiedCursorTime)
         {
+            // Time is the same, check if Y position changed significantly (more than 1 pixel)
+            if (qAbs(yPosition - lastNotifiedYPosition) < 1.0)
+            {
+                return; // Both time and position are essentially the same
+            }
+        }
+    }
+    else if (!lastNotifiedCursorTime.isValid() && yPosition < 0)
+    {
+        // Both are invalid/cleared, skip if we already notified this state
+        if (lastNotifiedYPosition < 0)
+        {
             return;
         }
     }
-    else if (!lastNotifiedCursorTime.isValid())
-    {
-        return;
-    }
 
     lastNotifiedCursorTime = time;
-    cursorTimeChangedCallback(time);
+    lastNotifiedYPosition = yPosition;
+    cursorTimeChangedCallback(time, yPosition);
+}
+
+/**
+ * @brief Notify listeners about crosshair position changes
+ *
+ * @param xPosition Crosshair X position in scene coordinates, or -1.0 to clear
+ */
+void WaterfallGraph::notifyCrosshairPositionChanged(qreal xPosition)
+{
+    if (crosshairPositionChangedCallback)
+    {
+        crosshairPositionChangedCallback(xPosition);
+    }
 }
