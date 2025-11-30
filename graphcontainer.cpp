@@ -802,12 +802,13 @@ void GraphContainer::subscribeToIntervalChange(QObject *subscriber, const char *
 
 void GraphContainer::onTimeIntervalChanged(TimeInterval interval)
 {
-    qDebug() << "GraphContainer: Handling emitted signal - Time interval changed to" << timeIntervalToString(interval);
+    qDebug() << "GraphContainer: Handling time interval change to" << timeIntervalToString(interval);
 
-    // Update the time interval for the waterfall graph and time selection visualizer
+    // Update the time interval locally
     updateTimeInterval(interval);
 
-    // Emit the signal to notify other components
+    // Emit the signal so GraphLayout can propagate to all other containers
+    // This won't cause loops because setTimeInterval() (used by GraphLayout) doesn't emit signals
     emit IntervalChanged(interval);
 }
 
@@ -818,10 +819,24 @@ void GraphContainer::updateTimeInterval(TimeInterval interval)
     // Set flag to prevent TimeScopeChanged from interfering
     m_updatingTimeInterval = true;
 
-    // Update the waterfall graph time interval
+    // Update ALL waterfall graphs' time interval (not just current one)
+    // This ensures all graphs have the correct interval when switching between them
+    // setTimeInterval() updates the interval, recalculates time ranges, and triggers a redraw
+    for (auto &pair : m_waterfallGraphs)
+    {
+        if (pair.second)
+        {
+            pair.second->setTimeInterval(interval);
+            qDebug() << "GraphContainer: Updated interval for graph type:" << graphTypeToString(pair.first);
+        }
+    }
+
+    // Explicitly redraw the current waterfall graph to ensure visual update
+    // (setTimeInterval already calls draw(), but this ensures it's definitely updated)
     if (m_currentWaterfallGraph)
     {
-        m_currentWaterfallGraph->setTimeInterval(interval);
+        m_currentWaterfallGraph->draw();
+        qDebug() << "GraphContainer: Explicitly redrew current waterfall graph after interval update";
     }
 
     // Update the time selection visualizer time interval
@@ -844,6 +859,17 @@ void GraphContainer::updateTimeInterval(TimeInterval interval)
         m_updatingTimeInterval = false;
         qDebug() << "GraphContainer: Time interval update complete, TimeScopeChanged handler re-enabled";
     });
+}
+
+void GraphContainer::setTimeInterval(TimeInterval interval)
+{
+    qDebug() << "GraphContainer: Setting time interval to" << timeIntervalToString(interval) << "(no signal emission)";
+    
+    // Update the interval without emitting signals (for centralized sync from GraphLayout)
+    updateTimeInterval(interval);
+    
+    // Note: This method does NOT emit IntervalChanged signal to avoid event loops
+    // when GraphLayout is synchronizing intervals across containers
 }
 
 void GraphContainer::onSelectionCreated(const TimeSelectionSpan &selection)

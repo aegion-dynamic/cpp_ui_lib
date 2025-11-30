@@ -139,11 +139,8 @@ public slots:
     void onTimeSelectionCreated(const TimeSelectionSpan &selection);
     void onTimeSelectionsCleared();
 
-    // TODO: Figure out how the rest of this works without breaking the cursor
-    // sync.
-    // void onTimeIntervalChanged(TimeInterval interval);
-    // void onTimeScopeChanged(const TimeSelectionSpan &selection);
-    // void onCursorTimeChanged(const QDateTime &time);
+public slots:
+    void onContainerIntervalChanged(TimeInterval interval);
 
 private:
     LayoutType m_layoutType;

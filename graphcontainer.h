@@ -104,6 +104,9 @@ public:
     // Public method for external components to update time interval
     void updateTimeInterval(TimeInterval interval);
 
+    // API to set time interval without emitting signals (for centralized sync)
+    void setTimeInterval(TimeInterval interval);
+
     // Unified data change notification handler
     void onDataChanged(GraphType graphType);
 

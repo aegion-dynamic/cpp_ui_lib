@@ -118,11 +118,8 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         m_graphContainers[2]->setShowTimelineView(true);
         m_graphContainers[3]->setShowTimelineView(false);
 
-        // Connect the interval change handler of containers 1 to the event of 0 and the 3 to the event of 2
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged, m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
-        connect(m_graphContainers[2], &GraphContainer::IntervalChanged, m_graphContainers[3], &GraphContainer::onTimeIntervalChanged);
-
         // Connect the time scope change handler of containers 1 to the event of 0 and the 3 to the event of 2
+        // Note: Interval changes are now handled centrally by GraphLayout
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[1], &GraphContainer::onTimeScopeChanged);
         connect(m_graphContainers[2], &GraphContainer::TimeScopeChanged, m_graphContainers[3], &GraphContainer::onTimeScopeChanged);
 
@@ -149,10 +146,8 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         m_graphContainers[2]->setVisible(false);
         m_graphContainers[3]->setVisible(false);
 
-        // Connect the interval change handler of containers 1 to the event of 0
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged, m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
-        
         // Connect the time scope change handler of containers 1 to the event of 0
+        // Note: Interval changes are now handled centrally by GraphLayout
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[1], &GraphContainer::onTimeScopeChanged);
         break;
     case LayoutType::GPW4WH:
@@ -168,12 +163,8 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         m_graphContainers[2]->setShowTimelineView(false);
         m_graphContainers[3]->setShowTimelineView(false);
 
-        // Connect the interval change handlers of containers 1,2,3 to the event of 0
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged, m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged, m_graphContainers[2], &GraphContainer::onTimeIntervalChanged);
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged, m_graphContainers[3], &GraphContainer::onTimeIntervalChanged);
-        
         // Connect the time scope change handlers of containers 1,2,3 to the event of 0
+        // Note: Interval changes are now handled centrally by GraphLayout
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[1], &GraphContainer::onTimeScopeChanged);
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[2], &GraphContainer::onTimeScopeChanged);
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged, m_graphContainers[3], &GraphContainer::onTimeScopeChanged);
@@ -192,8 +183,7 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
         m_graphContainers[2]->setVisible(false);
         m_graphContainers[3]->setVisible(false);
 
-        // Connect the interval change handler of container 1 to the event of 0
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged, m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
+        // Note: Interval changes are now handled centrally by GraphLayout
         break;
     case LayoutType::HIDDEN:
         // Hide all containers
@@ -220,6 +210,8 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
                 this, &GraphLayout::onTimeSelectionCreated);
         connect(container, &GraphContainer::TimeSelectionsCleared,
                 this, &GraphLayout::onTimeSelectionsCleared);
+        connect(container, &GraphContainer::IntervalChanged,
+                this, &GraphLayout::onContainerIntervalChanged);
     }
 }
 
@@ -280,6 +272,8 @@ void GraphLayout::initializeContainers()
                 this, &GraphLayout::onTimeSelectionCreated);
         connect(container, &GraphContainer::TimeSelectionsCleared,
                 this, &GraphLayout::onTimeSelectionsCleared);
+        connect(container, &GraphContainer::IntervalChanged,
+                this, &GraphLayout::onContainerIntervalChanged);
     }
     
     qDebug() << "GraphLayout: Connected all containers to time selection propagation";
@@ -928,17 +922,13 @@ void GraphLayout::linkHorizontalContainers()
     // Disconnect all existing connections first to avoid duplicates
     disconnectAllContainerConnections();
 
+    // Note: Interval synchronization is now handled centrally by GraphLayout
+    // via onContainerIntervalChanged, which uses setTimeInterval API to avoid signal loops.
+    // Only TimeScopeChanged needs direct container-to-container connections for now.
+
     switch (m_layoutType)
     {
     case LayoutType::GPW4W:
-        // Link row 1: container 0 -> container 1 (interval change)
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged,
-                m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
-
-        // Link row 2: container 2 -> container 3 (interval change)
-        connect(m_graphContainers[2], &GraphContainer::IntervalChanged,
-                m_graphContainers[3], &GraphContainer::onTimeIntervalChanged);
-
         // Link row 1: container 0 -> container 1 (time scope change)
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged,
                 m_graphContainers[1], &GraphContainer::onTimeScopeChanged);
@@ -951,10 +941,6 @@ void GraphLayout::linkHorizontalContainers()
         break;
 
     case LayoutType::GPW2WH:
-        // Link horizontal: container 0 -> container 1 (interval change)
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged,
-                m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
-
         // Link horizontal: container 0 -> container 1 (time scope change)
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged,
                 m_graphContainers[1], &GraphContainer::onTimeScopeChanged);
@@ -963,14 +949,6 @@ void GraphLayout::linkHorizontalContainers()
         break;
 
     case LayoutType::GPW4WH:
-        // Link horizontal: container 0 -> containers 1, 2, 3 (interval change)
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged,
-                m_graphContainers[1], &GraphContainer::onTimeIntervalChanged);
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged,
-                m_graphContainers[2], &GraphContainer::onTimeIntervalChanged);
-        connect(m_graphContainers[0], &GraphContainer::IntervalChanged,
-                m_graphContainers[3], &GraphContainer::onTimeIntervalChanged);
-
         // Link horizontal: container 0 -> containers 1, 2, 3 (time scope change)
         connect(m_graphContainers[0], &GraphContainer::TimeScopeChanged,
                 m_graphContainers[1], &GraphContainer::onTimeScopeChanged);
@@ -1025,12 +1003,27 @@ void GraphLayout::onTimeSelectionCreated(const TimeSelectionSpan &selection)
 }
 
 
-// TODO: Figure out how the rest of this works without breaking the cursor
-// void GraphLayout::onTimeIntervalChanged(TimeInterval interval)
-// {
-//     m_syncState.currentInterval = interval;
-//     m_syncState.hasInterval = true;
-// }
+void GraphLayout::onContainerIntervalChanged(TimeInterval interval)
+{
+    qDebug() << "GraphLayout: Container interval changed to" << timeIntervalToString(interval);
+    
+    // Update sync state
+    m_syncState.currentInterval = interval;
+    m_syncState.hasInterval = true;
+    
+    // Identify the source container to avoid updating it again
+    GraphContainer *source = qobject_cast<GraphContainer *>(sender());
+    
+    // Set the interval on all other containers using the API (no signal emission)
+    for (auto *container : m_graphContainers)
+    {
+        if (container && container != source)
+        {
+            container->setTimeInterval(interval);
+            qDebug() << "GraphLayout: Interval set on container via API";
+        }
+    }
+}
 
 // void GraphLayout::onTimeScopeChanged(const TimeSelectionSpan &selection)
 // {
