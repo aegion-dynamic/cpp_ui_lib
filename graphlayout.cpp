@@ -1003,6 +1003,9 @@ void GraphLayout::onTimerTick()
 void GraphLayout::onTimeSelectionCreated(const TimeSelectionSpan &selection)
 {
     qDebug() << "GraphLayout: Time selection created from" << selection.startTime.toString() << "to" << selection.endTime.toString();
+
+    // Add the selection to the sync state
+    m_syncState.timeSelections.push_back(selection);
     
     // Identify the source container to avoid duplicating selection there
     GraphContainer *source = qobject_cast<GraphContainer *>(sender());
@@ -1020,6 +1023,28 @@ void GraphLayout::onTimeSelectionCreated(const TimeSelectionSpan &selection)
     // Emit the signal for external components
     emit TimeSelectionCreated(selection);
 }
+
+
+// TODO: Figure out how the rest of this works without breaking the cursor
+// void GraphLayout::onTimeIntervalChanged(TimeInterval interval)
+// {
+//     m_syncState.currentInterval = interval;
+//     m_syncState.hasInterval = true;
+// }
+
+// void GraphLayout::onTimeScopeChanged(const TimeSelectionSpan &selection)
+// {
+//     m_syncState.currentTimeScope = selection;
+//     m_syncState.hasTimeScope = true;
+// }
+
+// void GraphLayout::onCursorTimeChanged(const QDateTime &time)
+// {
+//     m_syncState.cursorTime = time;
+//     m_syncState.hasCursorTime = true;
+// }
+
+// ------------------------------------------------------------
 
 void GraphLayout::propagateTimeSelectionToAllContainers(const TimeSelectionSpan &selection)
 {
@@ -1070,6 +1095,9 @@ void GraphLayout::onContainerCursorTimeChanged(GraphContainer *source, const QDa
 void GraphLayout::onTimeSelectionsCleared()
 {
     qDebug() << "GraphLayout: Time selections cleared by one container - clearing in all containers";
+    
+    // Clear the sync state
+    m_syncState.timeSelections.clear();
     
     // Identify the source container to avoid cyclic re-emission
     GraphContainer *source = qobject_cast<GraphContainer *>(sender());

@@ -25,6 +25,30 @@ enum class LayoutType
     HIDDEN = 6  // Hidden
 };
 
+// Shared synchronization state for all graph containers
+struct GraphContainerSyncState
+{
+    // Time interval synchronization
+    TimeInterval currentInterval;
+    bool hasInterval;
+
+    // Time scope synchronization
+    TimeSelectionSpan currentTimeScope;
+    bool hasTimeScope;
+
+    // Cursor time synchronization
+    QDateTime cursorTime;
+    bool hasCursorTime;
+
+    // Time selections synchronization
+    std::vector<TimeSelectionSpan> timeSelections;
+
+    GraphContainerSyncState()
+        : currentInterval(TimeInterval::OneHour), hasInterval(false), hasTimeScope(false), hasCursorTime(false)
+    {
+    }
+};
+
 class GraphLayout : public QWidget
 {
     Q_OBJECT
@@ -115,6 +139,12 @@ public slots:
     void onTimeSelectionCreated(const TimeSelectionSpan &selection);
     void onTimeSelectionsCleared();
 
+    // TODO: Figure out how the rest of this works without breaking the cursor
+    // sync.
+    // void onTimeIntervalChanged(TimeInterval interval);
+    // void onTimeScopeChanged(const TimeSelectionSpan &selection);
+    // void onCursorTimeChanged(const QDateTime &time);
+
 private:
     LayoutType m_layoutType;
     QTimer *m_timer;
@@ -138,6 +168,9 @@ private:
     void propagateTimeSelectionToAllContainers(const TimeSelectionSpan &selection);
     void registerCursorSyncCallbacks();
     void onContainerCursorTimeChanged(GraphContainer *source, const QDateTime &time);
+
+    // Container synchronization state
+    GraphContainerSyncState m_syncState;
 
 signals:
     void TimeSelectionCreated(const TimeSelectionSpan &selection);
