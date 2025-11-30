@@ -14,7 +14,8 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<
     currentDataOption(GraphType::BDW), 
     m_updatingTimeInterval(false),
     m_sharedCursorTime(QDateTime()),
-    m_hasSharedCursorTime(false)
+    m_hasSharedCursorTime(false),
+    m_isInFollowMode(true)
 {
     // Set size policy to expand both horizontally and vertically
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);

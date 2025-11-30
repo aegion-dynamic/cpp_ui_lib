@@ -255,6 +255,9 @@ private:
     void setupTimer();
     void onVisibleTimeWindowChanged(const TimeSelectionSpan& selection);
 
+    // Graph container in follow mode
+    bool m_isInFollowMode = true;
+
 private slots:
     void onIntervalButtonClicked();
     void onTimeModeButtonClicked();

@@ -40,11 +40,14 @@ struct GraphContainerSyncState
     QDateTime cursorTime;
     bool hasCursorTime;
 
+    // Graph Container data follower synchronization
+    bool isGraphContainerInFollowMode = true;
+
     // Time selections synchronization
     std::vector<TimeSelectionSpan> timeSelections;
 
     GraphContainerSyncState()
-        : currentInterval(TimeInterval::OneHour), hasInterval(false), hasTimeScope(false), hasCursorTime(false)
+        : currentInterval(TimeInterval::OneHour), hasInterval(false), hasTimeScope(false), hasCursorTime(false), isGraphContainerInFollowMode(true)
     {
     }
 };

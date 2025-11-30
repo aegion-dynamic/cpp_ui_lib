@@ -209,6 +209,9 @@ private:
     std::function<void(GraphContainer *, const QDateTime &)> m_cursorTimeChangedCallback;
     QDateTime m_sharedCursorTime;
     bool m_hasSharedCursorTime;
+
+    // Graph container in follow mode
+    bool m_isInFollowMode = true;
 };
 
 #endif // GRAPHCONTAINER_H
