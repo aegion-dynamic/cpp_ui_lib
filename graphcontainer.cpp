@@ -813,6 +813,12 @@ void GraphContainer::onTimeIntervalChanged(TimeInterval interval)
     emit IntervalChanged(interval);
 }
 
+void GraphContainer::onGraphContainerInFollowModeChanged(bool isInFollowMode)
+{
+    m_isInFollowMode = isInFollowMode;
+    qDebug() << "GraphContainer: Graph container in follow mode changed to" << isInFollowMode;
+}
+
 void GraphContainer::updateTimeInterval(TimeInterval interval)
 {
     qDebug() << "GraphContainer: Updating time interval to" << timeIntervalToString(interval);

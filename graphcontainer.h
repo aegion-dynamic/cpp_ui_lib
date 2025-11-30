@@ -107,8 +107,6 @@ public:
     // API to set time interval without emitting signals (for centralized sync)
     void setTimeInterval(TimeInterval interval);
 
-    // Unified data change notification handler
-    void onDataChanged(GraphType graphType);
 
     // Chevron label control methods
     void setChevronLabel1(const QString &label);
@@ -143,6 +141,9 @@ public slots:
     void onZoomValueChanged(ZoomBounds bounds);
     void onTimeSelectionMade(const TimeSelectionSpan &selection);
     void onTimeScopeChanged(const TimeSelectionSpan &selection);
+    void onGraphContainerInFollowModeChanged(bool isInFollowMode);
+    // Unified data change notification handler
+    void onDataChanged(GraphType graphType);
 
 private:
     void updateTotalContainerSize();

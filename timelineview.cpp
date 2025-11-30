@@ -303,6 +303,22 @@ void TimelineVisualizerWidget::setCurrentTime(const QTime &currentTime)
     // The slider position will be recalculated when drag ends
     if (!m_sliderState.isDragging())
     {
+        // Only update slider position to latest data when in follow mode
+        if (m_timelineViewMode == TimelineViewMode::FOLLOW_MODE)
+        {
+            // In follow mode, keep slider at top (Y=0) and update time window to latest data
+            QDateTime now = QDateTime::currentDateTime();
+            int intervalSeconds = m_timeLineLength.hour() * 3600 + m_timeLineLength.minute() * 60 + m_timeLineLength.second();
+            QDateTime startTime = now.addSecs(-intervalSeconds);
+            TimeSelectionSpan newWindow(startTime, now);
+            m_sliderState.setTimeWindow(newWindow, rect().height(), m_timeLineLength);
+            // Ensure slider is at the top
+            m_sliderState.setYPosition(0, rect().height(), m_timeLineLength);
+            // Keep legacy member in sync
+            m_sliderVisibleWindow = m_sliderState.getTimeWindow();
+            // Emit signal to notify about time window change
+            emitTimeScopeChanged();
+        }
         updateVisualization();
     }
 }
@@ -1021,6 +1037,39 @@ void TimelineVisualizerWidget::mouseReleaseEvent(QMouseEvent* event)
         // End drag using state manager (finalizes position and syncs time window)
         m_sliderState.endDrag(rect().height(), m_timeLineLength);
         
+        // Check if slider is at the top (Y=0 or very close to it)
+        int sliderY = m_sliderState.getYPosition();
+        const int SNAP_THRESHOLD = 5; // pixels - threshold for snapping to top
+        
+        if (sliderY <= SNAP_THRESHOLD)
+        {
+            // Snap slider to top and switch to follow mode
+            m_sliderState.setYPosition(0, rect().height(), m_timeLineLength);
+            m_timelineViewMode = TimelineViewMode::FOLLOW_MODE;
+            
+            // Update time window to latest data
+            QDateTime now = QDateTime::currentDateTime();
+            int intervalSeconds = m_timeLineLength.hour() * 3600 + m_timeLineLength.minute() * 60 + m_timeLineLength.second();
+            QDateTime startTime = now.addSecs(-intervalSeconds);
+            TimeSelectionSpan newWindow(startTime, now);
+            m_sliderState.setTimeWindow(newWindow, rect().height(), m_timeLineLength);
+            
+            // Emit signal to notify parent TimelineView
+            emit timelineViewModeChanged(TimelineViewMode::FOLLOW_MODE);
+            
+            qDebug() << "Slider snapped to top - switched to FOLLOW_MODE";
+        }
+        else
+        {
+            // Slider is not at top, switch to frozen mode
+            m_timelineViewMode = TimelineViewMode::FROZEN_MODE;
+            
+            // Emit signal to notify parent TimelineView
+            emit timelineViewModeChanged(TimelineViewMode::FROZEN_MODE);
+            
+            qDebug() << "Slider not at top - switched to FROZEN_MODE at Y:" << sliderY;
+        }
+        
         // Keep legacy member in sync
         m_sliderVisibleWindow = m_sliderState.getTimeWindow();
         
@@ -1044,8 +1093,36 @@ void TimelineVisualizerWidget::enterEvent(QEnterEvent* event)
     // Cursor will be updated in mouseMoveEvent
 }
 
+void TimelineVisualizerWidget::setTimelineViewMode(TimelineViewMode mode)
+{
+    m_timelineViewMode = mode;
+    
+    // If switching to follow mode, snap slider to top and update to latest data
+    if (mode == TimelineViewMode::FOLLOW_MODE)
+    {
+        QDateTime now = QDateTime::currentDateTime();
+        int intervalSeconds = m_timeLineLength.hour() * 3600 + m_timeLineLength.minute() * 60 + m_timeLineLength.second();
+        QDateTime startTime = now.addSecs(-intervalSeconds);
+        TimeSelectionSpan newWindow(startTime, now);
+        m_sliderState.setTimeWindow(newWindow, rect().height(), m_timeLineLength);
+        // Ensure slider is at the top
+        m_sliderState.setYPosition(0, rect().height(), m_timeLineLength);
+        // Keep legacy member in sync
+        m_sliderVisibleWindow = m_sliderState.getTimeWindow();
+        emitTimeScopeChanged();
+        update();
+    }
+}
+
 TimelineView::TimelineView(QWidget *parent, QTimer *timer)
-    : QWidget(parent), m_intervalChangeButton(nullptr), m_timeModeChangeButton(nullptr), m_visualizerWidget(nullptr), m_layout(nullptr), m_timer(timer), m_ownsTimer(false)
+    : QWidget(parent), 
+    m_intervalChangeButton(nullptr), 
+    m_timeModeChangeButton(nullptr), 
+    m_visualizerWidget(nullptr), 
+    m_layout(nullptr), 
+    m_timer(timer), 
+    m_ownsTimer(false),
+    m_timelineViewMode(TimelineViewMode::FOLLOW_MODE)
 {
     // Setup timer (create default if none provided)
     setupTimer();
@@ -1118,6 +1195,10 @@ TimelineView::TimelineView(QWidget *parent, QTimer *timer)
     {
         connect(m_visualizerWidget, &TimelineVisualizerWidget::visibleTimeWindowChanged, 
                 this, &TimelineView::onVisibleTimeWindowChanged);
+        connect(m_visualizerWidget, &TimelineVisualizerWidget::timelineViewModeChanged,
+                this, &TimelineView::onTimelineViewModeChanged);
+        // Initialize the visualizer widget's mode
+        m_visualizerWidget->setTimelineViewMode(m_timelineViewMode);
     }
 
     // Set the layout
@@ -1220,4 +1301,29 @@ void TimelineView::onVisibleTimeWindowChanged(const TimeSelectionSpan& selection
     {
         emit TimeScopeChanged(selection);
     }
+}
+
+void TimelineView::onTimelineViewModeChanged(TimelineViewMode mode)
+{
+    // Update our mode to match the visualizer widget
+    m_timelineViewMode = mode;
+    
+    // Emit signal for mode change
+    bool isInFollowMode = (mode == TimelineViewMode::FOLLOW_MODE);
+    emit GraphContainerInFollowModeChanged(isInFollowMode);
+}
+
+void TimelineView::setTimelineViewMode(TimelineViewMode mode)
+{
+    m_timelineViewMode = mode;
+    
+    // Update the visualizer widget's mode
+    if (m_visualizerWidget)
+    {
+        m_visualizerWidget->setTimelineViewMode(mode);
+    }
+    
+    // Emit signal for mode change
+    bool isInFollowMode = (mode == TimelineViewMode::FOLLOW_MODE);
+    emit GraphContainerInFollowModeChanged(isInFollowMode);
 }
