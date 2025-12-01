@@ -297,7 +297,13 @@ void TimelineVisualizerWidget::setCurrentTime(const QTime &currentTime)
 {
     m_lastCurrentTime = m_currentTime;
     m_currentTime = currentTime;
-    updatePixelSpeed();
+    
+    // Only update pixel speed and animate timeline when in follow mode
+    // In frozen mode, keep the timeline static (no animation)
+    if (m_timelineViewMode == TimelineViewMode::FOLLOW_MODE)
+    {
+        updatePixelSpeed();
+    }
     
     // Don't update visualization if dragging (preserve dragged position)
     // The slider position will be recalculated when drag ends
@@ -319,6 +325,7 @@ void TimelineVisualizerWidget::setCurrentTime(const QTime &currentTime)
             // Emit signal to notify about time window change
             emitTimeScopeChanged();
         }
+        // Always update visualization (needed for repaints), but animation only happens in follow mode
         updateVisualization();
     }
 }
@@ -345,6 +352,13 @@ void TimelineVisualizerWidget::updateAndDraw()
 
 void TimelineVisualizerWidget::updatePixelSpeed()
 {
+    // Don't update pixel speed or accumulate offset when in frozen mode
+    // This prevents the timeline from animating/shifting
+    if (m_timelineViewMode == TimelineViewMode::FROZEN_MODE)
+    {
+        return;
+    }
+    
     if (m_lastCurrentTime.isNull() || m_currentTime.isNull() || m_timeLineLength.isNull())
     {
         m_pixelSpeed = 0.0;
@@ -371,6 +385,7 @@ void TimelineVisualizerWidget::updatePixelSpeed()
     m_pixelSpeed = segmentHeight / segmentDurationSeconds;
 
     // Update accumulated offset based on time difference
+    // This creates the animation effect - only in follow mode
     double timeDiffSeconds = timeDiffMs / 1000.0;
     m_accumulatedOffset += m_pixelSpeed * timeDiffSeconds;
 
@@ -1303,16 +1318,31 @@ void TimelineView::onVisibleTimeWindowChanged(const TimeSelectionSpan& selection
     }
 }
 
+
+void TimelineView::handleModeTransitionLogic(TimelineViewMode newMode)
+{
+    // Handles all the logic for the mode transition
+    // Case 1 : FOLLOW_MODE -> FROZEN_MODE
+    // Case 2 : FROZEN_MODE -> FOLLOW_MODE
+    // TODO: TBA
+}
+
+// Primarily handles the mode change signal from the visualizer widget
 void TimelineView::onTimelineViewModeChanged(TimelineViewMode mode)
 {
     // Update our mode to match the visualizer widget
     m_timelineViewMode = mode;
     
+
+    // This is the standard location where the mode transition logic is handled
+    handleModeTransitionLogic(mode);
+
     // Emit signal for mode change
     bool isInFollowMode = (mode == TimelineViewMode::FOLLOW_MODE);
     emit GraphContainerInFollowModeChanged(isInFollowMode);
 }
 
+// Handles the mode change request from the user / outside the widget
 void TimelineView::setTimelineViewMode(TimelineViewMode mode)
 {
     m_timelineViewMode = mode;
@@ -1322,8 +1352,14 @@ void TimelineView::setTimelineViewMode(TimelineViewMode mode)
     {
         m_visualizerWidget->setTimelineViewMode(mode);
     }
+
+    // This is the standard location where the mode transition logic is handled
+    // Case 1 : FOLLOW_MODE -> FROZEN_MODE
+
+    handleModeTransitionLogic(TimelineViewMode::FROZEN_MODE);
+
+    // Case 2 : FROZEN_MODE -> FOLLOW_MODE
+
+    handleModeTransitionLogic(mode);
     
-    // Emit signal for mode change
-    bool isInFollowMode = (mode == TimelineViewMode::FOLLOW_MODE);
-    emit GraphContainerInFollowModeChanged(isInFollowMode);
 }

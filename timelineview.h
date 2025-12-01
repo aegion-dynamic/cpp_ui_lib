@@ -275,6 +275,7 @@ private:
     void setupTimer();
     void onVisibleTimeWindowChanged(const TimeSelectionSpan& selection);
     void onTimelineViewModeChanged(TimelineViewMode mode);
+    void handleModeTransitionLogic(TimelineViewMode newMode);
 
     // Timeline view mode
     TimelineViewMode m_timelineViewMode = TimelineViewMode::FOLLOW_MODE;
