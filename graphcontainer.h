@@ -115,6 +115,9 @@ public:
 
     // API to set time interval without emitting signals (for centralized sync)
     void setTimeInterval(TimeInterval interval);
+    
+    // API to set time scope without emitting signals (for centralized sync from GraphLayout hub)
+    void setTimeScope(const TimeSelectionSpan &selection);
 
 
     // Chevron label control methods
@@ -225,6 +228,10 @@ private:
 
     // Shared synchronization state pointer
     GraphContainerSyncState *m_syncState;
+    
+    // Track last known time scope from sync state to detect changes
+    TimeSelectionSpan m_lastSyncedTimeScope;
+    bool m_hasLastSyncedTimeScope;
 };
 
 #endif // GRAPHCONTAINER_H

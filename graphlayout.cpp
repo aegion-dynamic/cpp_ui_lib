@@ -212,6 +212,8 @@ void GraphLayout::setLayoutType(LayoutType layoutType)
                 this, &GraphLayout::onTimeSelectionsCleared);
         connect(container, &GraphContainer::IntervalChanged,
                 this, &GraphLayout::onContainerIntervalChanged);
+        connect(container, &GraphContainer::TimeScopeChanged,
+                this, &GraphLayout::onContainerTimeScopeChanged);
     }
 }
 
@@ -274,9 +276,11 @@ void GraphLayout::initializeContainers()
                 this, &GraphLayout::onTimeSelectionsCleared);
         connect(container, &GraphContainer::IntervalChanged,
                 this, &GraphLayout::onContainerIntervalChanged);
+        connect(container, &GraphContainer::TimeScopeChanged,
+                this, &GraphLayout::onContainerTimeScopeChanged);
     }
     
-    qDebug() << "GraphLayout: Connected all containers to time selection propagation";
+    qDebug() << "GraphLayout: Connected all containers to time selection and time scope propagation";
 
     registerCursorSyncCallbacks();
 }
@@ -1025,11 +1029,31 @@ void GraphLayout::onContainerIntervalChanged(TimeInterval interval)
     }
 }
 
-// void GraphLayout::onTimeScopeChanged(const TimeSelectionSpan &selection)
-// {
-//     m_syncState.currentTimeScope = selection;
-//     m_syncState.hasTimeScope = true;
-// }
+void GraphLayout::onContainerTimeScopeChanged(const TimeSelectionSpan &selection)
+{
+    qDebug() << "GraphLayout: Container time scope changed from" << selection.startTime.toString() << "to" << selection.endTime.toString();
+    
+    // Update sync state
+    m_syncState.currentTimeScope = selection;
+    m_syncState.hasTimeScope = true;
+    
+    // Identify the source container to avoid updating it again
+    GraphContainer *source = qobject_cast<GraphContainer *>(sender());
+    
+    // Act as hub: propagate time scope to all other containers
+    // This ensures all waterfall graphs stay synchronized
+    for (auto *container : m_graphContainers)
+    {
+        if (container && container != source)
+        {
+            // Use setTimeScope to update without triggering signals (prevents feedback loops)
+            container->setTimeScope(selection);
+            qDebug() << "GraphLayout: Time scope propagated to container";
+        }
+    }
+    
+    qDebug() << "GraphLayout: Time scope synchronized across all containers";
+}
 
 // void GraphLayout::onCursorTimeChanged(const QDateTime &time)
 // {

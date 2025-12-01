@@ -142,6 +142,7 @@ private:
     void propagateTimeSelectionToAllContainers(const TimeSelectionSpan &selection);
     void registerCursorSyncCallbacks();
     void onContainerCursorTimeChanged(GraphContainer *source, const QDateTime &time);
+    void onContainerTimeScopeChanged(const TimeSelectionSpan &selection);
 
     // Container synchronization state
     GraphContainerSyncState m_syncState;

@@ -16,7 +16,8 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<
     m_sharedCursorTime(QDateTime()),
     m_hasSharedCursorTime(false),
     m_isInFollowMode(true),
-    m_syncState(syncState)
+    m_syncState(syncState),
+    m_hasLastSyncedTimeScope(false)
 {
     // Set size policy to expand both horizontally and vertically
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -164,6 +165,9 @@ void GraphContainer::onTimerTick()
         // TimelineView will decide whether to update slider based on its current mode
         m_timelineView->setCurrentTime(currentTime);
     }
+
+    // Note: Time scope synchronization is now handled by GraphLayout hub
+    // GraphLayout propagates changes directly via setTimeScope() method
 
     // qDebug() << "GraphContainer: Timer tick - updated current time to" << currentTime.toString();
 }
@@ -953,10 +957,49 @@ void GraphContainer::onTimeScopeChanged(const TimeSelectionSpan &selection)
     // Update the waterfall graph's time range to match the visible scope
     m_currentWaterfallGraph->setTimeRange(selection.startTime, selection.endTime);
 
-    // Emit the signal so other containers in the row can update
+    // Update shared sync state so other containers can be synchronized
+    if (m_syncState)
+    {
+        m_syncState->currentTimeScope = selection;
+        m_syncState->hasTimeScope = true;
+        m_lastSyncedTimeScope = selection;
+        m_hasLastSyncedTimeScope = true;
+    }
+
+    // Emit the signal so GraphLayout hub can propagate to other containers
     emit TimeScopeChanged(selection);
 
     qDebug() << "GraphContainer: Waterfall graph time range updated and signal emitted";
+}
+
+void GraphContainer::setTimeScope(const TimeSelectionSpan &selection)
+{
+    // This method is called by GraphLayout hub to update time scope without triggering signals
+    // Skip processing if we're in the middle of updating the time interval
+    if (m_updatingTimeInterval)
+    {
+        return;
+    }
+
+    if (!m_currentWaterfallGraph)
+    {
+        return;
+    }
+
+    // Update the waterfall graph's time range to match the visible scope
+    m_currentWaterfallGraph->setTimeRange(selection.startTime, selection.endTime);
+
+    // Update timeline view slider position to match the time scope
+    if (m_timelineView)
+    {
+        m_timelineView->setTimeWindowSilent(selection);
+    }
+
+    // Update local tracking
+    m_lastSyncedTimeScope = selection;
+    m_hasLastSyncedTimeScope = true;
+
+    qDebug() << "GraphContainer: Time scope set (silent) from" << selection.startTime.toString() << "to" << selection.endTime.toString();
 }
 
 void GraphContainer::setMouseSelectionEnabled(bool enabled)

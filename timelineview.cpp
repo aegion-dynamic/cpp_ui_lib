@@ -1129,6 +1129,19 @@ void TimelineVisualizerWidget::setTimelineViewMode(TimelineViewMode mode)
     }
 }
 
+void TimelineVisualizerWidget::setTimeWindowSilent(const TimeSelectionSpan& window)
+{
+    // Update slider state with new time window (this will sync the position)
+    m_sliderState.setTimeWindow(window, rect().height(), m_timeLineLength);
+    
+    // Keep legacy member in sync
+    m_sliderVisibleWindow = m_sliderState.getTimeWindow();
+    
+    // Update visualization to reflect new slider position
+    // Note: We do NOT emit visibleTimeWindowChanged signal to avoid feedback loops
+    updateVisualization();
+}
+
 TimelineView::TimelineView(QWidget *parent, QTimer *timer)
     : QWidget(parent), 
     m_intervalChangeButton(nullptr), 
@@ -1340,6 +1353,15 @@ void TimelineView::onTimelineViewModeChanged(TimelineViewMode mode)
     // Emit signal for mode change
     bool isInFollowMode = (mode == TimelineViewMode::FOLLOW_MODE);
     emit GraphContainerInFollowModeChanged(isInFollowMode);
+}
+
+void TimelineView::setTimeWindowSilent(const TimeSelectionSpan& window)
+{
+    // Delegate to visualizer widget
+    if (m_visualizerWidget)
+    {
+        m_visualizerWidget->setTimeWindowSilent(window);
+    }
 }
 
 // Handles the mode change request from the user / outside the widget
