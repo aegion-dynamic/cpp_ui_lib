@@ -305,34 +305,10 @@ void TimelineVisualizerWidget::setCurrentTime(const QTime &currentTime)
         updatePixelSpeed();
     }
     
-    // Only update pixel speed and animate timeline when in follow mode
-    // In frozen mode, keep the timeline static (no animation)
-    if (m_timelineViewMode == TimelineViewMode::FOLLOW_MODE)
-    {
-        updatePixelSpeed();
-    }
-    
     // Don't update visualization if dragging (preserve dragged position)
     // The slider position will be recalculated when drag ends
     if (!m_sliderState.isDragging())
     {
-        // Only update slider position to latest data when in follow mode
-        if (m_timelineViewMode == TimelineViewMode::FOLLOW_MODE)
-        {
-            // In follow mode, keep slider at top (Y=0) and update time window to latest data
-            QDateTime now = QDateTime::currentDateTime();
-            int intervalSeconds = m_timeLineLength.hour() * 3600 + m_timeLineLength.minute() * 60 + m_timeLineLength.second();
-            QDateTime startTime = now.addSecs(-intervalSeconds);
-            TimeSelectionSpan newWindow(startTime, now);
-            m_sliderState.setTimeWindow(newWindow, rect().height(), m_timeLineLength);
-            // Ensure slider is at the top
-            m_sliderState.setYPosition(0, rect().height(), m_timeLineLength);
-            // Keep legacy member in sync
-            m_sliderVisibleWindow = m_sliderState.getTimeWindow();
-            // Emit signal to notify about time window change
-            emitTimeScopeChanged();
-        }
-        // Always update visualization (needed for repaints), but animation only happens in follow mode
         // Only update slider position to latest data when in follow mode
         if (m_timelineViewMode == TimelineViewMode::FOLLOW_MODE)
         {
@@ -1175,14 +1151,6 @@ TimelineView::TimelineView(QWidget *parent, QTimer *timer)
     m_timer(timer), 
     m_ownsTimer(false),
     m_timelineViewMode(TimelineViewMode::FOLLOW_MODE)
-    : QWidget(parent), 
-    m_intervalChangeButton(nullptr), 
-    m_timeModeChangeButton(nullptr), 
-    m_visualizerWidget(nullptr), 
-    m_layout(nullptr), 
-    m_timer(timer), 
-    m_ownsTimer(false),
-    m_timelineViewMode(TimelineViewMode::FOLLOW_MODE)
 {
     // Setup timer (create default if none provided)
     setupTimer();
@@ -1255,10 +1223,6 @@ TimelineView::TimelineView(QWidget *parent, QTimer *timer)
     {
         connect(m_visualizerWidget, &TimelineVisualizerWidget::visibleTimeWindowChanged, 
                 this, &TimelineView::onVisibleTimeWindowChanged);
-        connect(m_visualizerWidget, &TimelineVisualizerWidget::timelineViewModeChanged,
-                this, &TimelineView::onTimelineViewModeChanged);
-        // Initialize the visualizer widget's mode
-        m_visualizerWidget->setTimelineViewMode(m_timelineViewMode);
         connect(m_visualizerWidget, &TimelineVisualizerWidget::timelineViewModeChanged,
                 this, &TimelineView::onTimelineViewModeChanged);
         // Initialize the visualizer widget's mode
