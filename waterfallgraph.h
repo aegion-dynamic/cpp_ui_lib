@@ -141,6 +141,15 @@ protected:
     void updateYRangeFromCustom();
     void forceRangeUpdate();
 
+    // Filtered data cache management
+    void invalidateVisibleDataCache(const QString& seriesLabel);
+    void invalidateAllVisibleDataCache();
+    void updateVisibleDataCacheIncremental(const QString& seriesLabel);
+    bool isVisibleDataCacheValid(const QString& seriesLabel) const;
+    size_t findFirstVisibleIndex(const std::vector<QDateTime>& timestamps, const QDateTime& timeMin) const;
+    size_t findLastVisibleIndex(const std::vector<QDateTime>& timestamps, const QDateTime& timeMax) const;
+    void removeDataOlderThan12Hours(const QString& seriesLabel);
+
     // Data range tracking
     qreal yMin, yMax;
     QDateTime timeMin, timeMax;
@@ -170,6 +179,12 @@ protected:
     std::set<QString> m_dirtySeries;
     std::map<QString, QGraphicsPathItem*> m_seriesPathItems;
     std::map<QString, std::vector<QGraphicsEllipseItem*>> m_seriesPointItems;
+
+    // Filtered data cache for incremental filtering
+    std::map<QString, std::vector<std::pair<qreal, QDateTime>>> m_cachedVisibleData;
+    std::map<QString, std::pair<QDateTime, QDateTime>> m_cachedTimeRange;
+    std::map<QString, size_t> m_lastProcessedIndex;
+    std::map<QString, size_t> m_cachedDataSize;
 
     // Mouse tracking
     bool isDragging;

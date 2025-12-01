@@ -1,6 +1,7 @@
 #include "waterfallgraph.h"
 #include <QApplication>
 #include <QPointF>
+#include <algorithm>
 
 /**
  * @brief Construct a new WaterfallGraph::WaterfallGraph object
@@ -187,6 +188,8 @@ WaterfallGraph::~WaterfallGraph()
 void WaterfallGraph::setDataSource(WaterfallData &dataSource)
 {
     this->dataSource = &dataSource;
+    // Invalidate visible data cache when data source changes
+    invalidateAllVisibleDataCache();
     // New data source requires full redraw (automatically marks all series dirty)
     setRenderState(RenderState::FULL_REDRAW);
     draw(); // Trigger redraw with new data source
@@ -738,6 +741,159 @@ void WaterfallGraph::markRangeUpdateNeeded()
     transitionToAppropriateState();
 }
 
+// Filtered data cache management methods implementation
+
+void WaterfallGraph::invalidateVisibleDataCache(const QString& seriesLabel)
+{
+    m_cachedVisibleData.erase(seriesLabel);
+    m_cachedTimeRange.erase(seriesLabel);
+    m_lastProcessedIndex[seriesLabel] = 0;
+    m_cachedDataSize[seriesLabel] = 0;
+}
+
+void WaterfallGraph::invalidateAllVisibleDataCache()
+{
+    m_cachedVisibleData.clear();
+    m_cachedTimeRange.clear();
+    m_lastProcessedIndex.clear();
+    m_cachedDataSize.clear();
+}
+
+size_t WaterfallGraph::findFirstVisibleIndex(const std::vector<QDateTime>& timestamps, const QDateTime& timeMin) const
+{
+    if (timestamps.empty())
+        return 0;
+
+    // Use binary search to find first timestamp >= timeMin
+    auto it = std::lower_bound(timestamps.begin(), timestamps.end(), timeMin);
+    return std::distance(timestamps.begin(), it);
+}
+
+size_t WaterfallGraph::findLastVisibleIndex(const std::vector<QDateTime>& timestamps, const QDateTime& timeMax) const
+{
+    if (timestamps.empty())
+        return 0;
+
+    // Use binary search to find first timestamp > timeMax
+    auto it = std::upper_bound(timestamps.begin(), timestamps.end(), timeMax);
+    return std::distance(timestamps.begin(), it);
+}
+
+void WaterfallGraph::removeDataOlderThan12Hours(const QString& seriesLabel)
+{
+    auto it = m_cachedVisibleData.find(seriesLabel);
+    if (it == m_cachedVisibleData.end())
+        return;
+
+    QDateTime cutoffTime = QDateTime::currentDateTime().addSecs(-12 * 3600); // 12 hours ago
+
+    // Remove all points older than 12 hours
+    auto& cachedData = it->second;
+    cachedData.erase(
+        std::remove_if(cachedData.begin(), cachedData.end(),
+            [cutoffTime](const std::pair<qreal, QDateTime>& point) {
+                return point.second < cutoffTime;
+            }),
+        cachedData.end()
+    );
+}
+
+bool WaterfallGraph::isVisibleDataCacheValid(const QString& seriesLabel) const
+{
+    // Check if cache exists for series
+    if (m_cachedVisibleData.find(seriesLabel) == m_cachedVisibleData.end())
+        return false;
+
+    // Check if cached time range matches current time range
+    auto timeRangeIt = m_cachedTimeRange.find(seriesLabel);
+    if (timeRangeIt == m_cachedTimeRange.end())
+        return false;
+
+    if (timeRangeIt->second.first != timeMin || timeRangeIt->second.second != timeMax)
+        return false;
+
+    // Check if cached data size matches current data size (no new data added)
+    if (!dataSource)
+        return false;
+
+    size_t currentDataSize = dataSource->getDataSeriesSize(seriesLabel);
+    auto dataSizeIt = m_cachedDataSize.find(seriesLabel);
+    if (dataSizeIt == m_cachedDataSize.end() || dataSizeIt->second != currentDataSize)
+        return false;
+
+    return true;
+}
+
+void WaterfallGraph::updateVisibleDataCacheIncremental(const QString& seriesLabel)
+{
+    if (!dataSource)
+        return;
+
+    const auto &yData = dataSource->getYDataSeries(seriesLabel);
+    const auto &timestamps = dataSource->getTimestampsSeries(seriesLabel);
+
+    if (yData.empty() || timestamps.empty())
+    {
+        m_cachedVisibleData[seriesLabel].clear();
+        m_lastProcessedIndex[seriesLabel] = 0;
+        m_cachedDataSize[seriesLabel] = 0;
+        return;
+    }
+
+    size_t currentDataSize = yData.size();
+    size_t lastProcessed = m_lastProcessedIndex[seriesLabel];
+
+    // Check if time range changed - if so, need to rebuild cache using binary search
+    auto timeRangeIt = m_cachedTimeRange.find(seriesLabel);
+    bool timeRangeChanged = (timeRangeIt == m_cachedTimeRange.end() ||
+                             timeRangeIt->second.first != timeMin ||
+                             timeRangeIt->second.second != timeMax);
+
+    if (timeRangeChanged)
+    {
+        // Time range changed - rebuild cache using binary search for boundaries
+        size_t firstIndex = findFirstVisibleIndex(timestamps, timeMin);
+        size_t lastIndex = findLastVisibleIndex(timestamps, timeMax);
+
+        // Clear and rebuild cache for visible range
+        m_cachedVisibleData[seriesLabel].clear();
+        for (size_t i = firstIndex; i < lastIndex && i < yData.size(); ++i)
+        {
+            if (timestamps[i] >= timeMin && timestamps[i] <= timeMax)
+            {
+                m_cachedVisibleData[seriesLabel].push_back({yData[i], timestamps[i]});
+            }
+        }
+
+        m_cachedTimeRange[seriesLabel] = std::make_pair(timeMin, timeMax);
+        m_lastProcessedIndex[seriesLabel] = currentDataSize;
+        m_cachedDataSize[seriesLabel] = currentDataSize;
+
+        // Remove data older than 12 hours
+        removeDataOlderThan12Hours(seriesLabel);
+        return;
+    }
+
+    // Time range unchanged - incrementally add new data points
+    if (currentDataSize > lastProcessed)
+    {
+        // Filter new points within time range
+        for (size_t i = lastProcessed; i < currentDataSize; ++i)
+        {
+            if (timestamps[i] >= timeMin && timestamps[i] <= timeMax)
+            {
+                m_cachedVisibleData[seriesLabel].push_back({yData[i], timestamps[i]});
+            }
+        }
+
+        m_lastProcessedIndex[seriesLabel] = currentDataSize;
+        m_cachedDataSize[seriesLabel] = currentDataSize;
+
+        // Remove data older than 12 hours
+        removeDataOlderThan12Hours(seriesLabel);
+    }
+}
+
 /**
  * @brief Update the graphics dimensions.
  *
@@ -1205,18 +1361,14 @@ void WaterfallGraph::drawDataLine(const QString &seriesLabel, bool plotPoints)
         return;
     }
 
-    const auto &yData = dataSource->getYDataSeries(seriesLabel);
-    const auto &timestamps = dataSource->getTimestampsSeries(seriesLabel);
-
-    // Filter data points to only include those within the current time range
-    std::vector<std::pair<qreal, QDateTime>> visibleData;
-    for (size_t i = 0; i < yData.size(); ++i)
+    // Use cached visible data - update cache if needed
+    if (!isVisibleDataCacheValid(seriesLabel))
     {
-        if (timestamps[i] >= timeMin && timestamps[i] <= timeMax)
-        {
-            visibleData.push_back({yData[i], timestamps[i]});
-        }
+        updateVisibleDataCacheIncremental(seriesLabel);
     }
+
+    // Get cached visible data
+    const auto& visibleData = m_cachedVisibleData[seriesLabel];
 
     if (visibleData.empty())
     {
@@ -1263,7 +1415,8 @@ void WaterfallGraph::drawDataLine(const QString &seriesLabel, bool plotPoints)
         }
     }
 
-    qDebug() << "Data line drawn for series" << seriesLabel << "with" << visibleData.size() << "visible points out of" << yData.size() << "total points";
+    size_t totalPoints = dataSource ? dataSource->getDataSeriesSize(seriesLabel) : 0;
+    qDebug() << "Data line drawn for series" << seriesLabel << "with" << visibleData.size() << "visible points out of" << totalPoints << "total points";
 }
 
 // Mouse selection functionality implementation
@@ -1833,26 +1986,14 @@ void WaterfallGraph::drawDataSeries(const QString &seriesLabel)
         pointIt->second.clear();
     }
 
-    const auto &yData = dataSource->getYDataSeries(seriesLabel);
-    const auto &timestamps = dataSource->getTimestampsSeries(seriesLabel);
-
-    qDebug() << "drawDataSeries: Series" << seriesLabel << "has" << yData.size() << "yData points and" << timestamps.size() << "timestamps";
-
-    if (yData.empty() || timestamps.empty())
+    // Use cached visible data - update cache if needed
+    if (!isVisibleDataCacheValid(seriesLabel))
     {
-        qDebug() << "No data available for series:" << seriesLabel;
-        return;
+        updateVisibleDataCacheIncremental(seriesLabel);
     }
 
-    // Filter data points to only include those within the current time range
-    std::vector<std::pair<qreal, QDateTime>> visibleData;
-    for (size_t i = 0; i < yData.size(); ++i)
-    {
-        if (timestamps[i] >= timeMin && timestamps[i] <= timeMax)
-        {
-            visibleData.push_back({yData[i], timestamps[i]});
-        }
-    }
+    // Get cached visible data
+    const auto& visibleData = m_cachedVisibleData[seriesLabel];
 
     qDebug() << "drawDataSeries: Series" << seriesLabel << "has" << visibleData.size() << "visible data points within time range"
              << timeMin.toString() << "to" << timeMax.toString();
@@ -1905,7 +2046,8 @@ void WaterfallGraph::drawDataSeries(const QString &seriesLabel)
         pointItems.push_back(pointItem);
     }
 
-    qDebug() << "Data series" << seriesLabel << "drawn with" << visibleData.size() << "visible points out of" << yData.size() << "total points";
+    size_t totalPoints = dataSource ? dataSource->getDataSeriesSize(seriesLabel) : 0;
+    qDebug() << "Data series" << seriesLabel << "drawn with" << visibleData.size() << "visible points out of" << totalPoints << "total points";
 }
 
 // Multi-series support methods implementation
@@ -2147,6 +2289,9 @@ void WaterfallGraph::setTimeRange(const QDateTime &timeMin, const QDateTime &tim
     customTimeMax = timeMax;
     customTimeRangeEnabled = true;
 
+    // Invalidate visible data cache when time range changes
+    invalidateAllVisibleDataCache();
+
     // Update the current time range
     this->timeMin = timeMin;
     this->timeMax = timeMax;
@@ -2167,6 +2312,9 @@ void WaterfallGraph::setTimeRange(const QDateTime &timeMin, const QDateTime &tim
  */
 void WaterfallGraph::setTimeMax(const QDateTime &timeMax)
 {
+    // Invalidate visible data cache when time range changes
+    invalidateAllVisibleDataCache();
+
     if (customTimeRangeEnabled)
     {
         customTimeMax = timeMax;
@@ -2194,6 +2342,9 @@ void WaterfallGraph::setTimeMax(const QDateTime &timeMax)
  */
 void WaterfallGraph::setTimeMin(const QDateTime &timeMin)
 {
+    // Invalidate visible data cache when time range changes
+    invalidateAllVisibleDataCache();
+
     if (customTimeRangeEnabled)
     {
         customTimeMin = timeMin;
@@ -2261,6 +2412,13 @@ void WaterfallGraph::setTimeRangeFromData()
 
     // Get the combined time range from all series
     auto timeRange = dataSource->getCombinedTimeRange();
+    
+    // Invalidate cache if time range changed
+    if (timeMin != timeRange.first || timeMax != timeRange.second)
+    {
+        invalidateAllVisibleDataCache();
+    }
+    
     timeMin = timeRange.first;
     timeMax = timeRange.second;
 
