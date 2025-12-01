@@ -9,6 +9,12 @@ WaterfallData::WaterfallData(const QString& title)
     // Initialize empty vectors
     dataSeriesYData[dataTitle] = std::vector<qreal>();
     dataSeriesTimestamps[dataTitle] = std::vector<QDateTime>();
+    
+    // Initialize cache as invalid
+    m_yRangeValid = false;
+    m_timeRangeValid = false;
+    m_cachedYRange = std::make_pair(0.0, 0.0);
+    m_cachedTimeRange = std::make_pair(QDateTime(), QDateTime());
 }
 
 WaterfallData::WaterfallData(const QString& title, const std::vector<QString>& seriesLabels)
@@ -22,6 +28,11 @@ WaterfallData::WaterfallData(const QString& title, const std::vector<QString>& s
         dataSeriesTimestamps[seriesLabel] = std::vector<QDateTime>();
     }
     
+    // Initialize cache as invalid
+    m_yRangeValid = false;
+    m_timeRangeValid = false;
+    m_cachedYRange = std::make_pair(0.0, 0.0);
+    m_cachedTimeRange = std::make_pair(QDateTime(), QDateTime());
 }
 
 WaterfallData::~WaterfallData()
@@ -272,6 +283,10 @@ void WaterfallData::addDataPointToSeries(const QString& seriesLabel, qreal yValu
     dataSeriesYData[seriesLabel].push_back(yValue);
     dataSeriesTimestamps[seriesLabel].push_back(timestamp);
 
+    // Update cache incrementally
+    updateYRangeIncremental(seriesLabel, yValue);
+    updateTimeRangeIncremental(seriesLabel, timestamp);
+
     validateDataSeriesConsistency(seriesLabel);
 }
 
@@ -288,6 +303,19 @@ void WaterfallData::addDataPointsToSeries(const QString& seriesLabel, const std:
     dataSeriesYData[seriesLabel].insert(dataSeriesYData[seriesLabel].end(), yValues.begin(), yValues.end());
     dataSeriesTimestamps[seriesLabel].insert(dataSeriesTimestamps[seriesLabel].end(), timestamps.begin(), timestamps.end());
 
+    // Update cache: incremental for small batches, invalidate for large batches
+    const size_t INCREMENTAL_THRESHOLD = 10;
+    if (yValues.size() < INCREMENTAL_THRESHOLD) {
+        // Small batch: update incrementally
+        for (size_t i = 0; i < yValues.size(); ++i) {
+            updateYRangeIncremental(seriesLabel, yValues[i]);
+            updateTimeRangeIncremental(seriesLabel, timestamps[i]);
+        }
+    } else {
+        // Large batch: invalidate cache and let lazy recalculation handle it
+        invalidateAllCaches();
+    }
+
     validateDataSeriesConsistency(seriesLabel);
 }
 
@@ -295,12 +323,20 @@ void WaterfallData::clearDataSeries(const QString& seriesLabel)
 {
     dataSeriesYData.erase(seriesLabel);
     dataSeriesTimestamps.erase(seriesLabel);
+    
+    // Invalidate cache since data changed
+    invalidateAllCaches();
 }
 
 void WaterfallData::clearAllDataSeries()
 {
     dataSeriesYData.clear();
     dataSeriesTimestamps.clear();
+    
+    // Invalidate cache and reset to default values
+    invalidateAllCaches();
+    m_cachedYRange = std::make_pair(0.0, 0.0);
+    m_cachedTimeRange = std::make_pair(QDateTime(), QDateTime());
 }
 
 std::vector<std::pair<qreal, QDateTime>> WaterfallData::getDataSeries(const QString& seriesLabel) const
@@ -424,54 +460,16 @@ std::pair<QDateTime, QDateTime> WaterfallData::getTimeRangeSeries(const QString&
 
 std::pair<qreal, qreal> WaterfallData::getCombinedYRange() const
 {
-    qreal globalMin = std::numeric_limits<qreal>::max();
-    qreal globalMax = std::numeric_limits<qreal>::lowest();
-    bool hasData = false;
-
-    // Check all data series
-    for (const auto& pair : dataSeriesYData) {
-        if (!pair.second.empty()) {
-            auto minMax = std::minmax_element(pair.second.begin(), pair.second.end());
-            globalMin = std::min(globalMin, *minMax.first);
-            globalMax = std::max(globalMax, *minMax.second);
-            hasData = true;
-        }
-    }
-
-    if (!hasData) {
-        return std::make_pair(0.0, 0.0);
-    }
-
-    return std::make_pair(globalMin, globalMax);
+    // Recalculate if cache is invalid
+    recalculateYRange();
+    return m_cachedYRange;
 }
 
 std::pair<QDateTime, QDateTime> WaterfallData::getCombinedTimeRange() const
 {
-    QDateTime globalMin = QDateTime();
-    QDateTime globalMax = QDateTime();
-    bool hasData = false;
-
-    // Check all data series
-    for (const auto& pair : dataSeriesTimestamps) {
-        if (!pair.second.empty()) {
-            auto minMax = std::minmax_element(pair.second.begin(), pair.second.end());
-            if (!hasData) {
-                globalMin = *minMax.first;
-                globalMax = *minMax.second;
-                hasData = true;
-            }
-            else {
-                globalMin = std::min(globalMin, *minMax.first);
-                globalMax = std::max(globalMax, *minMax.second);
-            }
-        }
-    }
-
-    if (!hasData) {
-        return std::make_pair(QDateTime(), QDateTime());
-    }
-
-    return std::make_pair(globalMin, globalMax);
+    // Recalculate if cache is invalid
+    recalculateTimeRange();
+    return m_cachedTimeRange;
 }
 
 // Selection time span methods implementation
@@ -524,6 +522,9 @@ void WaterfallData::setDataSeries(const QString& seriesLabel, const std::vector<
     // Store the data series
     dataSeriesYData[seriesLabel] = yData;
     dataSeriesTimestamps[seriesLabel] = timestamps;
+
+    // Invalidate cache since entire series was replaced
+    invalidateAllCaches();
 
     validateDataSeriesConsistency(seriesLabel);
 }
@@ -734,4 +735,164 @@ std::vector<std::pair<qreal, QDateTime>> WaterfallData::binDataByTime(
     qDebug() << "WaterfallData::binDataByTime: Binned" << yData.size() << "points into" << result.size() << "bins with duration" << binSizeMs << "ms";
     
     return result;
+}
+
+// Range cache management methods implementation
+
+void WaterfallData::invalidateYRangeCache()
+{
+    m_yRangeValid = false;
+}
+
+void WaterfallData::invalidateTimeRangeCache()
+{
+    m_timeRangeValid = false;
+}
+
+void WaterfallData::invalidateAllCaches()
+{
+    m_yRangeValid = false;
+    m_timeRangeValid = false;
+}
+
+void WaterfallData::recalculateYRange() const
+{
+    if (m_yRangeValid) {
+        return; // Cache is already valid
+    }
+
+    qreal globalMin = std::numeric_limits<qreal>::max();
+    qreal globalMax = std::numeric_limits<qreal>::lowest();
+    bool hasData = false;
+
+    // Check all data series
+    for (const auto& pair : dataSeriesYData) {
+        if (!pair.second.empty()) {
+            auto minMax = std::minmax_element(pair.second.begin(), pair.second.end());
+            globalMin = std::min(globalMin, *minMax.first);
+            globalMax = std::max(globalMax, *minMax.second);
+            hasData = true;
+        }
+    }
+
+    if (!hasData) {
+        m_cachedYRange = std::make_pair(0.0, 0.0);
+    } else {
+        m_cachedYRange = std::make_pair(globalMin, globalMax);
+    }
+
+    m_yRangeValid = true;
+}
+
+void WaterfallData::recalculateTimeRange() const
+{
+    if (m_timeRangeValid) {
+        return; // Cache is already valid
+    }
+
+    QDateTime globalMin = QDateTime();
+    QDateTime globalMax = QDateTime();
+    bool hasData = false;
+
+    // Check all data series
+    for (const auto& pair : dataSeriesTimestamps) {
+        if (!pair.second.empty()) {
+            auto minMax = std::minmax_element(pair.second.begin(), pair.second.end());
+            if (!hasData) {
+                globalMin = *minMax.first;
+                globalMax = *minMax.second;
+                hasData = true;
+            }
+            else {
+                globalMin = std::min(globalMin, *minMax.first);
+                globalMax = std::max(globalMax, *minMax.second);
+            }
+        }
+    }
+
+    if (!hasData) {
+        m_cachedTimeRange = std::make_pair(QDateTime(), QDateTime());
+    } else {
+        m_cachedTimeRange = std::make_pair(globalMin, globalMax);
+    }
+
+    m_timeRangeValid = true;
+}
+
+void WaterfallData::updateYRangeIncremental(const QString& seriesLabel, qreal yValue)
+{
+    // Check if this is the first point in this series (after adding, size == 1)
+    auto it = dataSeriesYData.find(seriesLabel);
+    bool isFirstPointInSeries = (it != dataSeriesYData.end() && it->second.size() == 1);
+
+    if (!m_yRangeValid) {
+        // Cache is invalid - if this is the only point in the entire dataset, initialize cache
+        if (isFirstPointInSeries) {
+            // Check if this is the only series with data
+            bool hasOtherData = false;
+            for (const auto& pair : dataSeriesYData) {
+                if (pair.first != seriesLabel && !pair.second.empty()) {
+                    hasOtherData = true;
+                    break;
+                }
+            }
+            if (!hasOtherData) {
+                // This is the first point ever - initialize cache
+                m_cachedYRange = std::make_pair(yValue, yValue);
+                m_yRangeValid = true;
+            }
+        }
+        // Otherwise, cache will be recalculated on next access
+        return;
+    }
+
+    // Cache is valid - update incrementally
+    if (isFirstPointInSeries) {
+        // First point in this series - include it in the combined range
+        m_cachedYRange.first = std::min(m_cachedYRange.first, yValue);
+        m_cachedYRange.second = std::max(m_cachedYRange.second, yValue);
+    } else {
+        // Not first point - just update min/max if this value extends the range
+        m_cachedYRange.first = std::min(m_cachedYRange.first, yValue);
+        m_cachedYRange.second = std::max(m_cachedYRange.second, yValue);
+    }
+}
+
+void WaterfallData::updateTimeRangeIncremental(const QString& seriesLabel, const QDateTime& timestamp)
+{
+    // Check if this is the first point in this series (after adding, size == 1)
+    auto it = dataSeriesTimestamps.find(seriesLabel);
+    bool isFirstPointInSeries = (it != dataSeriesTimestamps.end() && it->second.size() == 1);
+
+    if (!m_timeRangeValid) {
+        // Cache is invalid - if this is the only point in the entire dataset, initialize cache
+        if (isFirstPointInSeries) {
+            // Check if this is the only series with data
+            bool hasOtherData = false;
+            for (const auto& pair : dataSeriesTimestamps) {
+                if (pair.first != seriesLabel && !pair.second.empty()) {
+                    hasOtherData = true;
+                    break;
+                }
+            }
+            if (!hasOtherData) {
+                // This is the first point ever - initialize cache
+                m_cachedTimeRange = std::make_pair(timestamp, timestamp);
+                m_timeRangeValid = true;
+            }
+        }
+        // Otherwise, cache will be recalculated on next access
+        return;
+    }
+
+    // Cache is valid - update incrementally
+    if (isFirstPointInSeries) {
+        // First point in this series - include it in the combined range
+        m_cachedTimeRange.first = std::min(m_cachedTimeRange.first, timestamp);
+        m_cachedTimeRange.second = std::max(m_cachedTimeRange.second, timestamp);
+    } else {
+        // Not first point - just update min/max if this value extends the range
+        m_cachedTimeRange.first = std::min(m_cachedTimeRange.first, timestamp);
+        m_cachedTimeRange.second = std::max(m_cachedTimeRange.second, timestamp);
+    }
 }
