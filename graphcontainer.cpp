@@ -3,7 +3,7 @@
 #include <QTimer>
 #include <stdexcept>
 
-GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<QString, QColor> seriesColorsMap, QTimer *timer, int containerWidth, int containerHeight)
+GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<QString, QColor> seriesColorsMap, QTimer *timer, int containerWidth, int containerHeight, GraphContainerSyncState *syncState)
     : QWidget{parent}, 
     m_showTimelineView(showTimelineView), 
     m_timer(timer), 
@@ -15,7 +15,8 @@ GraphContainer::GraphContainer(QWidget *parent, bool showTimelineView, std::map<
     m_updatingTimeInterval(false),
     m_sharedCursorTime(QDateTime()),
     m_hasSharedCursorTime(false),
-    m_isInFollowMode(true)
+    m_isInFollowMode(true),
+    m_syncState(syncState)
 {
     // Set size policy to expand both horizontally and vertically
     setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);

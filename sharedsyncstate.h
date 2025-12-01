@@ -5,10 +5,20 @@
 #include <QDateTime>
 #include <vector>
 
-
 // Shared synchronization state for all graph containers
-struct GraphContainerSyncState
+class GraphContainerSyncState
 {
+public:
+    // Constructor
+    GraphContainerSyncState()
+        : currentInterval(TimeInterval::OneHour), 
+          hasInterval(false), 
+          hasTimeScope(false), 
+          hasCursorTime(false), 
+          isGraphContainerInFollowMode(true)
+    {
+    }
+
     // Time interval synchronization
     TimeInterval currentInterval;
     bool hasInterval;
@@ -26,11 +36,6 @@ struct GraphContainerSyncState
 
     // Time selections synchronization
     std::vector<TimeSelectionSpan> timeSelections;
-
-    GraphContainerSyncState()
-        : currentInterval(TimeInterval::OneHour), hasInterval(false), hasTimeScope(false), hasCursorTime(false), isGraphContainerInFollowMode(true)
-    {
-    }
 };
 
 

@@ -25,12 +25,21 @@
 #include <functional>
 #include <map>
 #include <vector>
+#include "sharedsyncstate.h"
+
 
 class GraphContainer : public QWidget
 {
     Q_OBJECT
 public:
-    explicit GraphContainer(QWidget *parent = nullptr, bool showTimelineView = true, std::map<QString, QColor> seriesColorsMap = std::map<QString, QColor>(), QTimer *timer = nullptr, int containerWidth = 0, int containerHeight = 0);
+    explicit GraphContainer(QWidget *parent = nullptr, 
+        bool showTimelineView = true, 
+        std::map<QString, QColor> seriesColorsMap = std::map<QString, QColor>(), 
+        QTimer *timer = nullptr, 
+        int containerWidth = 0, 
+        int containerHeight = 0, 
+        GraphContainerSyncState *syncState = nullptr
+    );
     ~GraphContainer();
     void setShowTimelineView(bool showTimelineView);
     bool getShowTimelineView();
@@ -213,6 +222,9 @@ private:
 
     // Graph container in follow mode
     bool m_isInFollowMode = true;
+
+    // Shared synchronization state pointer
+    GraphContainerSyncState *m_syncState;
 };
 
 #endif // GRAPHCONTAINER_H
