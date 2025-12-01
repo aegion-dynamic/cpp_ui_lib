@@ -147,6 +147,21 @@ void GraphContainer::onTimerTick()
 
     if (m_timelineView)
     {
+        // Update mode from sync state if available and mode has changed
+        if (m_syncState)
+        {
+            TimelineViewMode newMode = m_syncState->isGraphContainerInFollowMode 
+                ? TimelineViewMode::FOLLOW_MODE 
+                : TimelineViewMode::FROZEN_MODE;
+            
+            // Only update mode if it has actually changed to avoid resetting slider unnecessarily
+            if (m_timelineView->getTimelineViewMode() != newMode)
+            {
+                m_timelineView->setTimelineViewMode(newMode);
+            }
+        }
+        
+        // TimelineView will decide whether to update slider based on its current mode
         m_timelineView->setCurrentTime(currentTime);
     }
 
@@ -529,6 +544,9 @@ void GraphContainer::setupEventConnections()
         
         connect(m_timelineView, &TimelineView::TimeScopeChanged,
                 this, &GraphContainer::onTimeScopeChanged);
+        
+        connect(m_timelineView, &TimelineView::GraphContainerInFollowModeChanged,
+                this, &GraphContainer::onGraphContainerInFollowModeChanged);
     }
 
     // Connect TimeSelectionVisualizer clear button events
@@ -817,6 +835,13 @@ void GraphContainer::onTimeIntervalChanged(TimeInterval interval)
 void GraphContainer::onGraphContainerInFollowModeChanged(bool isInFollowMode)
 {
     m_isInFollowMode = isInFollowMode;
+    
+    // Update sync state so other containers can be synchronized
+    if (m_syncState)
+    {
+        m_syncState->isGraphContainerInFollowMode = isInFollowMode;
+    }
+    
     qDebug() << "GraphContainer: Graph container in follow mode changed to" << isInFollowMode;
 }
 
@@ -971,6 +996,21 @@ void GraphContainer::setCurrentTime(const QTime &time)
 
     if (m_timelineView)
     {
+        // Update mode from sync state if available and mode has changed
+        if (m_syncState)
+        {
+            TimelineViewMode newMode = m_syncState->isGraphContainerInFollowMode 
+                ? TimelineViewMode::FOLLOW_MODE 
+                : TimelineViewMode::FROZEN_MODE;
+            
+            // Only update mode if it has actually changed to avoid resetting slider unnecessarily
+            if (m_timelineView->getTimelineViewMode() != newMode)
+            {
+                m_timelineView->setTimelineViewMode(newMode);
+            }
+        }
+        
+        // TimelineView will decide whether to update slider based on its current mode
         m_timelineView->setCurrentTime(time);
     }
 }
