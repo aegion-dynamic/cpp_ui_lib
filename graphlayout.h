@@ -13,6 +13,7 @@
 #include <QWidget>
 #include <map>
 #include <vector>
+#include "sharedsyncstate.h"
 
 enum class LayoutType
 {
@@ -23,30 +24,6 @@ enum class LayoutType
     GPW4WH = 4, // 4 windows in horizontal line
     NOGPW2WH = 5, // 2 windows in horizontal line, but take up whole screen
     HIDDEN = 6  // Hidden
-};
-
-// Shared synchronization state for all graph containers
-struct GraphContainerSyncState
-{
-    // Time interval synchronization
-    TimeInterval currentInterval;
-    bool hasInterval;
-
-    // Time scope synchronization
-    TimeSelectionSpan currentTimeScope;
-    bool hasTimeScope;
-
-    // Cursor time synchronization
-    QDateTime cursorTime;
-    bool hasCursorTime;
-
-    // Time selections synchronization
-    std::vector<TimeSelectionSpan> timeSelections;
-
-    GraphContainerSyncState()
-        : currentInterval(TimeInterval::OneHour), hasInterval(false), hasTimeScope(false), hasCursorTime(false)
-    {
-    }
 };
 
 class GraphLayout : public QWidget
