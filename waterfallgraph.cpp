@@ -25,7 +25,9 @@ WaterfallGraph::WaterfallGraph(QWidget *parent, bool enableGrid, int gridDivisio
     cursorTimeAxisLine(nullptr),
     m_cursorSyncState(nullptr),
     m_lastMousePos(QPointF()),
-    m_cursorLayerEnabled(true), 
+    m_cursorLayerEnabled(true),
+    m_lastCursorPos(QPointF()),
+    m_lastCursorTime(QDateTime()), 
     gridEnabled(enableGrid), 
     gridDivisions(gridDivisions), 
     yMin(0.0), 
@@ -51,7 +53,9 @@ WaterfallGraph::WaterfallGraph(QWidget *parent, bool enableGrid, int gridDivisio
     autoUpdateYRange(true),
     lastNotifiedCursorTime(QDateTime()),
     m_renderState(RenderState::FULL_REDRAW),
-    m_rangeUpdateNeeded(false)
+    m_rangeUpdateNeeded(false),
+    m_drawScheduled(false),
+    m_inDrawOperation(false)
 {
     // Remove all margins and padding for snug fit
     setContentsMargins(0, 0, 0, 0);
@@ -287,7 +291,7 @@ void WaterfallGraph::setDataSource(WaterfallData &dataSource)
     invalidateAllVisibleDataCache();
     // New data source requires full redraw (automatically marks all series dirty)
     setRenderState(RenderState::FULL_REDRAW);
-    draw(); // Trigger redraw with new data source
+    scheduleDraw(); // Schedule redraw with new data source
     qDebug() << "Data source set successfully";
 }
 
@@ -323,8 +327,9 @@ void WaterfallGraph::setData(const QString &seriesLabel, const std::vector<qreal
     // Mark ranges as invalid so they'll be recalculated
     dataRangesValid = false;
 
-    // Redraw the graph with the new data
-    draw();
+    // Schedule redraw with the new data
+    setRenderState(RenderState::FULL_REDRAW);
+    scheduleDraw();
 }
 
 /**
@@ -347,8 +352,9 @@ void WaterfallGraph::setData(const WaterfallData &data)
     // Mark ranges as invalid so they'll be recalculated
     dataRangesValid = false;
 
-    // Redraw the graph with the new data
-    draw();
+    // Schedule redraw with the new data
+    setRenderState(RenderState::FULL_REDRAW);
+    scheduleDraw();
 }
 
 /**
@@ -367,8 +373,9 @@ void WaterfallGraph::clearData()
 
     qDebug() << "Data cleared successfully";
 
-    // Redraw the graph
-    draw();
+    // Schedule redraw of the graph
+    setRenderState(RenderState::FULL_REDRAW);
+    scheduleDraw();
 }
 
 /**
@@ -394,8 +401,8 @@ void WaterfallGraph::addDataPoint(const QString &seriesLabel, qreal yValue, cons
     markRangeUpdateNeeded();
     dataRangesValid = false;
 
-    // Use incremental draw instead of full redraw
-    drawIncremental();
+    // Schedule deferred draw to allow batching
+    scheduleDraw();
 }
 
 /**
@@ -421,8 +428,8 @@ void WaterfallGraph::addDataPoints(const QString &seriesLabel, const std::vector
     markRangeUpdateNeeded();
     dataRangesValid = false;
 
-    // Use incremental draw instead of full redraw
-    drawIncremental();
+    // Schedule deferred draw to allow batching
+    scheduleDraw();
 }
 
 /**
@@ -531,15 +538,9 @@ void WaterfallGraph::setTimeInterval(TimeInterval interval)
         dataRangesValid = true;
     }
 
-    // Force redraw regardless of data presence to update grid and layout
-    draw();
-
-    // Explicitly update the graphics view to ensure repaint
-    if (graphicsView)
-    {
-        graphicsView->update();
-        graphicsView->viewport()->update();
-    }
+    // Mark for full redraw (time interval change affects layout)
+    setRenderState(RenderState::FULL_REDRAW);
+    scheduleDraw();
 
     qDebug() << "Time interval set to:" << timeIntervalToString(interval);
 }
@@ -575,7 +576,7 @@ void WaterfallGraph::setGridEnabled(bool enabled)
     {
         gridEnabled = enabled;
         setRenderState(RenderState::FULL_REDRAW); // Grid change requires full redraw
-        draw(); // Redraw to show/hide grid
+        scheduleDraw(); // Schedule redraw to show/hide grid
         qDebug() << "Grid" << (enabled ? "enabled" : "disabled");
     }
 }
@@ -603,7 +604,7 @@ void WaterfallGraph::setGridDivisions(int divisions)
         if (gridEnabled)
         {
             setRenderState(RenderState::FULL_REDRAW); // Grid change requires full redraw
-            draw(); // Redraw to update grid divisions
+            scheduleDraw(); // Schedule redraw to update grid divisions
         }
         qDebug() << "Grid divisions set to:" << divisions;
     }
@@ -645,11 +646,62 @@ void WaterfallGraph::draw()
     if (!graphicsScene)
         return;
 
-    // Mark for full redraw (automatically marks all series dirty)
-    setRenderState(RenderState::FULL_REDRAW);
+    // If already in a draw operation (called from drawIncremental), do the actual base class drawing
+    if (m_inDrawOperation)
+    {
+        // Base class implementation - clear and redraw everything
+        graphicsScene->clear();
+        m_seriesPathItems.clear();
+        for (auto &pair : m_seriesPointItems)
+        {
+            pair.second.clear();
+        }
+        m_seriesPointItems.clear();
 
-    // Use incremental draw which will handle the full redraw state
-    drawIncremental();
+        // Update drawing area and grid
+        setupDrawingArea();
+        if (gridEnabled)
+        {
+            drawGrid();
+        }
+
+        // Update ranges
+        if (dataSource && !dataSource->isEmpty())
+        {
+            updateDataRanges();
+        }
+        m_rangeUpdateNeeded = false;
+
+        // Redraw all series using base class method
+        if (dataSource && !dataSource->isEmpty() && dataRangesValid)
+        {
+            std::vector<QString> allSeries = dataSource->getDataSeriesLabels();
+            for (const QString &seriesLabel : allSeries)
+            {
+                if (isSeriesVisible(seriesLabel))
+                {
+                    drawDataSeries(seriesLabel);
+                }
+            }
+        }
+
+        m_dirtySeries.clear();
+        
+        // Update graphics view
+        if (graphicsView)
+        {
+            graphicsView->update();
+            graphicsView->viewport()->update();
+        }
+    }
+    else
+    {
+        // Mark for full redraw (automatically marks all series dirty)
+        setRenderState(RenderState::FULL_REDRAW);
+
+        // Use incremental draw which will handle the full redraw state
+        drawIncremental();
+    }
 }
 
 /**
@@ -659,11 +711,17 @@ void WaterfallGraph::draw()
 void WaterfallGraph::drawIncremental()
 {
     if (!graphicsScene)
+    {
+        m_drawScheduled = false;
         return;
+    }
+
+    bool renderingOccurred = false;
 
     switch (m_renderState)
     {
         case RenderState::CLEAN:
+            m_drawScheduled = false;
             return; // Nothing to do
 
         case RenderState::RANGE_UPDATE_ONLY:
@@ -674,6 +732,7 @@ void WaterfallGraph::drawIncremental()
             }
             m_rangeUpdateNeeded = false;
             m_renderState = RenderState::CLEAN;
+            // Range updates don't require view update (no visual changes)
             break;
 
         case RenderState::INCREMENTAL_UPDATE:
@@ -695,6 +754,7 @@ void WaterfallGraph::drawIncremental()
                     if (isSeriesVisible(seriesLabel))
                     {
                         drawDataSeries(seriesLabel);
+                        renderingOccurred = true;
                     }
                 }
             }
@@ -704,46 +764,87 @@ void WaterfallGraph::drawIncremental()
             break;
 
         case RenderState::FULL_REDRAW:
-            // Clear scene and graphics item maps
-            graphicsScene->clear();
-            m_seriesPathItems.clear();
-            for (auto &pair : m_seriesPointItems)
+            // For FULL_REDRAW, call the virtual draw() method if not already in draw operation
+            // This allows derived classes (like LTWGraph, BTWGraph, etc.) to override
+            // and use their custom drawing methods (drawCustomMarkers, etc.)
+            if (!m_inDrawOperation)
             {
-                pair.second.clear();
+                m_inDrawOperation = true;
+                m_renderState = RenderState::CLEAN; // Temporarily set to avoid recursion
+                draw(); // Call virtual draw() - derived classes can override this
+                m_inDrawOperation = false;
             }
-            m_seriesPointItems.clear();
-
-            // Update drawing area and grid
-            setupDrawingArea();
-            if (gridEnabled)
+            else
             {
-                drawGrid();
-            }
-
-            // Update ranges
-            if (dataSource && !dataSource->isEmpty())
-            {
-                updateDataRanges();
-            }
-            m_rangeUpdateNeeded = false;
-
-            // Redraw all series
-            if (dataSource && !dataSource->isEmpty() && dataRangesValid)
-            {
-                std::vector<QString> allSeries = dataSource->getDataSeriesLabels();
-                for (const QString &seriesLabel : allSeries)
+                // Already in draw operation, do base class drawing
+                // Clear scene and graphics item maps
+                graphicsScene->clear();
+                m_seriesPathItems.clear();
+                for (auto &pair : m_seriesPointItems)
                 {
-                    if (isSeriesVisible(seriesLabel))
+                    pair.second.clear();
+                }
+                m_seriesPointItems.clear();
+
+                // Update drawing area and grid
+                setupDrawingArea();
+                if (gridEnabled)
+                {
+                    drawGrid();
+                }
+
+                // Update ranges
+                if (dataSource && !dataSource->isEmpty())
+                {
+                    updateDataRanges();
+                }
+                m_rangeUpdateNeeded = false;
+
+                // Redraw all series
+                if (dataSource && !dataSource->isEmpty() && dataRangesValid)
+                {
+                    std::vector<QString> allSeries = dataSource->getDataSeriesLabels();
+                    for (const QString &seriesLabel : allSeries)
                     {
-                        drawDataSeries(seriesLabel);
+                        if (isSeriesVisible(seriesLabel))
+                        {
+                            drawDataSeries(seriesLabel);
+                            renderingOccurred = true;
+                        }
                     }
                 }
-            }
 
-            m_dirtySeries.clear();
+                m_dirtySeries.clear();
+            }
             m_renderState = RenderState::CLEAN;
+            renderingOccurred = true; // Full redraw always renders
             break;
     }
+
+    // Update graphics view if rendering occurred
+    if (renderingOccurred && graphicsView)
+    {
+        graphicsView->update();
+        graphicsView->viewport()->update();
+    }
+
+    // Clear draw scheduled flag
+    m_drawScheduled = false;
+}
+
+void WaterfallGraph::scheduleDraw()
+{
+    // If draw is already scheduled, don't schedule another
+    if (m_drawScheduled)
+    {
+        return;
+    }
+
+    m_drawScheduled = true;
+    // Defer to next event loop iteration to allow batching
+    QTimer::singleShot(0, this, [this]() {
+        drawIncremental();
+    });
 }
 
 /**
@@ -1024,8 +1125,9 @@ void WaterfallGraph::updateGraphicsDimensions()
         // Update the drawing area
         setupDrawingArea();
 
-        // Redraw the scene
-        draw();
+        // Schedule redraw of the scene
+        setRenderState(RenderState::FULL_REDRAW);
+        scheduleDraw();
 
         qDebug() << "Graphics dimensions updated successfully to:" << widgetSize;
         qDebug() << "Scene rect is now:" << graphicsScene->sceneRect();
@@ -1279,9 +1381,11 @@ void WaterfallGraph::leaveEvent(QEvent *event)
     
     // Clear mouse position
     m_lastMousePos = QPointF();
+    m_lastCursorPos = QPointF(); // Reset cursor position tracking
     
     // Notify cursor time cleared
     notifyCursorTimeChanged(QDateTime());
+    m_lastCursorTime = QDateTime(); // Reset cursor time tracking
     
     qDebug() << "Mouse left WaterfallGraph widget";
 }
@@ -1776,11 +1880,12 @@ void WaterfallGraph::setRangeLimitingEnabled(bool enabled)
     {
         rangeLimitingEnabled = enabled;
 
-        // Update data ranges and redraw if we have data
+        // Update data ranges and schedule redraw if we have data
         if (dataSource && !dataSource->isEmpty())
         {
             updateDataRanges();
-            draw();
+            setRenderState(RenderState::FULL_REDRAW);
+            scheduleDraw();
         }
 
         qDebug() << "Range limiting" << (enabled ? "enabled" : "disabled");
@@ -1832,8 +1937,8 @@ void WaterfallGraph::setCustomYRange(const qreal yMin, const qreal yMax)
         markRangeUpdateNeeded();
     }
 
-    // Force redraw to show new range
-    draw();
+    // Schedule redraw to show new range
+    scheduleDraw();
 
     qDebug() << "Custom Y range set to:" << yMin << "to" << yMax;
 }
@@ -1874,8 +1979,9 @@ void WaterfallGraph::updateTimeRange()
         updateDataRanges();
     }
 
-    // Force redraw to show only data within the new time range
-    draw();
+    // Schedule redraw to show only data within the new time range
+    setRenderState(RenderState::FULL_REDRAW);
+    scheduleDraw();
 }
 
 /**
@@ -1887,11 +1993,12 @@ void WaterfallGraph::unsetCustomYRange()
     customYMin = 0.0;
     customYMax = 0.0;
 
-    // Update data ranges and redraw if range limiting is enabled and we have data
+    // Update data ranges and schedule redraw if range limiting is enabled and we have data
     if (rangeLimitingEnabled && dataSource && !dataSource->isEmpty())
     {
         updateDataRanges();
-        draw();
+        setRenderState(RenderState::FULL_REDRAW);
+        scheduleDraw();
     }
 
     qDebug() << "Custom Y range unset, reverting to data range";
@@ -2181,42 +2288,15 @@ void WaterfallGraph::drawDataSeries(const QString &seriesLabel)
     // Get series color
     QColor seriesColor = getSeriesColor(seriesLabel);
 
-    if (visibleData.size() < 2)
-    {
-        // Draw a single point if we only have one data point
-        QPointF screenPoint = mapDataToScreen(visibleData[0].first, visibleData[0].second);
-        QPen pointPen(seriesColor, 0); // No stroke (width 0)
-        QGraphicsEllipseItem *pointItem = graphicsScene->addEllipse(screenPoint.x() - 2, screenPoint.y() - 2, 4, 4, pointPen);
-        m_seriesPointItems[seriesLabel].push_back(pointItem);
-        qDebug() << "Data series" << seriesLabel << "drawn with 1 visible point";
-        return;
-    }
-
-    // Create a path for the line
-    QPainterPath path;
-    QPointF firstPoint = mapDataToScreen(visibleData[0].first, visibleData[0].second);
-    path.moveTo(firstPoint);
-
-    // Add lines connecting all visible data points
-    for (size_t i = 1; i < visibleData.size(); ++i)
-    {
-        QPointF point = mapDataToScreen(visibleData[i].first, visibleData[i].second);
-        path.lineTo(point);
-    }
-
-    // Draw the line and store reference
-    QPen linePen(seriesColor, 2);
-    QGraphicsPathItem *pathItem = graphicsScene->addPath(path, linePen);
-    m_seriesPathItems[seriesLabel] = pathItem;
-
-    // Draw data points and store references
+    // Draw only points (no lines)
     QPen pointPen(seriesColor, 0); // No stroke (width 0)
+    QBrush pointBrush(seriesColor); // Fill with series color
     std::vector<QGraphicsEllipseItem*> &pointItems = m_seriesPointItems[seriesLabel];
     pointItems.reserve(visibleData.size());
     for (size_t i = 0; i < visibleData.size(); ++i)
     {
         QPointF point = mapDataToScreen(visibleData[i].first, visibleData[i].second);
-        QGraphicsEllipseItem *pointItem = graphicsScene->addEllipse(point.x() - 1, point.y() - 1, 2, 2, pointPen);
+        QGraphicsEllipseItem *pointItem = graphicsScene->addEllipse(point.x() - 1, point.y() - 1, 2, 2, pointPen, pointBrush);
         pointItems.push_back(pointItem);
     }
 
@@ -2325,7 +2405,8 @@ void WaterfallGraph::setAutoUpdateYRange(bool enabled)
     if (dataSource && !dataSource->isEmpty())
     {
         updateYRange();
-        draw();
+        setRenderState(RenderState::FULL_REDRAW);
+        scheduleDraw();
     }
 
     qDebug() << "Auto-update Y range" << (enabled ? "enabled" : "disabled");
@@ -2341,7 +2422,8 @@ void WaterfallGraph::forceRangeUpdate()
 {
     dataRangesValid = false;
     updateDataRanges();
-    draw();
+    setRenderState(RenderState::FULL_REDRAW);
+    scheduleDraw();
     qDebug() << "Forced range update - Y:" << yMin << "to" << yMax;
 }
 
@@ -2473,8 +2555,8 @@ void WaterfallGraph::setTimeRange(const QDateTime &timeMin, const QDateTime &tim
     // Time range change requires full redraw (automatically marks all series dirty)
     setRenderState(RenderState::FULL_REDRAW);
 
-    // Force redraw to show new time range
-    draw();
+    // Schedule redraw to show new time range
+    scheduleDraw();
 
     qDebug() << "Custom time range set to:" << timeMin.toString() << "to" << timeMax.toString();
 }
@@ -2503,8 +2585,8 @@ void WaterfallGraph::setTimeMax(const QDateTime &timeMax)
     // Time range change requires full redraw (automatically marks all series dirty)
     setRenderState(RenderState::FULL_REDRAW);
 
-    // Force redraw to show new time range
-    draw();
+    // Schedule redraw to show new time range
+    scheduleDraw();
 
     qDebug() << "Time max set to:" << timeMax.toString();
 }
@@ -2533,8 +2615,8 @@ void WaterfallGraph::setTimeMin(const QDateTime &timeMin)
     // Time range change requires full redraw (automatically marks all series dirty)
     setRenderState(RenderState::FULL_REDRAW);
 
-    // Force redraw to show new time range
-    draw();
+    // Schedule redraw to show new time range
+    scheduleDraw();
 
     qDebug() << "Time min set to:" << timeMin.toString();
 }
@@ -2635,8 +2717,9 @@ void WaterfallGraph::unsetCustomTimeRange()
     // Update time range based on data
     setTimeRangeFromData();
 
-    // Force redraw to show new time range
-    draw();
+    // Schedule redraw to show new time range
+    setRenderState(RenderState::FULL_REDRAW);
+    scheduleDraw();
 
     qDebug() << "Custom time range unset, reverting to data-based time range";
 }
@@ -2792,14 +2875,34 @@ void WaterfallGraph::updateCursorLayer()
 
     // Update time axis cursor from shared state
     bool timeAxisVisible = false;
+    QDateTime currentCursorTime;
     if (m_cursorSyncState && m_cursorSyncState->hasCursorTime && m_cursorSyncState->cursorTime.isValid())
     {
-        qreal yPos = mapTimeToY(m_cursorSyncState->cursorTime);
-        if (yPos >= 0)
+        currentCursorTime = m_cursorSyncState->cursorTime;
+        // Only update if cursor time changed
+        if (currentCursorTime != m_lastCursorTime)
         {
-            cursorTimeAxisLine->setLine(sceneRect.left(), yPos, sceneRect.right(), yPos);
-            timeAxisVisible = true;
-            needsUpdate = true;
+            qreal yPos = mapTimeToY(currentCursorTime);
+            if (yPos >= 0)
+            {
+                cursorTimeAxisLine->setLine(sceneRect.left(), yPos, sceneRect.right(), yPos);
+                timeAxisVisible = true;
+                needsUpdate = true;
+                m_lastCursorTime = currentCursorTime;
+            }
+        }
+        else
+        {
+            // Time unchanged, but check if visibility needs update
+            timeAxisVisible = cursorTimeAxisLine->isVisible();
+        }
+    }
+    else
+    {
+        // Cursor time cleared - reset tracking
+        if (m_lastCursorTime.isValid())
+        {
+            m_lastCursorTime = QDateTime();
         }
     }
     
@@ -2814,13 +2917,20 @@ void WaterfallGraph::updateCursorLayer()
                             m_lastMousePos.x() >= 0 && m_lastMousePos.y() >= 0 &&
                             m_lastMousePos.x() < this->width() && m_lastMousePos.y() < this->height();
     
-    if (crosshairVisible)
+    // Only update crosshair if position changed
+    if (crosshairVisible && m_lastMousePos != m_lastCursorPos)
     {
         cursorCrosshairHorizontal->setLine(sceneRect.left(), m_lastMousePos.y(), 
                                            sceneRect.right(), m_lastMousePos.y());
         cursorCrosshairVertical->setLine(m_lastMousePos.x(), sceneRect.top(), 
                                          m_lastMousePos.x(), sceneRect.bottom());
         needsUpdate = true;
+        m_lastCursorPos = m_lastMousePos;
+    }
+    else if (!crosshairVisible && !m_lastCursorPos.isNull())
+    {
+        // Crosshair should be hidden - reset tracking
+        m_lastCursorPos = QPointF();
     }
     
     if (cursorCrosshairHorizontal->isVisible() != crosshairVisible)

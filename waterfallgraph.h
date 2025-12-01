@@ -120,6 +120,8 @@ protected:
     GraphContainerSyncState *m_cursorSyncState;
     QPointF m_lastMousePos;
     bool m_cursorLayerEnabled;
+    QPointF m_lastCursorPos; // For cursor update optimization
+    QDateTime m_lastCursorTime; // For cursor update optimization
 
     // Drawing area and grid
     QRectF drawingArea;
@@ -190,6 +192,7 @@ protected:
     RenderState m_renderState;
     bool m_rangeUpdateNeeded;
     std::set<QString> m_dirtySeries;
+    bool m_inDrawOperation; // Flag to prevent recursion when calling draw() from drawIncremental()
     std::map<QString, QGraphicsPathItem*> m_seriesPathItems;
     std::map<QString, std::vector<QGraphicsEllipseItem*>> m_seriesPointItems;
 
@@ -198,6 +201,10 @@ protected:
     std::map<QString, std::pair<QDateTime, QDateTime>> m_cachedTimeRange;
     std::map<QString, size_t> m_lastProcessedIndex;
     std::map<QString, size_t> m_cachedDataSize;
+
+    // Draw call batching
+    bool m_drawScheduled;
+    void scheduleDraw();
 
     // Mouse tracking
     bool isDragging;

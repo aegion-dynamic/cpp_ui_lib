@@ -875,13 +875,9 @@ void GraphContainer::updateTimeInterval(TimeInterval interval)
         }
     }
 
-    // Explicitly redraw the current waterfall graph to ensure visual update
-    // (setTimeInterval already calls draw(), but this ensures it's definitely updated)
-    if (m_currentWaterfallGraph)
-    {
-        m_currentWaterfallGraph->draw();
-        qDebug() << "GraphContainer: Explicitly redrew current waterfall graph after interval update";
-    }
+    // setTimeInterval() already schedules the draw via state machine
+    // No need for explicit draw() call here - it would be redundant
+    qDebug() << "GraphContainer: Time interval updated for all graphs";
 
     // Update the time selection visualizer time interval
     if (m_timelineSelectionView)
