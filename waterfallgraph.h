@@ -137,22 +137,10 @@ protected:
     virtual void drawDataLine(const QString &seriesLabel, bool plotPoints = true);
     virtual void drawAllDataSeries();
     virtual void drawDataSeries(const QString &seriesLabel);
-    void drawIncremental();
     void drawBTWSymbols();
     QPointF mapDataToScreen(qreal yValue, const QDateTime &timestamp) const;
 
-    // State machine for rendering
-    enum class RenderState {
-        CLEAN,
-        RANGE_UPDATE_ONLY,
-        INCREMENTAL_UPDATE,
-        FULL_REDRAW
-    };
-    void setRenderState(RenderState newState);
-    void markSeriesDirty(const QString &seriesLabel);
-    void markAllSeriesDirty();
-    void markRangeUpdateNeeded();
-    void transitionToAppropriateState();
+    // Data range management
     void updateDataRanges();
     void updateYRange();
     void updateYRangeFromData();
@@ -184,13 +172,6 @@ protected:
     // Multi-series support
     std::map<QString, QColor> seriesColors;
     std::map<QString, bool> seriesVisibility;
-
-    // Incremental rendering support
-    RenderState m_renderState;
-    bool m_rangeUpdateNeeded;
-    std::set<QString> m_dirtySeries;
-    std::map<QString, QGraphicsPathItem*> m_seriesPathItems;
-    std::map<QString, std::vector<QGraphicsEllipseItem*>> m_seriesPointItems;
 
     // Mouse tracking
     bool isDragging;
