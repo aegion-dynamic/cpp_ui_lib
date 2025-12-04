@@ -108,10 +108,25 @@ private:
     // Data title
     QString dataTitle;
 
+    // Range cache for efficient range calculations
+    mutable std::pair<qreal, qreal> m_cachedYRange;
+    mutable std::pair<QDateTime, QDateTime> m_cachedTimeRange;
+    mutable bool m_yRangeValid;
+    mutable bool m_timeRangeValid;
+
     // Helper methods
     bool isValidIndex(size_t index) const;
     void validateDataConsistency() const;
     void validateDataSeriesConsistency(const QString& seriesLabel) const;
+
+    // Range cache management methods
+    void updateYRangeIncremental(const QString& seriesLabel, qreal yValue);
+    void updateTimeRangeIncremental(const QString& seriesLabel, const QDateTime& timestamp);
+    void invalidateYRangeCache();
+    void invalidateTimeRangeCache();
+    void invalidateAllCaches();
+    void recalculateYRange() const;
+    void recalculateTimeRange() const;
 };
 
 #endif // WATERFALLDATA_H
