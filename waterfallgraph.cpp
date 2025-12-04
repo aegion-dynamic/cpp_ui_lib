@@ -1,7 +1,14 @@
 #include "waterfallgraph.h"
 #include "waterfalldata.h"  // For BTWSymbolData
+#include "markers/waterfallmarker.h"
+#include "markers/rtwrmarker.h"
+#include "markers/rtwsymbolmarker.h"
+#include "markers/btwcirclemarker.h"
+#include "markers/interactivebtwmarker.h"
+#include "interactivegraphicsitem.h"
 #include <QApplication>
 #include <QPointF>
+#include <algorithm>
 
 /**
  * @brief Construct a new WaterfallGraph::WaterfallGraph object
@@ -524,6 +531,9 @@ void WaterfallGraph::setTimeInterval(TimeInterval interval)
         dataRangesValid = true;
     }
 
+    // Update marker positions when time interval changes (affects time axis mapping)
+    updateMarkerPositions();
+
     // Force redraw regardless of data presence to update grid and layout
     draw();
 
@@ -660,6 +670,13 @@ void WaterfallGraph::draw()
     
     // Draw BTW symbols (magenta circles) if any exist in data source
     drawBTWSymbols();
+    
+    // Update marker positions before drawing (ensures they're positioned correctly)
+    // This is especially important when time range updates continuously
+    updateMarkerPositions();
+    
+    // Draw all markers (RTW R markers, RTW symbols, BTW markers, interactive markers)
+    drawMarkers();
     
     isDrawing = false;
 }
@@ -1262,6 +1279,9 @@ void WaterfallGraph::updateDataRanges()
 
     dataRangesValid = true;
 
+    // Update marker positions when data ranges change (time or value axis)
+    updateMarkerPositions();
+
     qDebug() << "Data ranges updated - Y:" << yMin << "to" << yMax
              << "Time:" << timeMin.toString() << "to" << timeMax.toString()
              << "Interval:" << timeIntervalToString(timeInterval)
@@ -1613,6 +1633,9 @@ void WaterfallGraph::setCustomYRange(const qreal yMin, const qreal yMax)
     // Always update Y range immediately when custom range is set
     updateYRange();
 
+    // Update marker positions when Y range changes (affects X-axis mapping)
+    updateMarkerPositions();
+
     // Force redraw to show new range
     draw();
 
@@ -1654,6 +1677,11 @@ void WaterfallGraph::updateTimeRange()
     {
         updateDataRanges();
     }
+    else
+    {
+        // Even if no data, update marker positions when time range changes
+        updateMarkerPositions();
+    }
 
     // Force redraw to show only data within the new time range
     draw();
@@ -1672,7 +1700,13 @@ void WaterfallGraph::unsetCustomYRange()
     if (rangeLimitingEnabled && dataSource && !dataSource->isEmpty())
     {
         updateDataRanges();
+        // updateDataRanges() already calls updateMarkerPositions()
         draw();
+    }
+    else
+    {
+        // Even if no data or range limiting disabled, update marker positions
+        updateMarkerPositions();
     }
 
     qDebug() << "Custom Y range unset, reverting to data range";
@@ -2169,6 +2203,9 @@ void WaterfallGraph::setTimeRange(const QDateTime &timeMin, const QDateTime &tim
     this->timeMin = timeMin;
     this->timeMax = timeMax;
 
+    // Update marker positions immediately when time range changes
+    updateMarkerPositions();
+
     // Force redraw to show new time range
     draw();
 
@@ -2193,6 +2230,9 @@ void WaterfallGraph::setTimeMax(const QDateTime &timeMax)
         setTimeRangeFromData();
     }
 
+    // Update marker positions immediately when time range changes
+    updateMarkerPositions();
+
     // Force redraw to show new time range
     draw();
 
@@ -2216,6 +2256,9 @@ void WaterfallGraph::setTimeMin(const QDateTime &timeMin)
         // If not using custom range, set it based on data
         setTimeRangeFromData();
     }
+
+    // Update marker positions immediately when time range changes
+    updateMarkerPositions();
 
     // Force redraw to show new time range
     draw();
@@ -2422,6 +2465,9 @@ void WaterfallGraph::unsetCustomTimeRange()
 
     // Update time range based on data
     setTimeRangeFromData();
+
+    // Update marker positions immediately when time range changes
+    updateMarkerPositions();
 
     // Force redraw to show new time range
     draw();
@@ -2947,6 +2993,179 @@ void WaterfallGraph::notifyCrosshairPositionChanged(qreal xPosition)
     if (crosshairPositionChangedCallback)
     {
         crosshairPositionChangedCallback(xPosition);
+    }
+}
+
+// Marker management methods implementation
+
+/**
+ * @brief Add a marker to the graph
+ * @param marker Shared pointer to the marker
+ */
+void WaterfallGraph::addMarker(std::shared_ptr<WaterfallMarker> marker)
+{
+    if (!marker) {
+        qDebug() << "WaterfallGraph: Cannot add null marker";
+        return;
+    }
+
+    QString hash = marker->getHash();
+    QString typeKey = QString::number(static_cast<int>(marker->getType()));
+    
+    // Add to main map
+    m_markers[hash] = marker;
+    
+    // Add to type index
+    m_markersByType[typeKey].push_back(hash);
+    
+    qDebug() << "WaterfallGraph: Added marker with hash" << hash << "type" << typeKey;
+}
+
+/**
+ * @brief Remove a marker from the graph
+ * @param hash Hash string of the marker to remove
+ */
+void WaterfallGraph::removeMarker(const QString& hash)
+{
+    auto it = m_markers.find(hash);
+    if (it == m_markers.end()) {
+        qDebug() << "WaterfallGraph: Marker with hash" << hash << "not found";
+        return;
+    }
+
+    // Get marker type for index removal
+    QString typeKey = QString::number(static_cast<int>(it->second->getType()));
+    
+    // Remove from type index
+    auto& typeVec = m_markersByType[typeKey];
+    typeVec.erase(std::remove(typeVec.begin(), typeVec.end(), hash), typeVec.end());
+    if (typeVec.empty()) {
+        m_markersByType.erase(typeKey);
+    }
+    
+    // Remove from main map
+    m_markers.erase(it);
+    
+    qDebug() << "WaterfallGraph: Removed marker with hash" << hash;
+}
+
+/**
+ * @brief Remove a marker by its InteractiveGraphicsItem pointer
+ * @param item Pointer to the InteractiveGraphicsItem
+ */
+void WaterfallGraph::removeMarkerByInteractiveItem(InteractiveGraphicsItem *item)
+{
+    if (!item) {
+        return;
+    }
+
+    // Find the InteractiveBTWMarker that wraps this InteractiveGraphicsItem
+    QString interactiveType = QString::number(static_cast<int>(WaterfallMarker::MarkerType::InteractiveBTWMarker));
+    auto typeIt = m_markersByType.find(interactiveType);
+    if (typeIt != m_markersByType.end()) {
+        // Make a copy to avoid iterator invalidation
+        auto hashes = typeIt->second;
+        for (const QString& hash : hashes) {
+            auto it = m_markers.find(hash);
+            if (it != m_markers.end()) {
+                auto interactiveMarker = std::dynamic_pointer_cast<InteractiveBTWMarker>(it->second);
+                if (interactiveMarker && interactiveMarker->getItem() == item) {
+                    removeMarker(hash);
+                    qDebug() << "WaterfallGraph: Removed marker by InteractiveGraphicsItem pointer";
+                    return;
+                }
+            }
+        }
+    }
+    
+    qDebug() << "WaterfallGraph: Marker with InteractiveGraphicsItem pointer not found";
+}
+
+/**
+ * @brief Clear all markers
+ */
+void WaterfallGraph::clearMarkers()
+{
+    m_markers.clear();
+    m_markersByType.clear();
+    qDebug() << "WaterfallGraph: Cleared all markers";
+}
+
+/**
+ * @brief Draw all markers on the graph
+ * Filters by visible time range and draws on appropriate scene
+ */
+void WaterfallGraph::drawMarkers()
+{
+    if (m_markers.empty()) {
+        return;
+    }
+
+    // Filter by visible time range
+    bool timeRangeValid = timeMin.isValid() && timeMax.isValid() && timeMin <= timeMax;
+    
+    int markersDrawn = 0;
+    for (const auto& pair : m_markers) {
+        const auto& marker = pair.second;
+        
+        // Filter by time range if valid
+        if (timeRangeValid) {
+            QDateTime markerTime = marker->getTimestamp();
+            if (markerTime < timeMin || markerTime > timeMax) {
+                continue; // Skip markers outside visible time range
+            }
+        }
+        
+        // Determine which scene to draw on
+        QGraphicsScene *targetScene = nullptr;
+        if (marker->isInteractive()) {
+            targetScene = overlayScene;
+        } else {
+            targetScene = graphicsScene;
+        }
+        
+        if (targetScene) {
+            marker->draw(targetScene, this);
+            markersDrawn++;
+        }
+    }
+    
+    if (markersDrawn > 0) {
+        qDebug() << "WaterfallGraph: Drew" << markersDrawn << "markers";
+    }
+}
+
+/**
+ * @brief Update marker positions when time/value ranges change
+ * This is called more frequently than draw() to keep markers positioned correctly
+ * as the graph view updates continuously
+ * 
+ * Unlike drawMarkers(), this updates ALL markers regardless of visible time range,
+ * so markers can move into view as the time range shifts
+ */
+void WaterfallGraph::updateMarkerPositions()
+{
+    if (m_markers.empty() || !dataRangesValid) {
+        return;
+    }
+
+    // Update positions for all markers (both interactive and non-interactive)
+    // Don't filter by time range - update all markers so they can move into view
+    for (const auto& pair : m_markers) {
+        const auto& marker = pair.second;
+        
+        // Determine which scene the marker is on
+        QGraphicsScene *targetScene = nullptr;
+        if (marker->isInteractive()) {
+            targetScene = overlayScene;
+        } else {
+            targetScene = graphicsScene;
+        }
+        
+        if (targetScene) {
+            // Call draw() which will update the marker's position based on current time/value mapping
+            marker->draw(targetScene, this);
+        }
     }
 }
 

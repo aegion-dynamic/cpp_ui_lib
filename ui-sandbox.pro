@@ -34,6 +34,11 @@ SOURCES += \
     twoaxisgraph.cpp \
     waterfalldata.cpp \
     waterfallgraph.cpp \
+    markers/waterfallmarker.cpp \
+    markers/rtwrmarker.cpp \
+    markers/rtwsymbolmarker.cpp \
+    markers/btwcirclemarker.cpp \
+    markers/interactivebtwmarker.cpp \
     drawutils.cpp \
     zoompanel.cpp \
     bdwgraph.cpp \
@@ -66,6 +71,11 @@ HEADERS += \
     twoaxisgraph.h \
     waterfalldata.h \
     waterfallgraph.h \
+    markers/waterfallmarker.h \
+    markers/rtwrmarker.h \
+    markers/rtwsymbolmarker.h \
+    markers/btwcirclemarker.h \
+    markers/interactivebtwmarker.h \
     drawutils.h \
     zoompanel.h\
     bdwgraph.h \

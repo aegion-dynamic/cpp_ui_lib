@@ -2,6 +2,7 @@
 #define SHARED_SYNC_STATE_H
 
 #include "timelineutils.h"
+#include "waterfalldata.h"  // For BTWMarkerData
 #include <QDateTime>
 #include <vector>
 
@@ -17,7 +18,8 @@ public:
           hasCursorTime(false), 
           hasCurrentNavTime(false),
           isGraphContainerInFollowMode(true),
-          hasManoeuvres(false)
+          hasManoeuvres(false),
+          hasBTWMarkers(false)
     {
     }
 
@@ -46,6 +48,10 @@ public:
     // Manoeuvres synchronization
     std::vector<Manoeuvre> manoeuvres;
     bool hasManoeuvres;
+
+    // BTW markers synchronization
+    std::vector<BTWMarkerData> btwMarkers;
+    bool hasBTWMarkers;
 };
 
 

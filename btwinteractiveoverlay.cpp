@@ -10,6 +10,7 @@
 #include <QFontMetrics>
 #include <QVariant>
 #include <QDebug>
+#include <memory>
 
 BTWInteractiveOverlay::BTWInteractiveOverlay(BTWGraph *btwGraph, QObject *parent)
     : QObject(parent)
@@ -113,6 +114,9 @@ InteractiveGraphicsItem* BTWInteractiveOverlay::addDataPointMarker(const QPointF
 
     // Create bearing rate box for the marker
     updateBearingRateBox(marker);
+
+    // Note: Interactive markers are now created directly via InteractiveBTWMarker in BTWGraph
+    // This overlay is kept for backward compatibility with other marker types if needed
 
     qDebug() << "BTWInteractiveOverlay: Added data point marker at" << position << "for series" << seriesLabel;
     qDebug() << "BTWInteractiveOverlay: Marker bounding rect:" << marker->boundingRect();
@@ -252,6 +256,11 @@ void BTWInteractiveOverlay::removeMarker(InteractiveGraphicsItem *marker)
     int index = m_markers.indexOf(marker);
     if (index >= 0) {
         MarkerType type = m_markerTypes[index];
+        
+        // Remove from unified marker system
+        if (m_btwGraph) {
+            m_btwGraph->removeMarkerByInteractiveItem(marker);
+        }
         
         // Remove bearing rate items
         removeBearingRateBox(marker);

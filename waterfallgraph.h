@@ -32,7 +32,12 @@
 #include <set>
 #include <vector>
 #include <functional>
+#include <memory>
 #include "sharedsyncstate.h"
+
+// Forward declarations
+class WaterfallMarker;
+class InteractiveGraphicsItem;
 
 class WaterfallGraph : public QWidget
 {
@@ -139,6 +144,11 @@ protected:
     virtual void drawDataSeries(const QString &seriesLabel);
     void drawBTWSymbols();
     QPointF mapDataToScreen(qreal yValue, const QDateTime &timestamp) const;
+    
+    // Marker management
+    std::map<QString, std::shared_ptr<WaterfallMarker>> m_markers; // Key: hash string
+    std::map<QString, std::vector<QString>> m_markersByType; // Type -> vector of hashes
+    void drawMarkers(); // Unified marker drawing function
 
     // Data range management
     void updateDataRanges();
@@ -244,6 +254,7 @@ public:
     
     // Cursor layer control
     void setCursorSyncState(GraphContainerSyncState *syncState);
+    GraphContainerSyncState* getSyncState() const { return m_cursorSyncState; }
     void setCursorLayerEnabled(bool enabled);
     bool isCursorLayerEnabled() const;
     
@@ -276,6 +287,18 @@ public:
 
     // Public draw method for external redraw triggers
     virtual void draw();
+    
+    // Marker management methods
+    void addMarker(std::shared_ptr<WaterfallMarker> marker);
+    void removeMarker(const QString& hash);
+    void removeMarkerByInteractiveItem(class InteractiveGraphicsItem *item);
+    void clearMarkers();
+    void updateMarkerPositions(); // Update marker positions when time/value ranges change
+    
+    // Public accessors for marker drawing
+    QRectF getDrawingArea() const { return drawingArea; }
+    QPointF mapDataToScreenPublic(qreal yValue, const QDateTime &timestamp) const { return mapDataToScreen(yValue, timestamp); }
+    QDateTime mapScreenToTimePublic(qreal yPos) const { return mapScreenToTime(yPos); }
 
     // Drawing methods for custom elements
     void drawPoint(const QPointF &position, const QColor &color = Qt::white, qreal size = 2.0);

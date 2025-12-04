@@ -1,11 +1,15 @@
 #include "rtwgraph.h"
 #include "waterfalldata.h"  // For RTWRMarkerData
+#include "markers/waterfallmarker.h"
+#include "markers/rtwrmarker.h"
+#include "markers/rtwsymbolmarker.h"
 #include <QDebug>
 #include <QGraphicsTextItem>
 #include <QGraphicsPixmapItem>
 #include <QFont>
 #include <QTime>
 #include <QtMath>
+#include <memory>
 
 /**
  * @brief Construct a new RTWGraph::RTWGraph object
@@ -112,11 +116,8 @@ void RTWGraph::draw()
         qDebug() << "RTW: draw() - no dataSource or dataSource is empty";
     }
 
-    // Draw manually placed RTW R markers from data source
-    drawCustomRMarkers();
-    
-    // Draw RTW symbols
-    drawRTWSymbols();
+    // Sync markers from data source to marker system
+    syncMarkersFromDataSource();
     
     isDrawing = false;
 }
@@ -214,7 +215,48 @@ void RTWGraph::onMouseDrag(const QPointF &scenePos)
 }
 
 /**
- * @brief Draw manually placed RTW R markers from data source
+ * @brief Sync markers from WaterfallData to the unified marker system
+ */
+void RTWGraph::syncMarkersFromDataSource()
+{
+    if (!dataSource) {
+        return;
+    }
+
+    // Clear existing markers of RTW types
+    QString rMarkerType = QString::number(static_cast<int>(WaterfallMarker::MarkerType::RTWRMarker));
+    QString symbolType = QString::number(static_cast<int>(WaterfallMarker::MarkerType::RTWSymbolMarker));
+    
+    // Remove existing RTW markers (make a copy of the vector to avoid iterator invalidation)
+    auto rMarkerHashes = m_markersByType[rMarkerType];
+    for (const QString& hash : rMarkerHashes) {
+        removeMarker(hash);
+    }
+    
+    auto symbolHashes = m_markersByType[symbolType];
+    for (const QString& hash : symbolHashes) {
+        removeMarker(hash);
+    }
+
+    // Add RTW R markers from data source
+    std::vector<RTWRMarkerData> rMarkers = dataSource->getRTWRMarkers();
+    for (const auto& markerData : rMarkers) {
+        auto marker = std::make_shared<RTWRMarker>(markerData.timestamp, markerData.range);
+        addMarker(marker);
+    }
+
+    // Add RTW symbols from data source
+    std::vector<RTWSymbolData> symbols = dataSource->getRTWSymbols();
+    for (const auto& symbolData : symbols) {
+        auto marker = std::make_shared<RTWSymbolMarker>(symbolData.symbolName, symbolData.timestamp, symbolData.range);
+        addMarker(marker);
+    }
+    
+    qDebug() << "RTW: Synced" << rMarkers.size() << "R markers and" << symbols.size() << "symbols from data source";
+}
+
+/**
+ * @brief Draw manually placed RTW R markers from data source (DEPRECATED - use syncMarkersFromDataSource)
  */
 void RTWGraph::drawCustomRMarkers()
 {
@@ -367,7 +409,7 @@ RTWSymbolDrawing::SymbolType RTWGraph::symbolNameToType(const QString &symbolNam
 }
 
 /**
- * @brief Draw all stored RTW symbols on the graph
+ * @brief Draw all stored RTW symbols on the graph (DEPRECATED - use syncMarkersFromDataSource)
  *
  */
 void RTWGraph::drawRTWSymbols()

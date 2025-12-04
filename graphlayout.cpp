@@ -1,7 +1,6 @@
 #include "graphlayout.h"
 #include "navtimeutils.h"
 #include "btwgraph.h"
-#include "btwinteractiveoverlay.h"
 #include <QDebug>
 
 GraphLayout::GraphLayout(QWidget *parent, LayoutType layoutType, QTimer *timer, std::map<GraphType, std::vector<QPair<QString, QColor>>> seriesLabelsMap)
@@ -1549,6 +1548,22 @@ void GraphLayout::onBTWManualMarkerPlaced(const QDateTime &timestamp, const QPoi
         qDebug() << "GraphLayout: Using default range" << range << "for BTW marker";
     }
     
+    // Add BTW marker to sync state with default delta value (0.0)
+    // Delta can be updated later if bearing information becomes available
+    qreal delta = 0.0; // Default delta value
+    BTWMarkerData markerData;
+    markerData.timestamp = timestamp;
+    markerData.range = range;
+    markerData.delta = delta;
+    
+    m_syncState.btwMarkers.push_back(markerData);
+    m_syncState.hasBTWMarkers = true;
+    
+    // Redraw all BTW graphs to show the new marker
+    redrawGraph(GraphType::BTW);
+    
+    qDebug() << "GraphLayout: Added BTW marker to sync state from manual placement - timestamp" << timestamp.toString() << "range" << range << "delta" << delta;
+    
     // Add magenta circle (BTW symbol) to all graphs at this timestamp
     // The range parameter is not needed - we'll find the data point at this timestamp in each graph
     addBTWSymbolToAllGraphs(timestamp, 0.0); // Range parameter is ignored, we find it from data points
@@ -1901,20 +1916,24 @@ void GraphLayout::addBTWSymbol(const GraphType &graphType, const QString &symbol
 
 void GraphLayout::addBTWMarker(const GraphType &graphType, const QDateTime &timestamp, qreal range, qreal delta)
 {
-    auto it = m_dataSources.find(graphType);
-    if (it != m_dataSources.end() && it->second)
-    {
-        it->second->addBTWMarker(timestamp, range, delta);
-        redrawGraph(graphType);
-        qDebug() << "GraphLayout: Added BTW marker to graph type" << static_cast<int>(graphType);
-        
-        // Add magenta circle (BTW symbol) to all other graphs at this timestamp
-        addBTWSymbolToAllGraphs(timestamp, range);
-    }
-    else
-    {
-        qDebug() << "GraphLayout: Cannot add BTW marker - data source not found for graph type" << static_cast<int>(graphType);
-    }
+    Q_UNUSED(graphType); // No longer needed - markers are shared across all graphs
+    
+    // Add marker to sync state
+    BTWMarkerData markerData;
+    markerData.timestamp = timestamp;
+    markerData.range = range;
+    markerData.delta = delta;
+    
+    m_syncState.btwMarkers.push_back(markerData);
+    m_syncState.hasBTWMarkers = true;
+    
+    // Redraw all BTW graphs to show the new marker
+    redrawGraph(GraphType::BTW);
+    
+    qDebug() << "GraphLayout: Added BTW marker to sync state at timestamp" << timestamp.toString() << "range" << range << "delta" << delta;
+    
+    // Add magenta circle (BTW symbol) to all other graphs at this timestamp
+    addBTWSymbolToAllGraphs(timestamp, range);
 }
 
 void GraphLayout::addRTWRMarker(const GraphType &graphType, const QDateTime &timestamp, qreal range)
@@ -1934,22 +1953,40 @@ void GraphLayout::addRTWRMarker(const GraphType &graphType, const QDateTime &tim
 
 bool GraphLayout::removeBTWMarker(const GraphType &graphType, const QDateTime &timestamp, qreal range, qreal toleranceMs, qreal rangeTolerance)
 {
-    auto it = m_dataSources.find(graphType);
-    if (it != m_dataSources.end() && it->second)
+    Q_UNUSED(graphType); // No longer needed - markers are shared across all graphs
+    
+    // Remove marker from sync state using tolerance matching
+    bool removed = false;
+    for (auto it = m_syncState.btwMarkers.begin(); it != m_syncState.btwMarkers.end(); ++it)
     {
-        bool removed = it->second->removeBTWMarker(timestamp, range, toleranceMs, rangeTolerance);
-        if (removed)
+        qint64 timeDiff = qAbs(it->timestamp.msecsTo(timestamp));
+        qreal rangeDiff = qAbs(it->range - range);
+        
+        if (timeDiff <= toleranceMs && rangeDiff <= rangeTolerance)
         {
-            redrawGraph(graphType);
-            qDebug() << "GraphLayout: Removed BTW marker from graph type" << static_cast<int>(graphType);
+            m_syncState.btwMarkers.erase(it);
+            removed = true;
+            
+            // Update flag if vector becomes empty
+            if (m_syncState.btwMarkers.empty())
+            {
+                m_syncState.hasBTWMarkers = false;
+            }
+            
+            // Redraw all BTW graphs
+            redrawGraph(GraphType::BTW);
+            
+            qDebug() << "GraphLayout: Removed BTW marker from sync state at timestamp" << timestamp.toString() << "range" << range;
+            break;
         }
-        return removed;
     }
-    else
+    
+    if (!removed)
     {
-        qDebug() << "GraphLayout: Cannot remove BTW marker - data source not found for graph type" << static_cast<int>(graphType);
-        return false;
+        qDebug() << "GraphLayout: BTW marker not found in sync state at timestamp" << timestamp.toString() << "range" << range;
     }
+    
+    return removed;
 }
 
 bool GraphLayout::removeRTWRMarker(const GraphType &graphType, const QDateTime &timestamp, qreal range, qreal toleranceMs, qreal rangeTolerance)
@@ -2004,17 +2041,16 @@ void GraphLayout::clearBTWSymbols(const GraphType &graphType)
 
 void GraphLayout::clearBTWMarkers(const GraphType &graphType)
 {
-    auto it = m_dataSources.find(graphType);
-    if (it != m_dataSources.end() && it->second)
-    {
-        it->second->clearBTWMarkers();
-        redrawGraph(graphType);
-        qDebug() << "GraphLayout: Cleared BTW markers for graph type" << static_cast<int>(graphType);
-    }
-    else
-    {
-        qDebug() << "GraphLayout: Cannot clear BTW markers - data source not found for graph type" << static_cast<int>(graphType);
-    }
+    Q_UNUSED(graphType); // No longer needed - markers are shared across all graphs
+    
+    // Clear markers from sync state
+    m_syncState.btwMarkers.clear();
+    m_syncState.hasBTWMarkers = false;
+    
+    // Redraw all graphs to update display
+    redrawAllGraphs();
+    
+    qDebug() << "GraphLayout: Cleared all BTW markers from sync state";
 }
 
 void GraphLayout::clearRTWRMarkers(const GraphType &graphType)
@@ -2034,7 +2070,7 @@ void GraphLayout::clearRTWRMarkers(const GraphType &graphType)
 
 void GraphLayout::clearBTWManualMarkers()
 {
-    qDebug() << "GraphLayout: Clearing BTW manual markers (interactive overlay markers)";
+    qDebug() << "GraphLayout: Clearing BTW manual markers (interactive markers)";
     
     int markersCleared = 0;
     
@@ -2049,9 +2085,9 @@ void GraphLayout::clearBTWManualMarkers()
         if (btwGraphBase)
         {
             BTWGraph *btwGraph = qobject_cast<BTWGraph*>(btwGraphBase);
-            if (btwGraph && btwGraph->getInteractiveOverlay())
+            if (btwGraph)
             {
-                btwGraph->getInteractiveOverlay()->clearAllMarkers();
+                btwGraph->deleteInteractiveMarkers();
                 markersCleared++;
                 qDebug() << "GraphLayout: Cleared BTW manual markers in container";
             }

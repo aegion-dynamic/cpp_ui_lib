@@ -923,6 +923,12 @@ void GraphContainer::initializeWaterfallGraph(GraphType graphType)
             targetGraph->setAutoUpdateYRange(true);
         }
         
+        // Set shared sync state for cursor layer (ensures markers can be synced)
+        if (m_syncState)
+        {
+            targetGraph->setCursorSyncState(m_syncState);
+        }
+        
         // Set current waterfall graph reference
         m_currentWaterfallGraph = targetGraph;
         
@@ -1427,6 +1433,7 @@ void GraphContainer::onDataChanged(GraphType graphType)
                             QDateTime newTimeMax = latestDataTime;
                             
                             // Update the graph's time range
+                            // This will call updateMarkerPositions() internally
                             m_currentWaterfallGraph->setTimeRange(newTimeMin, newTimeMax);
                             
                             // Also update the timeline view to match

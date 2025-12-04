@@ -41,8 +41,9 @@ protected:
 private:
     // RTW-specific properties and methods can be added here
     void drawRTWScatterplot();
-    void drawCustomRMarkers();
-    void drawRTWSymbols();
+    void drawCustomRMarkers(); // DEPRECATED - kept for backward compatibility
+    void drawRTWSymbols(); // DEPRECATED - kept for backward compatibility
+    void syncMarkersFromDataSource(); // Sync markers from WaterfallData to unified marker system
     RTWSymbolDrawing::SymbolType symbolNameToType(const QString &symbolName) const;
 
     // RTW symbol drawing utility (symbols are stored in WaterfallData)

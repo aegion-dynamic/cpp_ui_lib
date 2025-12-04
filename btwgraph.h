@@ -14,7 +14,6 @@
 #include <vector>
 
 // Forward declarations to avoid circular dependency
-class BTWInteractiveOverlay;
 class InteractiveGraphicsItem;
 
 /**
@@ -22,7 +21,7 @@ class InteractiveGraphicsItem;
  *
  * This component creates scatterplots by default and can be extended
  * for specific BTW (Bit Time Waterfall) functionality.
- * Now includes interactive overlay capabilities.
+ * Interactive markers are managed by WaterfallGraph's unified marker system.
  */
 class BTWGraph : public WaterfallGraph
 {
@@ -32,9 +31,6 @@ public:
     explicit BTWGraph(QWidget *parent = nullptr, bool enableGrid = false, int gridDivisions = 10, TimeInterval timeInterval = TimeInterval::FifteenMinutes);
     ~BTWGraph();
 
-    // Interactive overlay access
-    BTWInteractiveOverlay* getInteractiveOverlay() const;
-    
     /**
      * @brief Get all timestamps from automatic markers
      * @return Vector of timestamps from all automatic markers that were created
@@ -60,30 +56,14 @@ protected:
     void onMouseClick(const QPointF &scenePos) override;
     void onMouseDrag(const QPointF &scenePos) override;
 
-    // Override resize event to update overlay
-    void resizeEvent(QResizeEvent *event) override;
-
-private slots:
-    // Interactive overlay event slots
-    void onMarkerAdded(InteractiveGraphicsItem *marker, int type);
-    void onMarkerRemoved(InteractiveGraphicsItem *marker, int type);
-    void onMarkerMoved(InteractiveGraphicsItem *marker, const QPointF &newPosition);
-    void onMarkerRotated(InteractiveGraphicsItem *marker, qreal angle);
-    void onMarkerClicked(InteractiveGraphicsItem *marker, const QPointF &position);
-
 private:
     // BTW-specific properties and methods can be added here
     void drawBTWScatterplot();
-    void drawCustomCircleMarkers();
+    void drawCustomCircleMarkers(); // DEPRECATED - kept for backward compatibility
     void drawBTWSymbols();
+    void syncMarkersFromDataSource(); // Sync markers from sync state to unified marker system
     BTWSymbolDrawing::SymbolType symbolNameToType(const QString &symbolName) const;
     void addBTWSymbolToOtherGraphs(const QDateTime &timestamp, qreal btwValue);
-    
-    // Interactive overlay setup
-    void setupInteractiveOverlay();
-    
-    // Interactive overlay
-    BTWInteractiveOverlay *m_interactiveOverlay;
     
     // BTW symbol drawing utility (symbols are stored in WaterfallData)
     BTWSymbolDrawing symbols;

@@ -1,12 +1,15 @@
 #include "btwgraph.h"
-#include "btwinteractiveoverlay.h"
 #include "interactivegraphicsitem.h"
 #include "graphcontainer.h"
 #include "graphlayout.h"
 #include "waterfalldata.h"
+#include "markers/waterfallmarker.h"
+#include "markers/btwcirclemarker.h"
+#include "markers/interactivebtwmarker.h"
 #include "graphtype.h"
 #include <QDebug>
 #include <QRandomGenerator>
+#include <memory>
 
 /**
  * @brief Construct a new BTWGraph::BTWGraph object
@@ -18,13 +21,12 @@
  */
 BTWGraph::BTWGraph(QWidget *parent, bool enableGrid, int gridDivisions, TimeInterval timeInterval)
     : WaterfallGraph(parent, enableGrid, gridDivisions, timeInterval)
-    , m_interactiveOverlay(nullptr)
     , symbols(40)  // Initialize BTW symbol cache
 {
     qDebug() << "BTWGraph constructor called";
     
-    // Setup interactive overlay
-    setupInteractiveOverlay();
+    // Interactive markers are created directly via InteractiveBTWMarker
+    // WaterfallGraph handles drawing and position updates
 }
 
 /**
@@ -99,8 +101,8 @@ void BTWGraph::draw()
     // Draw BTW symbols (magenta circles from other graphs)
     drawBTWSymbols();
     
-    // Draw manually placed BTW markers from data source
-    drawCustomCircleMarkers();
+    // Sync markers from data source to marker system
+    syncMarkersFromDataSource();
     
     isDrawing = false;
 }
@@ -117,25 +119,22 @@ void BTWGraph::onMouseClick(const QPointF &scenePos)
     qDebug() << "BTWGraph mouse clicked at scene position:" << scenePos;
     
     // Check if we clicked on an existing interactive marker in the overlay scene
-    // The overlay scene and graphics scene share the same coordinate system
-    if (m_interactiveOverlay && m_interactiveOverlay->getOverlayScene()) {
-        QGraphicsItem *itemAtPos = m_interactiveOverlay->getOverlayScene()->itemAt(scenePos, QTransform());
+    if (overlayScene) {
+        QGraphicsItem *itemAtPos = overlayScene->itemAt(scenePos, QTransform());
         // Filter out crosshair items - they should not prevent marker creation
         if (itemAtPos && itemAtPos != crosshairHorizontal && itemAtPos != crosshairVertical) {
-            qDebug() << "BTWGraph: Clicked on existing interactive item:" << itemAtPos << "letting it handle the event";
-            // Don't add a new marker, let the interactive item handle the click
-            return;
-        } else {
-            qDebug() << "BTWGraph: No interactive item found at position:" << scenePos;
-            qDebug() << "BTWGraph: Overlay scene items count:" << m_interactiveOverlay->getOverlayScene()->items().size();
+            // Check if this is an InteractiveGraphicsItem from one of our markers
+            InteractiveGraphicsItem *interactiveItem = qgraphicsitem_cast<InteractiveGraphicsItem*>(itemAtPos);
+            if (interactiveItem) {
+                qDebug() << "BTWGraph: Clicked on existing interactive marker, letting it handle the event";
+                // Don't add a new marker, let the interactive item handle the click
+                return;
+            }
         }
     }
     
     // Only add a marker if we clicked on empty space (no interactive items)
-    if (m_interactiveOverlay) {
-        // Convert scene position to overlay coordinates
-        QPointF overlayPos = scenePos;
-        
+    if (overlayScene) {
         // Calculate timestamp from Y position (this represents the time at that position on the graph)
         QDateTime timestamp = mapScreenToTime(scenePos.y());
         
@@ -145,12 +144,17 @@ void BTWGraph::onMouseClick(const QPointF &scenePos)
             qDebug() << "BTWGraph: Could not map Y position to timestamp, using current time";
         }
         
-        qreal value = 50.0; // Default value
-        QString seriesLabel = "BTW-Click";
+        // Calculate value (range) from X position
+        qreal value = mapScreenXToRange(scenePos.x());
         
-        m_interactiveOverlay->addDataPointMarker(overlayPos, timestamp, value, seriesLabel);
+        // Create InteractiveBTWMarker directly - it will be drawn by WaterfallGraph
+        auto marker = std::make_shared<InteractiveBTWMarker>(timestamp, value, scenePos, overlayScene);
+        addMarker(marker);
         
-        qDebug() << "BTWGraph: Added new interactive marker at:" << overlayPos << "with timestamp:" << timestamp.toString("yyyy-MM-dd hh:mm:ss.zzz");
+        // Emit signal for external integration
+        emit manualMarkerPlaced(timestamp, scenePos);
+        
+        qDebug() << "BTWGraph: Added new interactive marker at:" << scenePos << "with timestamp:" << timestamp.toString("yyyy-MM-dd hh:mm:ss.zzz") << "value:" << value;
     }
     
     // Call parent implementation
@@ -182,7 +186,37 @@ void BTWGraph::drawBTWScatterplot()
 }
 
 /**
- * @brief Draw manually placed BTW circle markers from data source
+ * @brief Sync markers from sync state to the unified marker system
+ */
+void BTWGraph::syncMarkersFromDataSource()
+{
+    // Get sync state instead of data source
+    GraphContainerSyncState *syncState = getSyncState();
+    if (!syncState || !syncState->hasBTWMarkers) {
+        return;
+    }
+
+    // Clear existing BTW circle markers
+    QString circleMarkerType = QString::number(static_cast<int>(WaterfallMarker::MarkerType::BTWCircleMarker));
+    
+    // Remove existing BTW circle markers (make a copy of the vector to avoid iterator invalidation)
+    auto markerHashes = m_markersByType[circleMarkerType];
+    for (const QString& hash : markerHashes) {
+        removeMarker(hash);
+    }
+
+    // Add BTW circle markers from sync state
+    std::vector<BTWMarkerData> btwMarkers = syncState->btwMarkers;
+    for (const auto& markerData : btwMarkers) {
+        auto marker = std::make_shared<BTWCircleMarker>(markerData.timestamp, markerData.range, markerData.delta);
+        addMarker(marker);
+    }
+    
+    qDebug() << "BTW: Synced" << btwMarkers.size() << "circle markers from sync state";
+}
+
+/**
+ * @brief Draw manually placed BTW circle markers from data source (DEPRECATED - use syncMarkersFromDataSource)
  * Circle outline with a line whose angle is calculated from delta values
  */
 void BTWGraph::drawCustomCircleMarkers()
@@ -302,202 +336,26 @@ void BTWGraph::drawCustomCircleMarkers()
     qDebug() << "BTW: Drew" << markersDrawn << "manually placed circle markers";
 }
 
-/**
- * @brief Get the interactive overlay
- * @return Pointer to the interactive overlay
- */
-BTWInteractiveOverlay* BTWGraph::getInteractiveOverlay() const
-{
-    return m_interactiveOverlay;
-}
-
-/**
- * @brief Override resize event to update overlay
- * @param event Resize event
- */
-void BTWGraph::resizeEvent(QResizeEvent *event)
-{
-    WaterfallGraph::resizeEvent(event);
-    
-    // Update overlay after resize
-    if (m_interactiveOverlay) {
-        m_interactiveOverlay->updateOverlay();
-    }
-}
-
-/**
- * @brief Setup interactive overlay
- */
-void BTWGraph::setupInteractiveOverlay()
-{
-    m_interactiveOverlay = new BTWInteractiveOverlay(this, this);
-    
-    // Connect overlay signals
-    connect(m_interactiveOverlay, &BTWInteractiveOverlay::markerAdded, 
-            this, [this](InteractiveGraphicsItem *marker, BTWInteractiveOverlay::MarkerType type) {
-                onMarkerAdded(marker, static_cast<int>(type));
-            });
-    connect(m_interactiveOverlay, &BTWInteractiveOverlay::markerRemoved, 
-            this, [this](InteractiveGraphicsItem *marker, BTWInteractiveOverlay::MarkerType type) {
-                onMarkerRemoved(marker, static_cast<int>(type));
-            });
-    connect(m_interactiveOverlay, &BTWInteractiveOverlay::markerMoved, 
-            this, &BTWGraph::onMarkerMoved);
-    connect(m_interactiveOverlay, &BTWInteractiveOverlay::markerRotated, 
-            this, &BTWGraph::onMarkerRotated);
-    connect(m_interactiveOverlay, &BTWInteractiveOverlay::markerClicked,
-            this, &BTWGraph::onMarkerClicked);
-    
-    qDebug() << "BTWGraph: Interactive overlay setup complete";
-}
 
 void BTWGraph::deleteInteractiveMarkers()
 {
-    if (!m_interactiveOverlay) {
-        qDebug() << "BTWGraph: deleteInteractiveMarkers called but overlay not available";
-        return;
-    }
-
     qDebug() << "BTWGraph: Clearing all interactive markers";
-    m_interactiveOverlay->clearAllMarkers();
+    
+    // Remove all InteractiveBTWMarker instances from the unified marker system
+    QString interactiveType = QString::number(static_cast<int>(WaterfallMarker::MarkerType::InteractiveBTWMarker));
+    auto typeIt = m_markersByType.find(interactiveType);
+    if (typeIt != m_markersByType.end()) {
+        // Make a copy to avoid iterator invalidation
+        auto hashes = typeIt->second;
+        for (const QString& hash : hashes) {
+            removeMarker(hash);
+        }
+    }
+    
+    qDebug() << "BTWGraph: Cleared all interactive markers from unified marker system";
 }
 
 
-void BTWGraph::onMarkerAdded(InteractiveGraphicsItem *marker, int type)
-{
-    if (!marker) {
-        qDebug() << "BTWGraph: Marker added - NULL marker, type:" << type;
-        return;
-    }
-    
-    // Extract timestamp from marker's stored data
-    QVariant timestampVariant = marker->data(0);
-    QDateTime timestamp;
-    
-    if (timestampVariant.isValid() && timestampVariant.canConvert<QDateTime>()) {
-        timestamp = timestampVariant.value<QDateTime>();
-    } else {
-        // Fallback: calculate timestamp from marker's Y position
-        QPointF scenePos = marker->scenePos();
-        qreal yPos = scenePos.y();
-        timestamp = mapScreenToTime(yPos);
-    }
-    
-    if (timestamp.isValid()) {
-        qDebug() << "========================================";
-        qDebug() << "BTW MANUAL MARKER PLACED - TIMESTAMP RETURNED";
-        qDebug() << "========================================";
-        qDebug() << "BTWGraph: Marker added, type:" << type;
-        qDebug() << "BTWGraph: Marker scene position:" << marker->scenePos();
-        qDebug() << "BTWGraph: TIMESTAMP:" << timestamp.toString("yyyy-MM-dd hh:mm:ss.zzz");
-        qDebug() << "========================================";
-        
-        // Emit signal for external integration
-        emit manualMarkerPlaced(timestamp, marker->scenePos());
-    } else {
-        qDebug() << "BTWGraph: Marker added, type:" << type << "- Could not determine timestamp (invalid)";
-    }
-}
-
-void BTWGraph::onMarkerRemoved(InteractiveGraphicsItem *marker, int type)
-{
-    Q_UNUSED(marker);
-    Q_UNUSED(type);
-    qDebug() << "BTWGraph: Marker removed, type:" << type;
-}
-
-void BTWGraph::onMarkerMoved(InteractiveGraphicsItem *marker, const QPointF &newPosition)
-{
-    if (!marker) {
-        qDebug() << "BTWGraph: Marker moved - NULL marker";
-        return;
-    }
-    
-    qDebug() << "BTWGraph: Marker moved to:" << newPosition;
-    
-    // Extract timestamp from marker's stored data
-    QVariant timestampVariant = marker->data(0);
-    QDateTime timestamp;
-    
-    if (timestampVariant.isValid() && timestampVariant.canConvert<QDateTime>()) {
-        timestamp = timestampVariant.value<QDateTime>();
-    } else {
-        // Fallback: calculate timestamp from marker's Y position
-        qreal yPos = newPosition.y();
-        timestamp = mapScreenToTime(yPos);
-    }
-    
-    // Update magenta circles when green marker is moved
-    if (timestamp.isValid()) {
-        emit manualMarkerPlaced(timestamp, newPosition);
-        qDebug() << "BTWGraph: Emitted manualMarkerPlaced signal for moved marker at timestamp" << timestamp.toString("yyyy-MM-dd hh:mm:ss.zzz");
-    }
-}
-
-void BTWGraph::onMarkerRotated(InteractiveGraphicsItem *marker, qreal angle)
-{
-    if (!marker) {
-        qDebug() << "BTWGraph: Marker rotated - NULL marker";
-        return;
-    }
-    
-    qDebug() << "BTWGraph: Marker rotated by:" << angle << "degrees";
-    
-    // Extract timestamp from marker's stored data
-    QVariant timestampVariant = marker->data(0);
-    QDateTime timestamp;
-    
-    if (timestampVariant.isValid() && timestampVariant.canConvert<QDateTime>()) {
-        timestamp = timestampVariant.value<QDateTime>();
-    } else {
-        // Fallback: calculate timestamp from marker's Y position
-        QPointF scenePos = marker->scenePos();
-        qreal yPos = scenePos.y();
-        timestamp = mapScreenToTime(yPos);
-    }
-    
-    // Update magenta circles when green marker is rotated (position might have changed)
-    if (timestamp.isValid()) {
-        emit manualMarkerPlaced(timestamp, marker->scenePos());
-        qDebug() << "BTWGraph: Emitted manualMarkerPlaced signal for rotated marker at timestamp" << timestamp.toString("yyyy-MM-dd hh:mm:ss.zzz");
-    }
-}
-
-void BTWGraph::onMarkerClicked(InteractiveGraphicsItem *marker, const QPointF &position)
-{
-    if (!marker) {
-        qDebug() << "BTWGraph: Marker clicked - NULL marker";
-        return;
-    }
-    
-    // First try to get timestamp from marker's stored data
-    QVariant timestampVariant = marker->data(0);
-    QDateTime timestamp;
-    
-    if (timestampVariant.isValid() && timestampVariant.canConvert<QDateTime>()) {
-        timestamp = timestampVariant.value<QDateTime>();
-    } else {
-        // Fallback: calculate timestamp from marker's Y position
-        QPointF scenePos = marker->scenePos();
-        qreal yPos = scenePos.y();
-        timestamp = mapScreenToTime(yPos);
-    }
-    
-    if (timestamp.isValid()) {
-        qDebug() << "========================================";
-        qDebug() << "BTW MANUAL MARKER CLICKED - TIMESTAMP RETURNED";
-        qDebug() << "========================================";
-        qDebug() << "BTWGraph: Marker clicked at position:" << position;
-        qDebug() << "BTWGraph: Marker scene position:" << marker->scenePos();
-        qDebug() << "BTWGraph: TIMESTAMP:" << timestamp.toString("yyyy-MM-dd hh:mm:ss.zzz");
-        qDebug() << "========================================";
-        
-        // Emit signal for external integration
-        emit manualMarkerClicked(timestamp, marker->scenePos());
-    } else {
-        qDebug() << "BTWGraph: Marker clicked at:" << position << "- Could not determine timestamp (invalid)";
-    }
-}
 
 std::vector<QDateTime> BTWGraph::getAutomaticMarkerTimestamps() const
 {
